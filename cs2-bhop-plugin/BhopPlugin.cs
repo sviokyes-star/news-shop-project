@@ -10,7 +10,7 @@ namespace BhopPlugin;
 public class BhopPlugin : BasePlugin
 {
     public override string ModuleName => "Bunny Hop";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Автоматический банихоп для CS2";
 
