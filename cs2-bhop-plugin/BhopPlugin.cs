@@ -10,7 +10,7 @@ namespace BhopPlugin;
 public class BhopPlugin : BasePlugin
 {
     public override string ModuleName => "Bunny Hop";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Автоматический банихоп для CS2";
 
@@ -35,9 +35,9 @@ public class BhopPlugin : BasePlugin
         int userId = (int)player.UserId!;
         
         if (!_autobhopEnabled.ContainsKey(userId))
-            _autobjopEnabled[userId] = false;
+            _autobhopEnabled[userId] = false;
 
-        _autobjopEnabled[userId] = !_autobhopEnabled[userId];
+        _autobhopEnabled[userId] = !_autobhopEnabled[userId];
 
         string status = _autobhopEnabled[userId] ? "включен" : "выключен";
         player.PrintToChat($" {ChatColors.Green}[BHOP]{ChatColors.Default} Автобанихоп {status}");
