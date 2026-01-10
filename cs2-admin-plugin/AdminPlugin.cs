@@ -11,21 +11,20 @@ namespace AdminPlugin;
 public class AdminPlugin : BasePlugin
 {
     public override string ModuleName => "Admin Tools";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Полнофункциональная админка для CS2";
-
-    private CCSPlayerController? _selectedTarget;
 
     public override void Load(bool hotReload)
     {
         AddCommand("css_admin", "Открыть админ-меню", OnAdminMenuCommand);
-        RegisterListener<Listeners.OnClientSayTeam>(OnClientSayTeam);
+        AddCommandListener("say", OnPlayerSay);
+        AddCommandListener("say_team", OnPlayerSay);
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
 
-    private HookResult OnClientSayTeam(CCSPlayerController? player, CommandInfo info)
+    private HookResult OnPlayerSay(CCSPlayerController? player, CommandInfo info)
     {
         if (player == null || !player.IsValid)
             return HookResult.Continue;
