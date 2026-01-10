@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.0.6";
+    public override string ModuleVersion => "1.0.7";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -74,7 +74,7 @@ public class TripleJumpPlugin : BasePlugin
                 float now = Server.CurrentTime;
                 if (now - _lastDebugTime > 0.5f)
                 {
-                    Console.WriteLine($"[TRIPLE JUMP DEBUG] Player {player.PlayerName} pressed jump. Ground: {isOnGround}, Count: {_jumpCount[userId]}");
+                    Console.WriteLine($"[TRIPLE JUMP DEBUG] Player {player.PlayerName} pressed jump. Ground: {isOnGround}, Count: {_jumpCount[userId]}, WasGround: {wasOnGround}");
                     _lastDebugTime = now;
                 }
                 
@@ -91,6 +91,21 @@ public class TripleJumpPlugin : BasePlugin
                     Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} air jump #{_jumpCount[userId]}");
                     
                     // Выполняем прыжок
+                    if (pawn.AbsVelocity != null)
+                    {
+                        pawn.Teleport(null, null, new Vector(
+                            pawn.AbsVelocity.X, 
+                            pawn.AbsVelocity.Y, 
+                            301.993377f
+                        ));
+                    }
+                }
+                // НОВОЕ: если нажали прыжок в воздухе со счетчиком 0, но только что оторвались от земли
+                else if (!isOnGround && _jumpCount[userId] == 0 && wasOnGround)
+                {
+                    _jumpCount[userId] = 2;
+                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} first air jump (just left ground, count -> 2)");
+                    
                     if (pawn.AbsVelocity != null)
                     {
                         pawn.Teleport(null, null, new Vector(
