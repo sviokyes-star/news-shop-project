@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.9";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -372,8 +372,6 @@ public class TimerPlugin : BasePlugin
         {
             _playerTimers[userId].BestTime = _playerRecords[steamId][mapName];
         }
-
-        AddTimer(1.0f, () => StartTimer(player));
 
         return HookResult.Continue;
     }
