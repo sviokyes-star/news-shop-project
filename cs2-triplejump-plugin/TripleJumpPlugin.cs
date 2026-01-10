@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -22,6 +22,7 @@ public class TripleJumpPlugin : BasePlugin
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
+        RegisterEventHandler<EventRoundStart>(OnRoundStart);
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
@@ -43,9 +44,10 @@ public class TripleJumpPlugin : BasePlugin
             // Сброс счетчика при приземлении или если игрок на земле
             if (isOnGround)
             {
-                if (!wasOnGround || _jumpCount[userId] > 0)
+                if (_jumpCount[userId] != 0)
                 {
                     _jumpCount[userId] = 0;
+                    _lastJumpButton[userId] = 0;
                 }
             }
             
@@ -74,7 +76,7 @@ public class TripleJumpPlugin : BasePlugin
                     _jumpCount[userId] = 1;
                 }
                 // Второй и третий прыжок - в воздухе
-                else if (_jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
+                else if (!isOnGround && _jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
                 {
                     _jumpCount[userId]++;
                     
@@ -87,6 +89,11 @@ public class TripleJumpPlugin : BasePlugin
                             301.993377f
                         ));
                     }
+                }
+                // Если счетчик сломался (больше 3) - сбрасываем
+                else if (_jumpCount[userId] >= 3)
+                {
+                    _jumpCount[userId] = 0;
                 }
             }
             
@@ -120,6 +127,18 @@ public class TripleJumpPlugin : BasePlugin
         _jumpCount.Remove(userId);
         _wasOnGround.Remove(userId);
         _lastJumpButton.Remove(userId);
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
+    {
+        // Сбрасываем все счетчики при старте раунда
+        foreach (var userId in _jumpCount.Keys.ToList())
+        {
+            _jumpCount[userId] = 0;
+            _lastJumpButton[userId] = 0;
+        }
 
         return HookResult.Continue;
     }
