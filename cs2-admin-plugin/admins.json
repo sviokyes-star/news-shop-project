@@ -1,0 +1,12 @@
+{
+  "admins": [
+    {
+      "identity": "STEAM_1:0:123456789",
+      "flags": ["@css/root"]
+    },
+    {
+      "identity": "STEAM_1:1:987654321",
+      "flags": ["@css/kick", "@css/ban", "@css/slay"]
+    }
+  ]
+}
