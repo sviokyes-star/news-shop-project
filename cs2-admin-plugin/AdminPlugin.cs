@@ -11,7 +11,7 @@ namespace AdminPlugin;
 public class AdminPlugin : BasePlugin
 {
     public override string ModuleName => "Admin Tools";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Полнофункциональная админка для CS2";
 
@@ -34,9 +34,21 @@ public class AdminPlugin : BasePlugin
 
         if (message.Equals("!admin", StringComparison.OrdinalIgnoreCase))
         {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/kick"))
+            var steamId = player.SteamID;
+            Console.WriteLine($"[AdminPlugin] Player {player.PlayerName} (SteamID: {steamId}) попытался открыть меню");
+            
+            bool hasPermission = AdminManager.PlayerHasPermissions(player, "@css/kick") || 
+                                 AdminManager.PlayerHasPermissions(player, "@css/root") ||
+                                 AdminManager.PlayerHasPermissions(player, "@css/ban") ||
+                                 AdminManager.PlayerHasPermissions(player, "@css/slay") ||
+                                 AdminManager.PlayerHasPermissions(player, "@css/cheats");
+            
+            Console.WriteLine($"[AdminPlugin] Has permission: {hasPermission}");
+
+            if (!hasPermission)
             {
                 player.PrintToChat($" {ChatColors.Red}[ADMIN] У вас нет прав для использования админ-меню");
+                player.PrintToChat($" {ChatColors.Yellow}[DEBUG] Ваш SteamID: {steamId}");
                 return HookResult.Handled;
             }
 
