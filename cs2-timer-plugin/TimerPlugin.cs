@@ -11,7 +11,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -225,10 +225,8 @@ public class TimerPlugin : BasePlugin
                     
                     if (IsInZone(position, zones.StartMin, zones.StartMax))
                     {
-                        if (!_playerTimers.ContainsKey(userId) || !_playerTimers[userId].IsRunning)
-                        {
-                            StartTimer(player);
-                        }
+                        // Всегда перезапускаем таймер при входе в зону старта
+                        StartTimer(player);
                     }
                 }
                 
