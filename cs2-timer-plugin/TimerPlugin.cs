@@ -419,12 +419,12 @@ public class TimerPlugin : BasePlugin
         // Если в зоне старта - показываем рекорд карты
         if (inStartZone)
         {
-            string mapRecord = "---";
+            string record = "---";
             if (_mapRecords.ContainsKey(mapName))
             {
-                mapRecord = FormatTime(_mapRecords[mapName]);
+                record = FormatTime(_mapRecords[mapName]);
             }
-            hudParts.Add($"<font class='fontSize-l' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
+            hudParts.Add($"<font class='fontSize-l' color='#ff00ff'>🏆 Рекорд карты: {record}</font>");
             return string.Join("<br>", hudParts);
         }
 
