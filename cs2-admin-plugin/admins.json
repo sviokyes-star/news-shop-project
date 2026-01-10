@@ -1,7 +1,7 @@
-[
-  {
+{
+  "STEAM_1:0:27777186": {
     "identity": "STEAM_1:0:27777186",
     "flags": ["@css/root"],
     "immunity": 100
   }
-]
+}
