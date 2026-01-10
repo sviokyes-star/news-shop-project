@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.8";
+    public override string ModuleVersion => "1.0.9";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -23,6 +23,7 @@ public class TimerPlugin : BasePlugin
     private readonly Dictionary<ulong, Dictionary<string, float>> _playerRecords = new();
     private readonly Dictionary<int, bool> _inStartZone = new();
     private readonly Dictionary<int, bool> _inEndZone = new();
+    private readonly Dictionary<int, float> _lastFinishTime = new();
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
@@ -276,6 +277,8 @@ public class TimerPlugin : BasePlugin
                         
                         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
                         {
+                            float finalTime = GetCurrentTime() - _playerTimers[userId].StartTime;
+                            _lastFinishTime[userId] = finalTime;
                             StopTimer(player);
                         }
                     }
@@ -285,7 +288,9 @@ public class TimerPlugin : BasePlugin
             }
             
             // Отображаем HUD с информацией
-            string hudText = BuildHudText(userId, mapName);
+            bool inStart = _inStartZone.ContainsKey(userId) && _inStartZone[userId];
+            bool inEnd = _inEndZone.ContainsKey(userId) && _inEndZone[userId];
+            string hudText = BuildHudText(userId, mapName, inStart, inEnd);
             player.PrintToCenterHtml(hudText);
         }
     }
@@ -409,10 +414,30 @@ public class TimerPlugin : BasePlugin
         return $"{minutes:D2}:{secs:D2}.{milliseconds:D3}";
     }
 
-    private string BuildHudText(int userId, string mapName)
+    private string BuildHudText(int userId, string mapName, bool inStartZone, bool inEndZone)
     {
         var hudParts = new List<string>();
 
+        // Если в зоне старта - показываем рекорд карты
+        if (inStartZone)
+        {
+            string mapRecord = "---";
+            if (_mapRecords.ContainsKey(mapName))
+            {
+                mapRecord = FormatTime(_mapRecords[mapName]);
+            }
+            hudParts.Add($"<font class='fontSize-l' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
+            return string.Join("<br>", hudParts);
+        }
+
+        // Если в зоне финиша - показываем время прохождения
+        if (inEndZone && _lastFinishTime.ContainsKey(userId))
+        {
+            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>Вы прошли карту за {FormatTime(_lastFinishTime[userId])}</font>");
+            return string.Join("<br>", hudParts);
+        }
+
+        // Обычный HUD (во время прохождения)
         // Текущее время (если таймер запущен)
         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
         {
