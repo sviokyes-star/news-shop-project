@@ -11,7 +11,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -221,6 +221,8 @@ public class TimerPlugin : BasePlugin
                 
                 if (zones.StartMin != null && zones.StartMax != null)
                 {
+                    DrawZoneBox(player, zones.StartMin, zones.StartMax, "00ff00");
+                    
                     if (IsInZone(position, zones.StartMin, zones.StartMax))
                     {
                         if (!_playerTimers.ContainsKey(userId) || !_playerTimers[userId].IsRunning)
@@ -232,6 +234,8 @@ public class TimerPlugin : BasePlugin
                 
                 if (zones.EndMin != null && zones.EndMax != null)
                 {
+                    DrawZoneBox(player, zones.EndMin, zones.EndMax, "ff0000");
+                    
                     if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
                     {
                         if (IsInZone(position, zones.EndMin, zones.EndMax))
@@ -260,6 +264,41 @@ public class TimerPlugin : BasePlugin
         return position.X >= min.X && position.X <= max.X &&
                position.Y >= min.Y && position.Y <= max.Y &&
                position.Z >= min.Z && position.Z <= max.Z;
+    }
+
+    private void DrawZoneBox(CCSPlayerController player, Vector min, Vector max, string color)
+    {
+        var corners = new Vector[8]
+        {
+            new Vector(min.X, min.Y, min.Z),
+            new Vector(max.X, min.Y, min.Z),
+            new Vector(max.X, max.Y, min.Z),
+            new Vector(min.X, max.Y, min.Z),
+            new Vector(min.X, min.Y, max.Z),
+            new Vector(max.X, min.Y, max.Z),
+            new Vector(max.X, max.Y, max.Z),
+            new Vector(min.X, max.Y, max.Z)
+        };
+
+        DrawLine(player, corners[0], corners[1], color);
+        DrawLine(player, corners[1], corners[2], color);
+        DrawLine(player, corners[2], corners[3], color);
+        DrawLine(player, corners[3], corners[0], color);
+
+        DrawLine(player, corners[4], corners[5], color);
+        DrawLine(player, corners[5], corners[6], color);
+        DrawLine(player, corners[6], corners[7], color);
+        DrawLine(player, corners[7], corners[4], color);
+
+        DrawLine(player, corners[0], corners[4], color);
+        DrawLine(player, corners[1], corners[5], color);
+        DrawLine(player, corners[2], corners[6], color);
+        DrawLine(player, corners[3], corners[7], color);
+    }
+
+    private void DrawLine(CCSPlayerController player, Vector start, Vector end, string color)
+    {
+        player.PrintToCenterHtml($"<font class='fontSize-l' color='#{color}'>■</font>");
     }
 
     private void StartTimer(CCSPlayerController player)
