@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.1.3";
+    public override string ModuleVersion => "1.1.4";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -24,6 +24,7 @@ public class TimerPlugin : BasePlugin
     private readonly Dictionary<int, bool> _inStartZone = new();
     private readonly Dictionary<int, bool> _inEndZone = new();
     private readonly Dictionary<int, float> _lastFinishTime = new();
+    private float _lastDebugLog = 0f;
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
@@ -429,11 +430,6 @@ public class TimerPlugin : BasePlugin
         if (_mapRecords.ContainsKey(mapName))
         {
             mapRecord = FormatTime(_mapRecords[mapName]);
-            Console.WriteLine($"[TIMER DEBUG] Map {mapName} has record: {mapRecord}");
-        }
-        else
-        {
-            Console.WriteLine($"[TIMER DEBUG] Map {mapName} has NO record yet. Total records: {_mapRecords.Count}");
         }
 
         // Если в зоне старта
@@ -471,7 +467,15 @@ public class TimerPlugin : BasePlugin
         hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
 
         string result = string.Join("<br>", hudParts);
-        Console.WriteLine($"[TIMER DEBUG] HUD Text Length: {result.Length}, Lines: {hudParts.Count}");
+        
+        // Логируем раз в секунду
+        float now = GetCurrentTime();
+        if (now - _lastDebugLog > 1.0f)
+        {
+            _lastDebugLog = now;
+            Console.WriteLine($"[TIMER DEBUG] Map: {mapName}, Record: {mapRecord}, HUD Lines: {hudParts.Count}, InStart: {inStartZone}, InEnd: {inEndZone}");
+        }
+        
         return result;
     }
 
