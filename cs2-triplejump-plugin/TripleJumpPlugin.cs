@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.0.7";
+    public override string ModuleVersion => "1.0.8";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -78,34 +78,19 @@ public class TripleJumpPlugin : BasePlugin
                     _lastDebugTime = now;
                 }
                 
-                // Первый прыжок - с земли
-                if (isOnGround)
+                // Первый прыжок - если был на земле (переход с земли)
+                if (wasOnGround || _jumpCount[userId] == 0)
                 {
                     _jumpCount[userId] = 1;
-                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} first jump (ground)");
+                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} first jump (from ground, count -> 1)");
                 }
                 // Второй и третий прыжок - в воздухе
-                else if (!isOnGround && _jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
+                else if (_jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
                 {
                     _jumpCount[userId]++;
                     Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} air jump #{_jumpCount[userId]}");
                     
                     // Выполняем прыжок
-                    if (pawn.AbsVelocity != null)
-                    {
-                        pawn.Teleport(null, null, new Vector(
-                            pawn.AbsVelocity.X, 
-                            pawn.AbsVelocity.Y, 
-                            301.993377f
-                        ));
-                    }
-                }
-                // НОВОЕ: если нажали прыжок в воздухе со счетчиком 0, но только что оторвались от земли
-                else if (!isOnGround && _jumpCount[userId] == 0 && wasOnGround)
-                {
-                    _jumpCount[userId] = 2;
-                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} first air jump (just left ground, count -> 2)");
-                    
                     if (pawn.AbsVelocity != null)
                     {
                         pawn.Teleport(null, null, new Vector(
