@@ -11,7 +11,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.3";
+    public override string ModuleVersion => "1.0.4";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -246,16 +246,9 @@ public class TimerPlugin : BasePlugin
                 }
             }
             
-            if (!_playerTimers.ContainsKey(userId))
-                continue;
-
-            var timer = _playerTimers[userId];
-            if (!timer.IsRunning)
-                continue;
-
-            float currentTime = GetCurrentTime() - timer.StartTime;
-            
-            player.PrintToCenterHtml($"<font color='#00ff00'>Время: {FormatTime(currentTime)}</font>");
+            // Отображаем HUD с информацией
+            string hudText = BuildHudText(userId, mapName);
+            player.PrintToCenterHtml(hudText);
         }
     }
 
@@ -387,6 +380,44 @@ public class TimerPlugin : BasePlugin
         int milliseconds = (int)((seconds - (int)seconds) * 1000);
         
         return $"{minutes:D2}:{secs:D2}.{milliseconds:D3}";
+    }
+
+    private string BuildHudText(int userId, string mapName)
+    {
+        var hudParts = new List<string>();
+
+        // Текущее время (если таймер запущен)
+        if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
+        {
+            float currentTime = GetCurrentTime() - _playerTimers[userId].StartTime;
+            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>⏱ Время: {FormatTime(currentTime)}</font>");
+        }
+        else
+        {
+            hudParts.Add($"<font class='fontSize-m' color='#808080'>⏱ Таймер остановлен</font>");
+        }
+
+        // Личный рекорд
+        if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].BestTime != float.MaxValue)
+        {
+            hudParts.Add($"<font class='fontSize-m' color='#ffd700'>★ Личный: {FormatTime(_playerTimers[userId].BestTime)}</font>");
+        }
+        else
+        {
+            hudParts.Add($"<font class='fontSize-m' color='#808080'>★ Личный: ---</font>");
+        }
+
+        // Рекорд карты
+        if (_mapRecords.ContainsKey(mapName))
+        {
+            hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд: {FormatTime(_mapRecords[mapName])}</font>");
+        }
+        else
+        {
+            hudParts.Add($"<font class='fontSize-m' color='#808080'>🏆 Рекорд: ---</font>");
+        }
+
+        return string.Join("<br>", hudParts);
     }
 
     public override void Unload(bool hotReload)
