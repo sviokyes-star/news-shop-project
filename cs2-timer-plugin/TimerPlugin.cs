@@ -10,12 +10,21 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
     private readonly Dictionary<int, PlayerTimer> _playerTimers = new();
     private readonly Dictionary<string, float> _mapRecords = new();
+    private readonly Dictionary<string, MapZones> _mapZones = new();
+
+    private class MapZones
+    {
+        public Vector? StartMin { get; set; }
+        public Vector? StartMax { get; set; }
+        public Vector? EndMin { get; set; }
+        public Vector? EndMax { get; set; }
+    }
 
     private class PlayerTimer
     {
@@ -69,6 +78,98 @@ public class TimerPlugin : BasePlugin
         }
     }
 
+    [ConsoleCommand("css_setstart", "Установить зону старта")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnSetStartCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid || player.PlayerPawn.Value == null)
+            return;
+
+        var position = player.PlayerPawn.Value.AbsOrigin;
+        if (position == null)
+            return;
+
+        string mapName = Server.MapName;
+        if (!_mapZones.ContainsKey(mapName))
+            _mapZones[mapName] = new MapZones();
+
+        var min = new Vector(position.X - 50, position.Y - 50, position.Z - 10);
+        var max = new Vector(position.X + 50, position.Y + 50, position.Z + 100);
+
+        _mapZones[mapName].StartMin = min;
+        _mapZones[mapName].StartMax = max;
+
+        player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона старта установлена!");
+        player.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
+    }
+
+    [ConsoleCommand("css_setend", "Установить зону финиша")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnSetEndCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid || player.PlayerPawn.Value == null)
+            return;
+
+        var position = player.PlayerPawn.Value.AbsOrigin;
+        if (position == null)
+            return;
+
+        string mapName = Server.MapName;
+        if (!_mapZones.ContainsKey(mapName))
+            _mapZones[mapName] = new MapZones();
+
+        var min = new Vector(position.X - 50, position.Y - 50, position.Z - 10);
+        var max = new Vector(position.X + 50, position.Y + 50, position.Z + 100);
+
+        _mapZones[mapName].EndMin = min;
+        _mapZones[mapName].EndMax = max;
+
+        player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона финиша установлена!");
+        player.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
+    }
+
+    [ConsoleCommand("css_showzones", "Показать зоны старта и финиша")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnShowZonesCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        string mapName = Server.MapName;
+        if (!_mapZones.ContainsKey(mapName))
+        {
+            player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зоны не настроены");
+            return;
+        }
+
+        var zones = _mapZones[mapName];
+        
+        if (zones.StartMin != null && zones.StartMax != null)
+        {
+            player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона старта:");
+            player.PrintToChat($" Min: {zones.StartMin.X:F0}, {zones.StartMin.Y:F0}, {zones.StartMin.Z:F0}");
+            player.PrintToChat($" Max: {zones.StartMax.X:F0}, {zones.StartMax.Y:F0}, {zones.StartMax.Z:F0}");
+        }
+        else
+        {
+            player.PrintToChat($" {ChatColors.Red}[TIMER] Зона старта не установлена");
+        }
+
+        if (zones.EndMin != null && zones.EndMax != null)
+        {
+            player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона финиша:");
+            player.PrintToChat($" Min: {zones.EndMin.X:F0}, {zones.EndMin.Y:F0}, {zones.EndMin.Z:F0}");
+            player.PrintToChat($" Max: {zones.EndMax.X:F0}, {zones.EndMax.Y:F0}, {zones.EndMax.Z:F0}");
+        }
+        else
+        {
+            player.PrintToChat($" {ChatColors.Red}[TIMER] Зона финиша не установлена");
+        }
+    }
+
     [ConsoleCommand("css_top", "Показать топ-10 результатов")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnTopCommand(CCSPlayerController? player, CommandInfo command)
@@ -106,6 +207,39 @@ public class TimerPlugin : BasePlugin
                 continue;
 
             int userId = (int)player.UserId!;
+            var position = player.PlayerPawn.Value.AbsOrigin;
+            
+            if (position == null)
+                continue;
+
+            string mapName = Server.MapName;
+            
+            if (_mapZones.ContainsKey(mapName))
+            {
+                var zones = _mapZones[mapName];
+                
+                if (zones.StartMin != null && zones.StartMax != null)
+                {
+                    if (IsInZone(position, zones.StartMin, zones.StartMax))
+                    {
+                        if (!_playerTimers.ContainsKey(userId) || !_playerTimers[userId].IsRunning)
+                        {
+                            StartTimer(player);
+                        }
+                    }
+                }
+                
+                if (zones.EndMin != null && zones.EndMax != null)
+                {
+                    if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
+                    {
+                        if (IsInZone(position, zones.EndMin, zones.EndMax))
+                        {
+                            StopTimer(player);
+                        }
+                    }
+                }
+            }
             
             if (!_playerTimers.ContainsKey(userId))
                 continue;
@@ -118,6 +252,13 @@ public class TimerPlugin : BasePlugin
             
             player.PrintToCenterHtml($"<font color='#00ff00'>Время: {FormatTime(currentTime)}</font>");
         }
+    }
+
+    private bool IsInZone(Vector position, Vector min, Vector max)
+    {
+        return position.X >= min.X && position.X <= max.X &&
+               position.Y >= min.Y && position.Y <= max.Y &&
+               position.Z >= min.Z && position.Z <= max.Z;
     }
 
     private void StartTimer(CCSPlayerController player)
