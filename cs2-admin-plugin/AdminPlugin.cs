@@ -11,7 +11,7 @@ namespace AdminPlugin;
 public class AdminPlugin : BasePlugin
 {
     public override string ModuleName => "Admin Tools";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Полнофункциональная админка для CS2";
 
@@ -23,12 +23,17 @@ public class AdminPlugin : BasePlugin
     }
 
     [ConsoleCommand("css_admin", "Открыть админ-меню")]
-    [RequiresPermissions("@css/kick")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnAdminMenuCommand(CCSPlayerController? caller, CommandInfo command)
     {
         if (caller == null)
             return;
+
+        if (!AdminManager.PlayerHasPermissions(caller, "@css/kick"))
+        {
+            caller.PrintToChat($" {ChatColors.Red}[ADMIN] У вас нет прав для использования админ-меню");
+            return;
+        }
 
         ShowMainMenu(caller);
     }
