@@ -5,19 +5,26 @@ using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Admin;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TimerPlugin;
 
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.6";
+    public override string ModuleVersion => "1.0.7";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
     private readonly Dictionary<int, PlayerTimer> _playerTimers = new();
     private readonly Dictionary<string, float> _mapRecords = new();
     private readonly Dictionary<string, MapZones> _mapZones = new();
+    private readonly Dictionary<ulong, Dictionary<string, float>> _playerRecords = new();
+    
+    private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
+    private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
+    private string PlayerRecordsFilePath => Path.Combine(ModuleDirectory, "player_records.json");
 
     private class MapZones
     {
@@ -25,6 +32,21 @@ public class TimerPlugin : BasePlugin
         public Vector? StartMax { get; set; }
         public Vector? EndMin { get; set; }
         public Vector? EndMax { get; set; }
+    }
+    
+    private class SerializableVector
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+    }
+    
+    private class SerializableMapZones
+    {
+        public SerializableVector? StartMin { get; set; }
+        public SerializableVector? StartMax { get; set; }
+        public SerializableVector? EndMin { get; set; }
+        public SerializableVector? EndMax { get; set; }
     }
 
     private class PlayerTimer
@@ -40,6 +62,10 @@ public class TimerPlugin : BasePlugin
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
+        
+        LoadZones();
+        LoadRecords();
+        LoadPlayerRecords();
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
@@ -100,8 +126,10 @@ public class TimerPlugin : BasePlugin
 
         _mapZones[mapName].StartMin = min;
         _mapZones[mapName].StartMax = max;
+        
+        SaveZones();
 
-        player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона старта установлена!");
+        player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона старта установлена и сохранена!");
         player.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
     }
 
@@ -126,8 +154,10 @@ public class TimerPlugin : BasePlugin
 
         _mapZones[mapName].EndMin = min;
         _mapZones[mapName].EndMax = max;
+        
+        SaveZones();
 
-        player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона финиша установлена!");
+        player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Зона финиша установлена и сохранена!");
         player.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
     }
 
@@ -318,6 +348,14 @@ public class TimerPlugin : BasePlugin
         if (isNewRecord)
         {
             timer.BestTime = finalTime;
+            
+            ulong steamId = player.SteamID;
+            if (!_playerRecords.ContainsKey(steamId))
+                _playerRecords[steamId] = new Dictionary<string, float>();
+            
+            _playerRecords[steamId][mapName] = finalTime;
+            SavePlayerRecords();
+            
             player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Новый личный рекорд: {ChatColors.Gold}{FormatTime(finalTime)}!");
         }
         else
@@ -329,6 +367,7 @@ public class TimerPlugin : BasePlugin
         if (!_mapRecords.ContainsKey(mapName) || finalTime < _mapRecords[mapName])
         {
             _mapRecords[mapName] = finalTime;
+            SaveRecords();
             Server.PrintToChatAll($" {ChatColors.Green}[TIMER]{ChatColors.Default} {player.PlayerName} установил новый рекорд карты: {ChatColors.Purple}{FormatTime(finalTime)}!");
         }
     }
@@ -338,6 +377,18 @@ public class TimerPlugin : BasePlugin
         var player = @event.Userid;
         if (player == null || !player.IsValid)
             return HookResult.Continue;
+
+        int userId = (int)player.UserId!;
+        ulong steamId = player.SteamID;
+        string mapName = Server.MapName;
+
+        if (!_playerTimers.ContainsKey(userId))
+            _playerTimers[userId] = new PlayerTimer();
+
+        if (_playerRecords.ContainsKey(steamId) && _playerRecords[steamId].ContainsKey(mapName))
+        {
+            _playerTimers[userId].BestTime = _playerRecords[steamId][mapName];
+        }
 
         AddTimer(1.0f, () => StartTimer(player));
 
@@ -408,6 +459,164 @@ public class TimerPlugin : BasePlugin
         hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
 
         return string.Join("<br>", hudParts);
+    }
+
+    private void LoadZones()
+    {
+        try
+        {
+            if (!File.Exists(ZonesFilePath))
+                return;
+
+            string json = File.ReadAllText(ZonesFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<string, SerializableMapZones>>(json);
+
+            if (data == null)
+                return;
+
+            foreach (var kvp in data)
+            {
+                var zone = new MapZones();
+                
+                if (kvp.Value.StartMin != null)
+                    zone.StartMin = new Vector(kvp.Value.StartMin.X, kvp.Value.StartMin.Y, kvp.Value.StartMin.Z);
+                
+                if (kvp.Value.StartMax != null)
+                    zone.StartMax = new Vector(kvp.Value.StartMax.X, kvp.Value.StartMax.Y, kvp.Value.StartMax.Z);
+                
+                if (kvp.Value.EndMin != null)
+                    zone.EndMin = new Vector(kvp.Value.EndMin.X, kvp.Value.EndMin.Y, kvp.Value.EndMin.Z);
+                
+                if (kvp.Value.EndMax != null)
+                    zone.EndMax = new Vector(kvp.Value.EndMax.X, kvp.Value.EndMax.Y, kvp.Value.EndMax.Z);
+
+                _mapZones[kvp.Key] = zone;
+            }
+
+            Console.WriteLine($"[{ModuleName}] Загружено зон: {_mapZones.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки зон: {ex.Message}");
+        }
+    }
+
+    private void SaveZones()
+    {
+        try
+        {
+            var data = new Dictionary<string, SerializableMapZones>();
+
+            foreach (var kvp in _mapZones)
+            {
+                var zone = new SerializableMapZones();
+                
+                if (kvp.Value.StartMin != null)
+                    zone.StartMin = new SerializableVector { X = kvp.Value.StartMin.X, Y = kvp.Value.StartMin.Y, Z = kvp.Value.StartMin.Z };
+                
+                if (kvp.Value.StartMax != null)
+                    zone.StartMax = new SerializableVector { X = kvp.Value.StartMax.X, Y = kvp.Value.StartMax.Y, Z = kvp.Value.StartMax.Z };
+                
+                if (kvp.Value.EndMin != null)
+                    zone.EndMin = new SerializableVector { X = kvp.Value.EndMin.X, Y = kvp.Value.EndMin.Y, Z = kvp.Value.EndMin.Z };
+                
+                if (kvp.Value.EndMax != null)
+                    zone.EndMax = new SerializableVector { X = kvp.Value.EndMax.X, Y = kvp.Value.EndMax.Y, Z = kvp.Value.EndMax.Z };
+
+                data[kvp.Key] = zone;
+            }
+
+            string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(ZonesFilePath, json);
+
+            Console.WriteLine($"[{ModuleName}] Зоны сохранены: {data.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения зон: {ex.Message}");
+        }
+    }
+
+    private void LoadRecords()
+    {
+        try
+        {
+            if (!File.Exists(RecordsFilePath))
+                return;
+
+            string json = File.ReadAllText(RecordsFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<string, float>>(json);
+
+            if (data == null)
+                return;
+
+            foreach (var kvp in data)
+            {
+                _mapRecords[kvp.Key] = kvp.Value;
+            }
+
+            Console.WriteLine($"[{ModuleName}] Загружено рекордов: {_mapRecords.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки рекордов: {ex.Message}");
+        }
+    }
+
+    private void SaveRecords()
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(_mapRecords, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(RecordsFilePath, json);
+
+            Console.WriteLine($"[{ModuleName}] Рекорды сохранены: {_mapRecords.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения рекордов: {ex.Message}");
+        }
+    }
+
+    private void LoadPlayerRecords()
+    {
+        try
+        {
+            if (!File.Exists(PlayerRecordsFilePath))
+                return;
+
+            string json = File.ReadAllText(PlayerRecordsFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<ulong, Dictionary<string, float>>>(json);
+
+            if (data == null)
+                return;
+
+            foreach (var kvp in data)
+            {
+                _playerRecords[kvp.Key] = kvp.Value;
+            }
+
+            Console.WriteLine($"[{ModuleName}] Загружено личных рекордов: {_playerRecords.Count} игроков");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки личных рекордов: {ex.Message}");
+        }
+    }
+
+    private void SavePlayerRecords()
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(_playerRecords, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(PlayerRecordsFilePath, json);
+
+            Console.WriteLine($"[{ModuleName}] Личные рекорды сохранены: {_playerRecords.Count} игроков");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения личных рекордов: {ex.Message}");
+        }
     }
 
     public override void Unload(bool hotReload)
