@@ -321,6 +321,8 @@ public class TimerPlugin : BasePlugin
         float finalTime = GetCurrentTime() - timer.StartTime;
         timer.IsRunning = false;
 
+        string mapName = Server.MapName;
+
         bool isNewRecord = finalTime < timer.BestTime;
         if (isNewRecord)
         {
@@ -340,7 +342,6 @@ public class TimerPlugin : BasePlugin
             player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Время прохождения: {ChatColors.Yellow}{FormatTime(finalTime)}");
         }
 
-        string mapName = Server.MapName;
         if (!_mapRecords.ContainsKey(mapName) || finalTime < _mapRecords[mapName])
         {
             _mapRecords[mapName] = finalTime;
