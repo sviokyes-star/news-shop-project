@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.1.1";
+    public override string ModuleVersion => "1.1.2";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -351,6 +351,7 @@ public class TimerPlugin : BasePlugin
         {
             _mapRecords[mapName] = finalTime;
             SaveRecords();
+            Console.WriteLine($"[TIMER DEBUG] New map record set for {mapName}: {FormatTime(finalTime)}");
             Server.PrintToChatAll($" {ChatColors.Green}[TIMER]{ChatColors.Default} {player.PlayerName} установил новый рекорд карты: {ChatColors.Purple}{FormatTime(finalTime)}!");
         }
     }
@@ -428,6 +429,11 @@ public class TimerPlugin : BasePlugin
         if (_mapRecords.ContainsKey(mapName))
         {
             mapRecord = FormatTime(_mapRecords[mapName]);
+            Console.WriteLine($"[TIMER DEBUG] Map {mapName} has record: {mapRecord}");
+        }
+        else
+        {
+            Console.WriteLine($"[TIMER DEBUG] Map {mapName} has NO record yet. Total records: {_mapRecords.Count}");
         }
 
         // Если в зоне старта
