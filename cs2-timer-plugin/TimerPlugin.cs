@@ -13,12 +13,13 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.2.2";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
     private readonly Dictionary<int, PlayerTimer> _playerTimers = new();
     private readonly Dictionary<string, float> _mapRecords = new();
+    private readonly Dictionary<string, string> _mapRecordHolders = new();
     private readonly Dictionary<string, MapZones> _mapZones = new();
     private readonly Dictionary<ulong, Dictionary<string, float>> _playerRecords = new();
     private readonly Dictionary<int, bool> _inStartZone = new();
@@ -28,6 +29,7 @@ public class TimerPlugin : BasePlugin
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
+    private string RecordHoldersFilePath => Path.Combine(ModuleDirectory, "record_holders.json");
     private string PlayerRecordsFilePath => Path.Combine(ModuleDirectory, "player_records.json");
 
     private class MapZones
@@ -69,6 +71,7 @@ public class TimerPlugin : BasePlugin
         
         LoadZones();
         LoadRecords();
+        LoadRecordHolders();
         LoadPlayerRecords();
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
@@ -105,7 +108,8 @@ public class TimerPlugin : BasePlugin
         string mapName = Server.MapName;
         if (_mapRecords.ContainsKey(mapName))
         {
-            player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Рекорд карты: {ChatColors.Purple}{FormatTime(_mapRecords[mapName])}");
+            string recordHolder = _mapRecordHolders.ContainsKey(mapName) ? _mapRecordHolders[mapName] : "???";
+            player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Рекорд карты ({recordHolder}): {ChatColors.Purple}{FormatTime(_mapRecords[mapName])}");
         }
     }
 
@@ -351,8 +355,10 @@ public class TimerPlugin : BasePlugin
         if (!_mapRecords.ContainsKey(mapName) || finalTime < _mapRecords[mapName])
         {
             _mapRecords[mapName] = finalTime;
+            _mapRecordHolders[mapName] = player.PlayerName;
             SaveRecords();
-            Console.WriteLine($"[TIMER DEBUG] New map record set for {mapName}: {FormatTime(finalTime)}");
+            SaveRecordHolders();
+            Console.WriteLine($"[TIMER DEBUG] New map record set for {mapName}: {FormatTime(finalTime)} by {player.PlayerName}");
             Server.PrintToChatAll($" {ChatColors.Green}[TIMER]{ChatColors.Default} {player.PlayerName} установил новый рекорд карты: {ChatColors.Purple}{FormatTime(finalTime)}!");
         }
     }
@@ -427,9 +433,14 @@ public class TimerPlugin : BasePlugin
 
         // Рекорд карты
         string mapRecord = "---";
+        string mapRecordHolder = "";
         if (_mapRecords.ContainsKey(mapName))
         {
             mapRecord = FormatTime(_mapRecords[mapName]);
+            if (_mapRecordHolders.ContainsKey(mapName))
+            {
+                mapRecordHolder = $" ({_mapRecordHolders[mapName]})";
+            }
         }
 
         // Если в зоне старта
@@ -443,7 +454,7 @@ public class TimerPlugin : BasePlugin
             
             hudParts.Add($"{FormatTime(currentTime)}");
             hudParts.Add($"Личный рекорд: {personalRecord}");
-            hudParts.Add($"Рекорд карты: {mapRecord}");
+            hudParts.Add($"Рекорд карты{mapRecordHolder}: {mapRecord}");
             return string.Join("\n", hudParts);
         }
 
@@ -452,7 +463,7 @@ public class TimerPlugin : BasePlugin
         {
             hudParts.Add($"Время: {FormatTime(_lastFinishTime[userId])}");
             hudParts.Add($"Личный рекорд: {personalRecord}");
-            hudParts.Add($"Рекорд карты: {mapRecord}");
+            hudParts.Add($"Рекорд карты{mapRecordHolder}: {mapRecord}");
             return string.Join("\n", hudParts);
         }
 
@@ -464,7 +475,7 @@ public class TimerPlugin : BasePlugin
         }
 
         hudParts.Add($"Личный рекорд: {personalRecord}");
-        hudParts.Add($"Рекорд карты: {mapRecord}");
+        hudParts.Add($"Рекорд карты{mapRecordHolder}: {mapRecord}");
 
         string result = string.Join("\n", hudParts);
         
@@ -594,6 +605,47 @@ public class TimerPlugin : BasePlugin
         catch (Exception ex)
         {
             Console.WriteLine($"[{ModuleName}] Ошибка сохранения рекордов: {ex.Message}");
+        }
+    }
+
+    private void LoadRecordHolders()
+    {
+        try
+        {
+            if (!File.Exists(RecordHoldersFilePath))
+                return;
+
+            string json = File.ReadAllText(RecordHoldersFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+            if (data == null)
+                return;
+
+            foreach (var kvp in data)
+            {
+                _mapRecordHolders[kvp.Key] = kvp.Value;
+            }
+
+            Console.WriteLine($"[{ModuleName}] Загружено рекордсменов: {_mapRecordHolders.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки рекордсменов: {ex.Message}");
+        }
+    }
+
+    private void SaveRecordHolders()
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(_mapRecordHolders, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(RecordHoldersFilePath, json);
+
+            Console.WriteLine($"[{ModuleName}] Рекордсмены сохранены: {_mapRecordHolders.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения рекордсменов: {ex.Message}");
         }
     }
 
