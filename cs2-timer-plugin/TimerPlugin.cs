@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.7";
+    public override string ModuleVersion => "1.0.8";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -21,6 +21,8 @@ public class TimerPlugin : BasePlugin
     private readonly Dictionary<string, float> _mapRecords = new();
     private readonly Dictionary<string, MapZones> _mapZones = new();
     private readonly Dictionary<ulong, Dictionary<string, float>> _playerRecords = new();
+    private readonly Dictionary<int, bool> _inStartZone = new();
+    private readonly Dictionary<int, bool> _inEndZone = new();
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
@@ -251,26 +253,34 @@ public class TimerPlugin : BasePlugin
                 
                 if (zones.StartMin != null && zones.StartMax != null)
                 {
-                    DrawZoneBox(player, zones.StartMin, zones.StartMax, "00ff00");
+                    bool isInStart = IsInZone(position, zones.StartMin, zones.StartMax);
+                    bool wasInStart = _inStartZone.ContainsKey(userId) && _inStartZone[userId];
                     
-                    if (IsInZone(position, zones.StartMin, zones.StartMax))
+                    if (isInStart && !wasInStart)
                     {
-                        // Всегда перезапускаем таймер при входе в зону старта
+                        player.PrintToCenter("🟩 ЗОНА СТАРТА");
                         StartTimer(player);
                     }
+                    
+                    _inStartZone[userId] = isInStart;
                 }
                 
                 if (zones.EndMin != null && zones.EndMax != null)
                 {
-                    DrawZoneBox(player, zones.EndMin, zones.EndMax, "ff0000");
+                    bool isInEnd = IsInZone(position, zones.EndMin, zones.EndMax);
+                    bool wasInEnd = _inEndZone.ContainsKey(userId) && _inEndZone[userId];
                     
-                    if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
+                    if (isInEnd && !wasInEnd)
                     {
-                        if (IsInZone(position, zones.EndMin, zones.EndMax))
+                        player.PrintToCenter("🟥 ЗОНА ФИНИША");
+                        
+                        if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
                         {
                             StopTimer(player);
                         }
                     }
+                    
+                    _inEndZone[userId] = isInEnd;
                 }
             }
             
@@ -287,40 +297,7 @@ public class TimerPlugin : BasePlugin
                position.Z >= min.Z && position.Z <= max.Z;
     }
 
-    private void DrawZoneBox(CCSPlayerController player, Vector min, Vector max, string color)
-    {
-        var corners = new Vector[8]
-        {
-            new Vector(min.X, min.Y, min.Z),
-            new Vector(max.X, min.Y, min.Z),
-            new Vector(max.X, max.Y, min.Z),
-            new Vector(min.X, max.Y, min.Z),
-            new Vector(min.X, min.Y, max.Z),
-            new Vector(max.X, min.Y, max.Z),
-            new Vector(max.X, max.Y, max.Z),
-            new Vector(min.X, max.Y, max.Z)
-        };
 
-        DrawLine(player, corners[0], corners[1], color);
-        DrawLine(player, corners[1], corners[2], color);
-        DrawLine(player, corners[2], corners[3], color);
-        DrawLine(player, corners[3], corners[0], color);
-
-        DrawLine(player, corners[4], corners[5], color);
-        DrawLine(player, corners[5], corners[6], color);
-        DrawLine(player, corners[6], corners[7], color);
-        DrawLine(player, corners[7], corners[4], color);
-
-        DrawLine(player, corners[0], corners[4], color);
-        DrawLine(player, corners[1], corners[5], color);
-        DrawLine(player, corners[2], corners[6], color);
-        DrawLine(player, corners[3], corners[7], color);
-    }
-
-    private void DrawLine(CCSPlayerController player, Vector start, Vector end, string color)
-    {
-        player.PrintToCenterHtml($"<font class='fontSize-l' color='#{color}'>■</font>");
-    }
 
     private void StartTimer(CCSPlayerController player)
     {
