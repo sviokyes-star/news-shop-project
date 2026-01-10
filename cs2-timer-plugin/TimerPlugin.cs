@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.3.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -207,6 +207,30 @@ public class TimerPlugin : BasePlugin
         {
             player.PrintToChat($" {ChatColors.Red}[TIMER] Зона финиша не установлена");
         }
+    }
+
+    [ConsoleCommand("css_setrecordholder", "Установить рекордсмена карты")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 1, usage: "<имя игрока>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnSetRecordHolderCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        string mapName = Server.MapName;
+        
+        if (!_mapRecords.ContainsKey(mapName))
+        {
+            if (player != null)
+                player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} На этой карте нет рекорда");
+            return;
+        }
+
+        string holderName = command.GetArg(1);
+        _mapRecordHolders[mapName] = holderName;
+        SaveRecordHolders();
+
+        if (player != null)
+            player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Рекордсмен установлен: {holderName}");
+        
+        Console.WriteLine($"[TIMER] Record holder for {mapName} set to: {holderName}");
     }
 
     [ConsoleCommand("css_top", "Показать топ-10 результатов")]
