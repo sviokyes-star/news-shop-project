@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.0.3";
+    public override string ModuleVersion => "1.0.4";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -40,10 +40,13 @@ public class TripleJumpPlugin : BasePlugin
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
             bool wasOnGround = _wasOnGround.ContainsKey(userId) && _wasOnGround[userId];
             
-            // Сброс счетчика при приземлении
-            if (isOnGround && !wasOnGround)
+            // Сброс счетчика при приземлении или если игрок на земле
+            if (isOnGround)
             {
-                _jumpCount[userId] = 0;
+                if (!wasOnGround || _jumpCount[userId] > 0)
+                {
+                    _jumpCount[userId] = 0;
+                }
             }
             
             // Проверяем нажатие прыжка
@@ -63,24 +66,27 @@ public class TripleJumpPlugin : BasePlugin
             // Детектируем момент нажатия (переход от не нажата к нажата)
             bool justPressedJump = isJumping && !wasJumpPressed;
             
-            // Первый прыжок - с земли
-            if (justPressedJump && isOnGround)
+            if (justPressedJump)
             {
-                _jumpCount[userId] = 1;
-            }
-            // Второй и третий прыжок - в воздухе
-            else if (justPressedJump && !isOnGround && _jumpCount[userId] > 0 && _jumpCount[userId] < 3)
-            {
-                _jumpCount[userId]++;
-                
-                // Выполняем прыжок
-                if (pawn.AbsVelocity != null)
+                // Первый прыжок - с земли
+                if (isOnGround)
                 {
-                    pawn.Teleport(null, null, new Vector(
-                        pawn.AbsVelocity.X, 
-                        pawn.AbsVelocity.Y, 
-                        301.993377f
-                    ));
+                    _jumpCount[userId] = 1;
+                }
+                // Второй и третий прыжок - в воздухе
+                else if (_jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
+                {
+                    _jumpCount[userId]++;
+                    
+                    // Выполняем прыжок
+                    if (pawn.AbsVelocity != null)
+                    {
+                        pawn.Teleport(null, null, new Vector(
+                            pawn.AbsVelocity.X, 
+                            pawn.AbsVelocity.Y, 
+                            301.993377f
+                        ));
+                    }
                 }
             }
             
