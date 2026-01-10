@@ -11,7 +11,7 @@ namespace AdminPlugin;
 public class AdminPlugin : BasePlugin
 {
     public override string ModuleName => "Admin Tools";
-    public override string ModuleVersion => "1.0.6";
+    public override string ModuleVersion => "1.0.7";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Полнофункциональная админка для CS2";
 
@@ -90,6 +90,14 @@ public class AdminPlugin : BasePlugin
         {
             ShowCheatsMenu(controller);
         });
+
+        if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            menu.AddMenuOption("⚙️ Настройка зон карты", (controller, option) =>
+            {
+                ShowZonesMenu(controller);
+            });
+        }
 
         MenuManager.OpenChatMenu(player, menu);
     }
@@ -307,6 +315,54 @@ public class AdminPlugin : BasePlugin
                     controller.PrintToChat($" {ChatColors.Yellow}[ADMIN] {target.PlayerName} гравитация 0.5x");
                 }
             });
+        });
+
+        menu.AddMenuOption("← Назад", (controller, option) =>
+        {
+            ShowMainMenu(controller);
+        });
+
+        MenuManager.OpenChatMenu(player, menu);
+    }
+
+    private void ShowZonesMenu(CCSPlayerController player)
+    {
+        var menu = new ChatMenu("Настройка зон карты");
+
+        menu.AddMenuOption("🟩 Установить зону СТАРТА", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                var position = controller.PlayerPawn.Value.AbsOrigin;
+                if (position != null)
+                {
+                    Server.ExecuteCommand($"css_setstart");
+                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Зона старта установлена!");
+                    controller.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
+                }
+            }
+            ShowZonesMenu(controller);
+        });
+
+        menu.AddMenuOption("🟥 Установить зону ФИНИША", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                var position = controller.PlayerPawn.Value.AbsOrigin;
+                if (position != null)
+                {
+                    Server.ExecuteCommand($"css_setend");
+                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Зона финиша установлена!");
+                    controller.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
+                }
+            }
+            ShowZonesMenu(controller);
+        });
+
+        menu.AddMenuOption("📋 Показать текущие зоны", (controller, option) =>
+        {
+            Server.ExecuteCommand($"css_showzones");
+            ShowZonesMenu(controller);
         });
 
         menu.AddMenuOption("← Назад", (controller, option) =>
