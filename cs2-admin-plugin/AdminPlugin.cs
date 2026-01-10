@@ -11,7 +11,7 @@ namespace AdminPlugin;
 public class AdminPlugin : BasePlugin
 {
     public override string ModuleName => "Admin Tools";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Полнофункциональная админка для CS2";
 
@@ -19,14 +19,14 @@ public class AdminPlugin : BasePlugin
 
     public override void Load(bool hotReload)
     {
+        AddCommand("css_admin", "Открыть админ-меню", OnAdminMenuCommand);
+        
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
 
-    [ConsoleCommand("css_admin", "Открыть админ-меню")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnAdminMenuCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        if (caller == null)
+        if (caller == null || !caller.IsValid)
             return;
 
         if (!AdminManager.PlayerHasPermissions(caller, "@css/kick"))
