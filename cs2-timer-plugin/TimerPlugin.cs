@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.1.4";
+    public override string ModuleVersion => "1.1.5";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -474,6 +474,7 @@ public class TimerPlugin : BasePlugin
         {
             _lastDebugLog = now;
             Console.WriteLine($"[TIMER DEBUG] Map: {mapName}, Record: {mapRecord}, HUD Lines: {hudParts.Count}, InStart: {inStartZone}, InEnd: {inEndZone}");
+            Console.WriteLine($"[TIMER DEBUG] HUD Content: {result}");
         }
         
         return result;
