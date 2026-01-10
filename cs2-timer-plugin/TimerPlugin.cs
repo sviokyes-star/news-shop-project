@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.1.2";
+    public override string ModuleVersion => "1.1.3";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -470,7 +470,9 @@ public class TimerPlugin : BasePlugin
         hudParts.Add($"<font class='fontSize-m' color='#ffd700'>★ Личный: {personalRecord}</font>");
         hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
 
-        return string.Join("<br>", hudParts);
+        string result = string.Join("<br>", hudParts);
+        Console.WriteLine($"[TIMER DEBUG] HUD Text Length: {result.Length}, Lines: {hudParts.Count}");
+        return result;
     }
 
     private void LoadZones()
