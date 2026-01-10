@@ -9,13 +9,14 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
     private readonly Dictionary<int, int> _jumpCount = new();
     private readonly Dictionary<int, bool> _wasOnGround = new();
     private readonly Dictionary<int, ulong> _lastJumpButton = new();
+    private float _lastDebugTime = 0f;
 
     public override void Load(bool hotReload)
     {
@@ -70,15 +71,24 @@ public class TripleJumpPlugin : BasePlugin
             
             if (justPressedJump)
             {
+                float now = Server.CurrentTime;
+                if (now - _lastDebugTime > 0.5f)
+                {
+                    Console.WriteLine($"[TRIPLE JUMP DEBUG] Player {player.PlayerName} pressed jump. Ground: {isOnGround}, Count: {_jumpCount[userId]}");
+                    _lastDebugTime = now;
+                }
+                
                 // Первый прыжок - с земли
                 if (isOnGround)
                 {
                     _jumpCount[userId] = 1;
+                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} first jump (ground)");
                 }
                 // Второй и третий прыжок - в воздухе
                 else if (!isOnGround && _jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
                 {
                     _jumpCount[userId]++;
+                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} air jump #{_jumpCount[userId]}");
                     
                     // Выполняем прыжок
                     if (pawn.AbsVelocity != null)
@@ -93,6 +103,7 @@ public class TripleJumpPlugin : BasePlugin
                 // Если счетчик сломался (больше 3) - сбрасываем
                 else if (_jumpCount[userId] >= 3)
                 {
+                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} reset (count was {_jumpCount[userId]})");
                     _jumpCount[userId] = 0;
                 }
             }
@@ -134,6 +145,7 @@ public class TripleJumpPlugin : BasePlugin
     private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
     {
         // Сбрасываем все счетчики при старте раунда
+        Console.WriteLine($"[TRIPLE JUMP] Round start - resetting all counters");
         foreach (var userId in _jumpCount.Keys.ToList())
         {
             _jumpCount[userId] = 0;
