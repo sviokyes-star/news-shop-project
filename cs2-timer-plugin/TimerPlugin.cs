@@ -10,7 +10,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -67,20 +67,6 @@ public class TimerPlugin : BasePlugin
         {
             player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Рекорд карты: {ChatColors.Purple}{FormatTime(_mapRecords[mapName])}");
         }
-    }
-
-    [ConsoleCommand("css_restart", "Перезапустить таймер")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnRestartCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid || player.PlayerPawn.Value == null)
-            return;
-
-        var pawn = player.PlayerPawn.Value;
-        pawn.Teleport(pawn.AbsOrigin, pawn.AbsRotation, new Vector(0, 0, 0));
-        
-        StartTimer(player);
-        player.PrintToChat($" {ChatColors.Green}[TIMER]{ChatColors.Default} Таймер перезапущен!");
     }
 
     [ConsoleCommand("css_top", "Показать топ-10 результатов")]
