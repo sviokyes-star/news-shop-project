@@ -11,7 +11,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -388,32 +388,24 @@ public class TimerPlugin : BasePlugin
         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
         {
             float currentTime = GetCurrentTime() - _playerTimers[userId].StartTime;
-            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>⏱ Время: {FormatTime(currentTime)}</font>");
-        }
-        else
-        {
-            hudParts.Add($"<font class='fontSize-m' color='#808080'>⏱ Таймер остановлен</font>");
+            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>⏱ {FormatTime(currentTime)}</font>");
         }
 
-        // Личный рекорд
+        // Личный рекорд (всегда показываем)
+        string personalRecord = "---";
         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].BestTime != float.MaxValue)
         {
-            hudParts.Add($"<font class='fontSize-m' color='#ffd700'>★ Личный: {FormatTime(_playerTimers[userId].BestTime)}</font>");
+            personalRecord = FormatTime(_playerTimers[userId].BestTime);
         }
-        else
-        {
-            hudParts.Add($"<font class='fontSize-m' color='#808080'>★ Личный: ---</font>");
-        }
+        hudParts.Add($"<font class='fontSize-m' color='#ffd700'>★ Личный: {personalRecord}</font>");
 
-        // Рекорд карты
+        // Рекорд карты (всегда показываем)
+        string mapRecord = "---";
         if (_mapRecords.ContainsKey(mapName))
         {
-            hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд: {FormatTime(_mapRecords[mapName])}</font>");
+            mapRecord = FormatTime(_mapRecords[mapName]);
         }
-        else
-        {
-            hudParts.Add($"<font class='fontSize-m' color='#808080'>🏆 Рекорд: ---</font>");
-        }
+        hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
 
         return string.Join("<br>", hudParts);
     }
