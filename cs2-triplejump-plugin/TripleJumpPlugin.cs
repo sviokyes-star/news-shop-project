@@ -9,13 +9,13 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
     private readonly Dictionary<int, int> _jumpCount = new();
     private readonly Dictionary<int, bool> _wasOnGround = new();
-    private readonly Dictionary<int, float> _lastJumpTime = new();
+    private readonly Dictionary<int, ulong> _lastJumpButton = new();
 
     public override void Load(bool hotReload)
     {
@@ -48,28 +48,30 @@ public class TripleJumpPlugin : BasePlugin
             
             // Проверяем нажатие прыжка
             var buttons = player.Buttons;
+            ulong currentButtons = (ulong)buttons;
             bool isJumping = (buttons & PlayerButtons.Jump) != 0;
             
             if (!_jumpCount.ContainsKey(userId))
                 _jumpCount[userId] = 0;
             
-            if (!_lastJumpTime.ContainsKey(userId))
-                _lastJumpTime[userId] = 0f;
+            if (!_lastJumpButton.ContainsKey(userId))
+                _lastJumpButton[userId] = 0;
             
-            float currentTime = Server.CurrentTime;
-            float timeSinceLastJump = currentTime - _lastJumpTime[userId];
+            ulong lastButtons = _lastJumpButton[userId];
+            bool wasJumpPressed = (lastButtons & (ulong)PlayerButtons.Jump) != 0;
+            
+            // Детектируем момент нажатия (переход от не нажата к нажата)
+            bool justPressedJump = isJumping && !wasJumpPressed;
             
             // Первый прыжок - с земли
-            if (isJumping && isOnGround)
+            if (justPressedJump && isOnGround)
             {
                 _jumpCount[userId] = 1;
-                _lastJumpTime[userId] = currentTime;
             }
             // Второй и третий прыжок - в воздухе
-            else if (isJumping && !isOnGround && _jumpCount[userId] > 0 && _jumpCount[userId] < 3 && timeSinceLastJump > 0.1f)
+            else if (justPressedJump && !isOnGround && _jumpCount[userId] > 0 && _jumpCount[userId] < 3)
             {
                 _jumpCount[userId]++;
-                _lastJumpTime[userId] = currentTime;
                 
                 // Выполняем прыжок
                 if (pawn.AbsVelocity != null)
@@ -81,6 +83,8 @@ public class TripleJumpPlugin : BasePlugin
                     ));
                 }
             }
+            
+            _lastJumpButton[userId] = currentButtons;
             
             _wasOnGround[userId] = isOnGround;
         }
@@ -95,7 +99,7 @@ public class TripleJumpPlugin : BasePlugin
         int userId = (int)player.UserId!;
         _jumpCount[userId] = 0;
         _wasOnGround[userId] = true;
-        _lastJumpTime[userId] = 0f;
+        _lastJumpButton[userId] = 0;
 
         return HookResult.Continue;
     }
@@ -109,7 +113,7 @@ public class TripleJumpPlugin : BasePlugin
         int userId = (int)player.UserId!;
         _jumpCount.Remove(userId);
         _wasOnGround.Remove(userId);
-        _lastJumpTime.Remove(userId);
+        _lastJumpButton.Remove(userId);
 
         return HookResult.Continue;
     }
@@ -129,7 +133,7 @@ public class TripleJumpPlugin : BasePlugin
     {
         _jumpCount.Clear();
         _wasOnGround.Clear();
-        _lastJumpTime.Clear();
+        _lastJumpButton.Clear();
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 }
