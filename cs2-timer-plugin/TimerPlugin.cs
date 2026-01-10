@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.1.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -416,47 +416,52 @@ public class TimerPlugin : BasePlugin
     {
         var hudParts = new List<string>();
 
-        // Если в зоне старта - показываем рекорд карты
+        // Личный рекорд
+        string personalRecord = "---";
+        if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].BestTime != float.MaxValue)
+        {
+            personalRecord = FormatTime(_playerTimers[userId].BestTime);
+        }
+
+        // Рекорд карты
+        string mapRecord = "---";
+        if (_mapRecords.ContainsKey(mapName))
+        {
+            mapRecord = FormatTime(_mapRecords[mapName]);
+        }
+
+        // Если в зоне старта
         if (inStartZone)
         {
-            string record = "---";
-            if (_mapRecords.ContainsKey(mapName))
+            float currentTime = 0f;
+            if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
             {
-                record = FormatTime(_mapRecords[mapName]);
+                currentTime = GetCurrentTime() - _playerTimers[userId].StartTime;
             }
-            hudParts.Add($"<font class='fontSize-l' color='#ff00ff'>🏆 Рекорд карты: {record}</font>");
+            
+            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>⏱ {FormatTime(currentTime)}</font>");
+            hudParts.Add($"<font class='fontSize-m' color='#ffd700'>★ Личный: {personalRecord}</font>");
+            hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
             return string.Join("<br>", hudParts);
         }
 
-        // Если в зоне финиша - показываем время прохождения
+        // Если в зоне финиша
         if (inEndZone && _lastFinishTime.ContainsKey(userId))
         {
             hudParts.Add($"<font class='fontSize-l' color='#00ff00'>Вы прошли карту за {FormatTime(_lastFinishTime[userId])}</font>");
+            hudParts.Add($"<font class='fontSize-m' color='#ffd700'>★ Личный: {personalRecord}</font>");
+            hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
             return string.Join("<br>", hudParts);
         }
 
         // Обычный HUD (во время прохождения)
-        // Текущее время (если таймер запущен)
         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
         {
             float currentTime = GetCurrentTime() - _playerTimers[userId].StartTime;
             hudParts.Add($"<font class='fontSize-l' color='#00ff00'>⏱ {FormatTime(currentTime)}</font>");
         }
 
-        // Личный рекорд (всегда показываем)
-        string personalRecord = "---";
-        if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].BestTime != float.MaxValue)
-        {
-            personalRecord = FormatTime(_playerTimers[userId].BestTime);
-        }
         hudParts.Add($"<font class='fontSize-m' color='#ffd700'>★ Личный: {personalRecord}</font>");
-
-        // Рекорд карты (всегда показываем)
-        string mapRecord = "---";
-        if (_mapRecords.ContainsKey(mapName))
-        {
-            mapRecord = FormatTime(_mapRecords[mapName]);
-        }
         hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>🏆 Рекорд карты: {mapRecord}</font>");
 
         return string.Join("<br>", hudParts);
