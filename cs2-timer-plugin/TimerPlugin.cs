@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.2.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -292,7 +292,7 @@ public class TimerPlugin : BasePlugin
             bool inStart = _inStartZone.ContainsKey(userId) && _inStartZone[userId];
             bool inEnd = _inEndZone.ContainsKey(userId) && _inEndZone[userId];
             string hudText = BuildHudText(userId, mapName, inStart, inEnd);
-            player.PrintToCenterHtml(hudText);
+            player.PrintToCenter(hudText);
         }
     }
 
@@ -441,32 +441,32 @@ public class TimerPlugin : BasePlugin
                 currentTime = GetCurrentTime() - _playerTimers[userId].StartTime;
             }
             
-            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>{FormatTime(currentTime)}</font>");
-            hudParts.Add($"<font class='fontSize-m' color='#ffd700'>Личный: {personalRecord}</font>");
-            hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>Рекорд: {mapRecord}</font>");
-            return string.Join("<br>", hudParts);
+            hudParts.Add($"{FormatTime(currentTime)}");
+            hudParts.Add($"Личный: {personalRecord}");
+            hudParts.Add($"Рекорд: {mapRecord}");
+            return string.Join("\n", hudParts);
         }
 
         // Если в зоне финиша
         if (inEndZone && _lastFinishTime.ContainsKey(userId))
         {
-            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>Время: {FormatTime(_lastFinishTime[userId])}</font>");
-            hudParts.Add($"<font class='fontSize-m' color='#ffd700'>Личный: {personalRecord}</font>");
-            hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>Рекорд: {mapRecord}</font>");
-            return string.Join("<br>", hudParts);
+            hudParts.Add($"Время: {FormatTime(_lastFinishTime[userId])}");
+            hudParts.Add($"Личный: {personalRecord}");
+            hudParts.Add($"Рекорд: {mapRecord}");
+            return string.Join("\n", hudParts);
         }
 
         // Обычный HUD (во время прохождения)
         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
         {
             float currentTime = GetCurrentTime() - _playerTimers[userId].StartTime;
-            hudParts.Add($"<font class='fontSize-l' color='#00ff00'>{FormatTime(currentTime)}</font>");
+            hudParts.Add($"{FormatTime(currentTime)}");
         }
 
-        hudParts.Add($"<font class='fontSize-m' color='#ffd700'>Личный: {personalRecord}</font>");
-        hudParts.Add($"<font class='fontSize-m' color='#ff00ff'>Рекорд: {mapRecord}</font>");
+        hudParts.Add($"Личный: {personalRecord}");
+        hudParts.Add($"Рекорд: {mapRecord}");
 
-        string result = string.Join("<br>", hudParts);
+        string result = string.Join("\n", hudParts);
         
         // Логируем раз в секунду
         float now = GetCurrentTime();
