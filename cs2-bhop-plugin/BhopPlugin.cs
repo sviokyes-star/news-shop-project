@@ -10,7 +10,7 @@ namespace BhopPlugin;
 public class BhopPlugin : BasePlugin
 {
     public override string ModuleName => "Bunny Hop";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Автоматический банихоп для CS2";
 
@@ -18,7 +18,7 @@ public class BhopPlugin : BasePlugin
 
     public override void Load(bool hotReload)
     {
-        RegisterEventHandler<EventPlayerJump>(OnPlayerJump);
+        RegisterListener<Listeners.OnTick>(OnTick);
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         
@@ -43,32 +43,32 @@ public class BhopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Green}[BHOP]{ChatColors.Default} Автобанихоп {status}");
     }
 
-    private HookResult OnPlayerJump(EventPlayerJump @event, GameEventInfo info)
+    private void OnTick()
     {
-        var player = @event.Userid;
-        if (player == null || !player.IsValid || player.PlayerPawn.Value == null)
-            return HookResult.Continue;
-
-        int userId = (int)player.UserId!;
-        
-        if (!_autobhopEnabled.ContainsKey(userId) || !_autobhopEnabled[userId])
-            return HookResult.Continue;
-
-        var pawn = player.PlayerPawn.Value;
-        
-        // Проверяем, что игрок на земле
-        if ((pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) == 0)
-            return HookResult.Continue;
-
-        // Применяем вертикальный импульс для прыжка
-        var velocity = pawn.AbsVelocity;
-        if (velocity != null)
+        var players = Utilities.GetPlayers();
+        foreach (var player in players)
         {
-            // Стандартная скорость прыжка в CS2
-            velocity.Z = 301.993377f;
-        }
+            if (player == null || !player.IsValid || player.PlayerPawn.Value == null)
+                continue;
 
-        return HookResult.Continue;
+            int userId = (int)player.UserId!;
+            
+            if (!_autobhopEnabled.ContainsKey(userId) || !_autobhopEnabled[userId])
+                continue;
+
+            var pawn = player.PlayerPawn.Value;
+            
+            // Проверяем, что игрок нажимает прыжок и находится на земле
+            var buttons = player.Buttons;
+            bool isJumping = (buttons & PlayerButtons.Jump) != 0;
+            bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
+
+            if (isJumping && isOnGround)
+            {
+                // Автоматически выполняем прыжок
+                pawn.Teleport(null, null, new Vector(pawn.AbsVelocity!.X, pawn.AbsVelocity.Y, 301.993377f));
+            }
+        }
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
