@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Map Timer";
-    public override string ModuleVersion => "1.2.1";
+    public override string ModuleVersion => "1.2.2";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -442,8 +442,8 @@ public class TimerPlugin : BasePlugin
             }
             
             hudParts.Add($"{FormatTime(currentTime)}");
-            hudParts.Add($"Личный: {personalRecord}");
-            hudParts.Add($"Рекорд: {mapRecord}");
+            hudParts.Add($"Личный рекорд: {personalRecord}");
+            hudParts.Add($"Рекорд карты: {mapRecord}");
             return string.Join("\n", hudParts);
         }
 
@@ -451,8 +451,8 @@ public class TimerPlugin : BasePlugin
         if (inEndZone && _lastFinishTime.ContainsKey(userId))
         {
             hudParts.Add($"Время: {FormatTime(_lastFinishTime[userId])}");
-            hudParts.Add($"Личный: {personalRecord}");
-            hudParts.Add($"Рекорд: {mapRecord}");
+            hudParts.Add($"Личный рекорд: {personalRecord}");
+            hudParts.Add($"Рекорд карты: {mapRecord}");
             return string.Join("\n", hudParts);
         }
 
@@ -463,8 +463,8 @@ public class TimerPlugin : BasePlugin
             hudParts.Add($"{FormatTime(currentTime)}");
         }
 
-        hudParts.Add($"Личный: {personalRecord}");
-        hudParts.Add($"Рекорд: {mapRecord}");
+        hudParts.Add($"Личный рекорд: {personalRecord}");
+        hudParts.Add($"Рекорд карты: {mapRecord}");
 
         string result = string.Join("\n", hudParts);
         
