@@ -118,7 +118,16 @@ public class ShopPlugin : BasePlugin
         {
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 1: Управление игроками");
+                _playerMenuContext[steamId] = "admin_players";
+                ShowPlayersManagement(player);
+            }
+            return;
+        }
+        else if (context == "admin_players")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Убить");
             }
             return;
         }
@@ -154,6 +163,14 @@ public class ShopPlugin : BasePlugin
             }
             return;
         }
+        else if (context == "admin_players")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Кикнуть");
+            }
+            return;
+        }
 
         // Магазин
         if (context == "shop_main")
@@ -185,6 +202,14 @@ public class ShopPlugin : BasePlugin
             }
             return;
         }
+        else if (context == "admin_players")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Забанить");
+            }
+            return;
+        }
 
         // Магазин
         if (context == "shop_main")
@@ -208,6 +233,14 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 4: Настройки зон карт");
+            }
+            return;
+        }
+        else if (context == "admin_players")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Шлепнуть");
             }
             return;
         }
@@ -253,6 +286,13 @@ public class ShopPlugin : BasePlugin
         {
             ShowGiftsManagement(player);
         }
+        else if (context == "admin_players")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Заморозить");
+            }
+        }
     }
 
     [ConsoleCommand("css_6", "Управление спавнами")]
@@ -275,6 +315,45 @@ public class ShopPlugin : BasePlugin
         if (context == "admin_main")
         {
             ShowSpawnsManagement(player);
+        }
+        else if (context == "admin_players")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Возродить");
+            }
+        }
+    }
+
+    [ConsoleCommand("css_7", "Команда 7")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnMenu7Command(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
+
+        if (context == "admin_players" && AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Телепортировать к себе");
+        }
+    }
+
+    [ConsoleCommand("css_8", "Команда 8")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnMenu8Command(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
+
+        if (context == "admin_players" && AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Телепортироваться к игроку");
         }
     }
 
@@ -1048,6 +1127,25 @@ public class ShopPlugin : BasePlugin
             player.PrintToChat($" {ChatColors.Yellow}!4{ChatColors.Default} - Настройки зон карт");
             player.PrintToChat($" {ChatColors.Yellow}!5{ChatColors.Default} - Управление подарками");
             player.PrintToChat($" {ChatColors.Yellow}!6{ChatColors.Default} - Управление спавнами");
+        });
+    }
+
+    private void ShowPlayersManagement(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление игроками:");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Убить");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Кикнуть");
+        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Забанить");
+        player.PrintToChat($" {ChatColors.Yellow}!4{ChatColors.Default} - Шлепнуть");
+        
+        AddTimer(0.1f, () =>
+        {
+            if (!player.IsValid) return;
+            player.PrintToChat($" {ChatColors.Yellow}!5{ChatColors.Default} - Заморозить");
+            player.PrintToChat($" {ChatColors.Yellow}!6{ChatColors.Default} - Возродить");
+            player.PrintToChat($" {ChatColors.Yellow}!7{ChatColors.Default} - Телепортировать к себе");
+            player.PrintToChat($" {ChatColors.Yellow}!8{ChatColors.Default} - Телепортироваться к игроку");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
         });
     }
 
