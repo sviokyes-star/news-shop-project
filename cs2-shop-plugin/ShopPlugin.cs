@@ -1652,7 +1652,7 @@ public class ShopPlugin : BasePlugin
         if (gift == null)
             return;
 
-        gift.SetModel("models/weapons/w_eq_healthshot.vmdl");
+        gift.SetModel("models/weapons/w_c4_planted.vmdl");
         gift.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
         gift.DispatchSpawn();
 
