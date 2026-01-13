@@ -11,7 +11,7 @@ namespace MapTimeLimitPlugin;
 public class MapTimeLimitPlugin : BasePlugin
 {
     public override string ModuleName => "Map Time Limit";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Устанавливает время карты на 30 минут в CS2";
 
@@ -26,8 +26,13 @@ public class MapTimeLimitPlugin : BasePlugin
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         RegisterEventHandler<EventCsIntermission>(OnMapEnd);
         
+        Server.ExecuteCommand($"mp_roundtime {_timeLimitMinutes}");
+        Server.ExecuteCommand("mp_roundtime_deployment 0");
+        Server.ExecuteCommand("mp_roundtime_defuse 0");
+        Server.ExecuteCommand("mp_roundtime_hostage 0");
+        
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
-        Console.WriteLine($"[{ModuleName}] Время карты: {_timeLimitMinutes} минут");
+        Console.WriteLine($"[{ModuleName}] Время раунда установлено: {_timeLimitMinutes} минут");
     }
 
     [ConsoleCommand("css_timelimit", "Установить время карты")]
@@ -47,10 +52,12 @@ public class MapTimeLimitPlugin : BasePlugin
         _timeLimitMinutes = minutes;
         _mapStartTime = Server.CurrentTime;
         _warningShown = false;
+        
+        Server.ExecuteCommand($"mp_roundtime {minutes}");
 
         string message = minutes == 0 
-            ? "Лимит времени карты отключен" 
-            : $"Лимит времени карты: {minutes} минут";
+            ? "Лимит времени раунда отключен" 
+            : $"Время раунда: {minutes} минут";
 
         if (caller != null)
             caller.PrintToChat($" {ChatColors.Green}[Map Time]{ChatColors.Default} {message}");
