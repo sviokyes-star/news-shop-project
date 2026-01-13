@@ -92,6 +92,16 @@ public class AdminPlugin : BasePlugin
             {
                 ShowZonesMenu(controller);
             });
+
+            menu.AddMenuOption("🎁 Управление подарками", (controller, option) =>
+            {
+                ShowGiftsMenu(controller);
+            });
+
+            menu.AddMenuOption("📍 Управление спавнами", (controller, option) =>
+            {
+                ShowSpawnsMenu(controller);
+            });
         }
 
         MenuManager.OpenChatMenu(player, menu);
@@ -318,6 +328,120 @@ public class AdminPlugin : BasePlugin
         {
             Server.ExecuteCommand($"css_showzones");
             ShowZonesMenu(controller);
+        });
+
+        menu.AddMenuOption("← Назад", (controller, option) =>
+        {
+            ShowMainMenu(controller);
+        });
+
+        MenuManager.OpenChatMenu(player, menu);
+    }
+
+    private void ShowGiftsMenu(CCSPlayerController player)
+    {
+        var menu = new ChatMenu("Управление подарками");
+
+        menu.AddMenuOption("➕ Добавить подарок (1000 серебра)", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                Server.ExecuteCommand($"css_addgift 1000");
+                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Подарок добавлен на вашей позиции!");
+            }
+            ShowGiftsMenu(controller);
+        });
+
+        menu.AddMenuOption("➕ Добавить подарок (5000 серебра)", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                Server.ExecuteCommand($"css_addgift 5000");
+                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Подарок добавлен на вашей позиции!");
+            }
+            ShowGiftsMenu(controller);
+        });
+
+        menu.AddMenuOption("➕ Добавить подарок (10000 серебра)", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                Server.ExecuteCommand($"css_addgift 10000");
+                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Подарок добавлен на вашей позиции!");
+            }
+            ShowGiftsMenu(controller);
+        });
+
+        menu.AddMenuOption("📋 Список всех подарков", (controller, option) =>
+        {
+            Server.ExecuteCommand($"css_listgifts");
+            ShowGiftsMenu(controller);
+        });
+
+        menu.AddMenuOption("🗑️ Удалить все подарки", (controller, option) =>
+        {
+            Server.ExecuteCommand($"css_removegifts");
+            controller.PrintToChat($" {ChatColors.Red}[ADMIN] Все подарки удалены!");
+            ShowGiftsMenu(controller);
+        });
+
+        menu.AddMenuOption("← Назад", (controller, option) =>
+        {
+            ShowMainMenu(controller);
+        });
+
+        MenuManager.OpenChatMenu(player, menu);
+    }
+
+    private void ShowSpawnsMenu(CCSPlayerController player)
+    {
+        var menu = new ChatMenu("Управление спавнами");
+
+        menu.AddMenuOption("➕ Добавить спавн CT", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                Server.ExecuteCommand($"css_addspawn CT");
+                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Спавн CT добавлен на вашей позиции!");
+            }
+            ShowSpawnsMenu(controller);
+        });
+
+        menu.AddMenuOption("➕ Добавить спавн T", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                Server.ExecuteCommand($"css_addspawn T");
+                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Спавн T добавлен на вашей позиции!");
+            }
+            ShowSpawnsMenu(controller);
+        });
+
+        menu.AddMenuOption("📋 Список всех спавнов", (controller, option) =>
+        {
+            Server.ExecuteCommand($"css_listspawns");
+            ShowSpawnsMenu(controller);
+        });
+
+        menu.AddMenuOption("👁️ Показать маркеры спавнов", (controller, option) =>
+        {
+            Server.ExecuteCommand($"css_showspawns");
+            controller.PrintToChat($" {ChatColors.Green}[ADMIN] Маркеры спавнов показаны!");
+            ShowSpawnsMenu(controller);
+        });
+
+        menu.AddMenuOption("🚫 Скрыть маркеры спавнов", (controller, option) =>
+        {
+            Server.ExecuteCommand($"css_hidespawns");
+            controller.PrintToChat($" {ChatColors.Green}[ADMIN] Маркеры спавнов скрыты!");
+            ShowSpawnsMenu(controller);
+        });
+
+        menu.AddMenuOption("🗑️ Удалить все спавны", (controller, option) =>
+        {
+            Server.ExecuteCommand($"css_removespawns");
+            controller.PrintToChat($" {ChatColors.Red}[ADMIN] Все спавны удалены!");
+            ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("← Назад", (controller, option) =>
