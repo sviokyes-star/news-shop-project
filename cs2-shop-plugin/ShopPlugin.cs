@@ -78,6 +78,9 @@ public class ShopPlugin : BasePlugin
         RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         
+        AddCommandListener("say", OnPlayerSay);
+        AddCommandListener("say_team", OnPlayerSay);
+        
         LoadData();
         LoadGiftsData();
         LoadSpawns();
@@ -89,6 +92,24 @@ public class ShopPlugin : BasePlugin
         Console.WriteLine($"[{ModuleName}] Магазин содержит {_shopItems.Count} товаров");
         Console.WriteLine($"[{ModuleName}] Загружено подарков: {_giftPositions.Count}");
         Console.WriteLine($"[{ModuleName}] Загружено спавнов: {_customSpawns.Count}");
+    }
+
+    private HookResult OnPlayerSay(CCSPlayerController? player, CommandInfo info)
+    {
+        if (player == null || !player.IsValid)
+            return HookResult.Continue;
+
+        string message = info.GetArg(1).Trim();
+
+        if (message.Equals("!shop", StringComparison.OrdinalIgnoreCase))
+        {
+            ulong steamId = player.SteamID;
+            _playerMenuContext[steamId] = "shop_main";
+            ShowShopMenu(player);
+            return HookResult.Handled;
+        }
+
+        return HookResult.Continue;
     }
 
     [ConsoleCommand("css_shop", "Открыть магазин")]
