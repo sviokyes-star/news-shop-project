@@ -12,7 +12,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.2.1";
+    public override string ModuleVersion => "1.2.2";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -122,7 +122,10 @@ public class ShopPlugin : BasePlugin
                 ShowShopItems(player, "skin");
                 break;
             case "admin":
-                ShowGiftsManagement(player);
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                {
+                    ShowGiftsManagement(player);
+                }
                 break;
             default:
                 ShowShopCategories(player);
@@ -149,7 +152,10 @@ public class ShopPlugin : BasePlugin
                 ShowShopItems(player, "trail");
                 break;
             case "admin":
-                ShowSpawnsManagement(player);
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                {
+                    ShowSpawnsManagement(player);
+                }
                 break;
             default:
                 ShowSellMenu(player);
@@ -195,6 +201,12 @@ public class ShopPlugin : BasePlugin
     {
         if (player == null || !player.IsValid)
             return;
+
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}У вас нет прав администратора!");
+            return;
+        }
 
         ulong steamId = player.SteamID;
         _playerMenuContext[steamId] = "admin";
