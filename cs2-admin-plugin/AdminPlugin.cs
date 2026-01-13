@@ -54,12 +54,6 @@ public class AdminPlugin : BasePlugin
             ShowMainMenu(player);
             return HookResult.Handled;
         }
-        else if (message.StartsWith("!a", StringComparison.OrdinalIgnoreCase) && message.Length == 3 && char.IsDigit(message[2]))
-        {
-            player.PrintToChat($" {ChatColors.Yellow}[ADMIN] Команды !a1-!a9 доступны только в ChatMenu режиме");
-            player.PrintToChat($" {ChatColors.Yellow}[ADMIN] Используйте !admin для открытия меню");
-            return HookResult.Handled;
-        }
 
         return HookResult.Continue;
     }
