@@ -12,7 +12,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.1.2";
+    public override string ModuleVersion => "1.1.3";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -22,9 +22,11 @@ public class ShopPlugin : BasePlugin
     private readonly Dictionary<ulong, CounterStrikeSharp.API.Modules.Timers.Timer?> _previewTimers = new();
     private readonly List<CBaseModelEntity> _giftBoxes = new();
     private readonly Dictionary<ulong, HashSet<int>> _collectedGifts = new();
+    private readonly List<GiftData> _giftPositions = new();
     private const float PreviewDuration = 30.0f;
     private const int GiftSilverReward = 1000;
     private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
+    private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts_data.json");
 
     private class PlayerData
     {
@@ -46,6 +48,14 @@ public class ShopPlugin : BasePlugin
         public string Type { get; set; } = "skin";
     }
 
+    private class GiftData
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+        public int SilverAmount { get; set; }
+    }
+
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
@@ -53,12 +63,14 @@ public class ShopPlugin : BasePlugin
         RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         
         LoadData();
+        LoadGifts();
         InitializeShopItems();
         
         AddTimer(1.0f, CheckGiftPickups, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
         Console.WriteLine($"[{ModuleName}] Магазин содержит {_shopItems.Count} товаров");
+        Console.WriteLine($"[{ModuleName}] Загружено подарков: {_giftPositions.Count}");
     }
 
     [ConsoleCommand("css_shop", "Открыть магазин")]
@@ -453,6 +465,8 @@ public class ShopPlugin : BasePlugin
         }
         
         _giftBoxes.Clear();
+        _giftPositions.Clear();
+        SaveGifts();
         
         string msg = $" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Удалено подарков: {count}";
         
@@ -763,6 +777,15 @@ public class ShopPlugin : BasePlugin
         gift.Glow.GlowTeam = -1;
 
         _giftBoxes.Add(gift);
+        _giftPositions.Add(new GiftData 
+        { 
+            X = position.X, 
+            Y = position.Y, 
+            Z = position.Z, 
+            SilverAmount = silverAmount 
+        });
+        
+        SaveGifts();
         
         Console.WriteLine($"[Shop] Подарок создан на позиции {position.X}, {position.Y}, {position.Z} | Награда: {silverAmount} серебра");
     }
@@ -894,9 +917,69 @@ public class ShopPlugin : BasePlugin
         }
     }
 
+    private void LoadGifts()
+    {
+        try
+        {
+            if (!File.Exists(GiftsFilePath))
+                return;
+
+            string json = File.ReadAllText(GiftsFilePath);
+            var gifts = JsonSerializer.Deserialize<List<GiftData>>(json);
+
+            if (gifts == null)
+                return;
+
+            foreach (var giftData in gifts)
+            {
+                var position = new Vector(giftData.X, giftData.Y, giftData.Z);
+                SpawnGiftBoxFromData(position, giftData.SilverAmount);
+            }
+
+            Console.WriteLine($"[{ModuleName}] Загружено подарков: {_giftPositions.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки подарков: {ex.Message}");
+        }
+    }
+
+    private void SaveGifts()
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(_giftPositions, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(GiftsFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения подарков: {ex.Message}");
+        }
+    }
+
+    private void SpawnGiftBoxFromData(Vector position, int silverAmount)
+    {
+        var gift = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
+        if (gift == null)
+            return;
+
+        gift.SetModel("models/props/cs_office/cardboard_box01.mdl");
+        gift.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+        gift.DispatchSpawn();
+
+        gift.Glow.GlowColorOverride = Color.FromArgb(255, 255, 215, 0);
+        gift.Glow.GlowRange = 2000;
+        gift.Glow.GlowRangeMin = 0;
+        gift.Glow.GlowType = 3;
+        gift.Glow.GlowTeam = -1;
+
+        _giftBoxes.Add(gift);
+    }
+
     public override void Unload(bool hotReload)
     {
         SaveData();
+        SaveGifts();
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 }
