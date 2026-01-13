@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -60,9 +60,9 @@ public class ShopPlugin : BasePlugin
         ShowShopMenu(player);
     }
 
-    [ConsoleCommand("css_shop_items", "Показать товары")]
+    [ConsoleCommand("css_1", "Товары")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnShopItemsCommand(CCSPlayerController? player, CommandInfo command)
+    public void OnMenu1Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
@@ -70,9 +70,9 @@ public class ShopPlugin : BasePlugin
         ShowShopItems(player);
     }
 
-    [ConsoleCommand("css_shop_sell", "Продать товары")]
+    [ConsoleCommand("css_2", "Продать")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnShopSellCommand(CCSPlayerController? player, CommandInfo command)
+    public void OnMenu2Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
@@ -80,9 +80,9 @@ public class ShopPlugin : BasePlugin
         ShowSellMenu(player);
     }
 
-    [ConsoleCommand("css_shop_inventory", "Показать инвентарь")]
+    [ConsoleCommand("css_3", "Инвентарь")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnShopInventoryCommand(CCSPlayerController? player, CommandInfo command)
+    public void OnMenu3Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
@@ -341,9 +341,9 @@ public class ShopPlugin : BasePlugin
         int totalItems = _shopItems.Count;
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {ChatColors.Gold}Золото: {data.Gold}{ChatColors.Default} | {ChatColors.Silver}Серебро: {data.Silver}");
-        player.PrintToChat($" {ChatColors.Yellow}Товары [{ownedItems}/{totalItems}]{ChatColors.Default} - /shop_items");
-        player.PrintToChat($" {ChatColors.Yellow}Продать [{ownedItems}]{ChatColors.Default} - /shop_sell");
-        player.PrintToChat($" {ChatColors.Yellow}Инвентарь [{ownedItems}]{ChatColors.Default} - /shop_inventory");
+        player.PrintToChat($" {ChatColors.Yellow}Товары [{ownedItems}/{totalItems}]{ChatColors.Default} - !1");
+        player.PrintToChat($" {ChatColors.Yellow}Продать [{ownedItems}]{ChatColors.Default} - !2");
+        player.PrintToChat($" {ChatColors.Yellow}Инвентарь [{ownedItems}]{ChatColors.Default} - !3");
     }
 
     private void ShowShopItems(CCSPlayerController player)
@@ -369,11 +369,11 @@ public class ShopPlugin : BasePlugin
 
         if (!hasAvailableItems)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все товары!");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все товары! - !shop назад");
         }
         else
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: /buy <id>");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy <id> | Назад: !shop");
         }
     }
 
@@ -384,7 +384,7 @@ public class ShopPlugin : BasePlugin
 
         if (data.OwnedSkins.Count == 0)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет скинов для продажи");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет скинов для продажи - !shop назад");
             return;
         }
 
@@ -403,7 +403,7 @@ public class ShopPlugin : BasePlugin
             }
         }
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продать: /sell <id>");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продать: !sell <id> | Назад: !shop");
     }
 
     private void ShowInventory(CCSPlayerController player)
@@ -413,7 +413,7 @@ public class ShopPlugin : BasePlugin
 
         if (data.OwnedSkins.Count == 0)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас пока нет скинов");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас пока нет скинов - !shop назад");
             return;
         }
 
@@ -427,7 +427,7 @@ public class ShopPlugin : BasePlugin
                 player.PrintToChat($" {ChatColors.Yellow}{skinId}{ChatColors.Default} - {item.Name}{active}");
             }
         }
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Надеть: /setskin <id>");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Надеть: !setskin <id> | Назад: !shop");
     }
 
     private void BuyItem(CCSPlayerController player, string itemId)
