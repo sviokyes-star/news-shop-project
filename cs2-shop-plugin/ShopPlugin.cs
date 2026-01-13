@@ -12,7 +12,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.2.3";
+    public override string ModuleVersion => "1.2.4";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -76,9 +76,10 @@ public class ShopPlugin : BasePlugin
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
+        RegisterEventHandler<EventRoundStart>(OnRoundStart);
         
         LoadData();
-        LoadGifts();
+        LoadGiftsData();
         LoadSpawns();
         InitializeShopItems();
         
@@ -858,6 +859,16 @@ public class ShopPlugin : BasePlugin
         return HookResult.Continue;
     }
 
+    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
+    {
+        Server.NextFrame(() =>
+        {
+            SpawnAllGifts();
+        });
+
+        return HookResult.Continue;
+    }
+
 
 
     private void ShowShopMenu(CCSPlayerController player)
@@ -1278,7 +1289,7 @@ public class ShopPlugin : BasePlugin
         }
     }
 
-    private void LoadGifts()
+    private void LoadGiftsData()
     {
         try
         {
@@ -1291,18 +1302,32 @@ public class ShopPlugin : BasePlugin
             if (gifts == null)
                 return;
 
-            foreach (var giftData in gifts)
-            {
-                var position = new Vector(giftData.X, giftData.Y, giftData.Z);
-                SpawnGiftBoxFromData(position, giftData.SilverAmount);
-            }
+            _giftPositions.Clear();
+            _giftPositions.AddRange(gifts);
 
-            Console.WriteLine($"[{ModuleName}] Загружено подарков: {_giftPositions.Count}");
+            Console.WriteLine($"[{ModuleName}] Загружено данных подарков: {_giftPositions.Count}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[{ModuleName}] Ошибка загрузки подарков: {ex.Message}");
         }
+    }
+
+    private void SpawnAllGifts()
+    {
+        foreach (var gift in _giftBoxes)
+        {
+            gift?.Remove();
+        }
+        _giftBoxes.Clear();
+
+        foreach (var giftData in _giftPositions)
+        {
+            var position = new Vector(giftData.X, giftData.Y, giftData.Z);
+            SpawnGiftBoxFromData(position, giftData.SilverAmount);
+        }
+
+        Console.WriteLine($"[{ModuleName}] Заспавнено подарков: {_giftBoxes.Count}");
     }
 
     private void SaveGifts()
