@@ -11,13 +11,15 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.8";
+    public override string ModuleVersion => "1.0.9";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
     private readonly Dictionary<ulong, PlayerData> _playerData = new();
     private readonly Dictionary<string, ShopItem> _shopItems = new();
     private readonly Dictionary<ulong, string?> _previewSkins = new();
+    private readonly Dictionary<ulong, CounterStrikeSharp.API.Modules.Timers.Timer?> _previewTimers = new();
+    private const float PreviewDuration = 30.0f;
     private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
 
     private class PlayerData
@@ -156,12 +158,37 @@ public class ShopPlugin : BasePlugin
             return;
         }
 
+        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
+        {
+            _previewTimers[steamId]?.Kill();
+            _previewTimers.Remove(steamId);
+        }
+
         _previewSkins[steamId] = skinId;
         var item = _shopItems[skinId];
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр: {ChatColors.Yellow}{item.Name}");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр: {ChatColors.Yellow}{item.Name}{ChatColors.Default} ({PreviewDuration} сек)");
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy {skinId} | Отменить: !stoppreview");
         
         ApplySkin(player, skinId);
+
+        _previewTimers[steamId] = AddTimer(PreviewDuration, () => 
+        {
+            if (player.IsValid && _previewSkins.ContainsKey(steamId))
+            {
+                _previewSkins.Remove(steamId);
+                player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Время предпросмотра истекло");
+
+                if (data.ActiveSkin != null)
+                {
+                    ApplySkin(player, data.ActiveSkin);
+                }
+                else
+                {
+                    RemoveSkin(player);
+                }
+            }
+            _previewTimers.Remove(steamId);
+        });
     }
 
     [ConsoleCommand("css_stoppreview", "Остановить предпросмотр")]
@@ -178,6 +205,12 @@ public class ShopPlugin : BasePlugin
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр не активен");
             return;
+        }
+
+        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
+        {
+            _previewTimers[steamId]?.Kill();
+            _previewTimers.Remove(steamId);
         }
 
         _previewSkins.Remove(steamId);
@@ -213,6 +246,12 @@ public class ShopPlugin : BasePlugin
         if (_previewSkins.ContainsKey(steamId))
         {
             _previewSkins.Remove(steamId);
+        }
+
+        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
+        {
+            _previewTimers[steamId]?.Kill();
+            _previewTimers.Remove(steamId);
         }
 
         data.ActiveSkin = skinId;
@@ -501,6 +540,12 @@ public class ShopPlugin : BasePlugin
         if (_previewSkins.ContainsKey(steamId))
         {
             _previewSkins.Remove(steamId);
+        }
+
+        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
+        {
+            _previewTimers[steamId]?.Kill();
+            _previewTimers.Remove(steamId);
         }
 
         if (item.GoldPrice > 0)
