@@ -169,6 +169,23 @@ public class ShopPlugin : BasePlugin
         }
     }
 
+    [ConsoleCommand("css_admin", "Открыть админ-панель")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnAdminCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}У вас нет прав администратора!");
+            return;
+        }
+
+        ShowAdminPanel(player);
+    }
+
     [ConsoleCommand("css_5", "Управление подарками")]
     [RequiresPermissions("@css/root")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
@@ -950,6 +967,17 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Надеть: !setskin <id> | Назад: !shop");
     }
 
+    private void ShowAdminPanel(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Админ-панель:");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Управление игроками");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Модерация");
+        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Читы и настройки");
+        player.PrintToChat($" {ChatColors.Yellow}!4{ChatColors.Default} - Настройки зон карт");
+        player.PrintToChat($" {ChatColors.Yellow}!5{ChatColors.Default} - Управление подарками");
+        player.PrintToChat($" {ChatColors.Yellow}!6{ChatColors.Default} - Управление спавнами");
+    }
+
     private void ShowGiftsManagement(CCSPlayerController player)
     {
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление подарками:");
@@ -957,6 +985,7 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Yellow}!addgift <сумма>{ChatColors.Default} - создать подарок");
         player.PrintToChat($" {ChatColors.Yellow}!removegifts{ChatColors.Default} - удалить все подарки");
         player.PrintToChat($" {ChatColors.Yellow}!listgifts{ChatColors.Default} - список всех подарков");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
     private void ShowSpawnsManagement(CCSPlayerController player)
@@ -968,6 +997,7 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Yellow}!listspawns{ChatColors.Default} - список спавнов");
         player.PrintToChat($" {ChatColors.Yellow}!showspawns{ChatColors.Default} - показать маркеры спавнов");
         player.PrintToChat($" {ChatColors.Yellow}!hidespawns{ChatColors.Default} - скрыть маркеры");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
     private void BuyItem(CCSPlayerController player, string itemId)
