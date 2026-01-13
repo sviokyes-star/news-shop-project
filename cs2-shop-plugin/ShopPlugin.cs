@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.9";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -29,6 +29,8 @@ public class ShopPlugin : BasePlugin
         public List<string> OwnedSkins { get; set; } = new();
         public string? ActiveSkin { get; set; }
         public string? PreviewSkin { get; set; }
+        public List<string> OwnedTrails { get; set; } = new();
+        public string? ActiveTrail { get; set; }
     }
 
     private class ShopItem
@@ -79,7 +81,17 @@ public class ShopPlugin : BasePlugin
         if (player == null || !player.IsValid)
             return;
 
-        ShowShopItems(player);
+        ShowShopItems(player, "skin");
+    }
+
+    [ConsoleCommand("css_12", "Следы")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnMenu12Command(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ShowShopItems(player, "trail");
     }
 
     [ConsoleCommand("css_2", "Продать")]
@@ -263,39 +275,47 @@ public class ShopPlugin : BasePlugin
         ApplySkin(player, skinId);
     }
 
-    [ConsoleCommand("css_sell", "Продать скин")]
-    [CommandHelper(minArgs: 1, usage: "<id скина>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    [ConsoleCommand("css_sell", "Продать товар")]
+    [CommandHelper(minArgs: 1, usage: "<id товара>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnSellCommand(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
 
-        string skinId = command.GetArg(1).ToLower();
+        string itemId = command.GetArg(1).ToLower();
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        if (!data.OwnedSkins.Contains(skinId))
+        bool hasItem = data.OwnedSkins.Contains(itemId) || data.OwnedTrails.Contains(itemId);
+        if (!hasItem)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет этого скина!");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет этого товара!");
             return;
         }
 
-        if (!_shopItems.ContainsKey(skinId))
+        if (!_shopItems.ContainsKey(itemId))
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Товар не найден!");
             return;
         }
 
-        var item = _shopItems[skinId];
+        var item = _shopItems[itemId];
         int sellPrice = item.GoldPrice > 0 ? item.GoldPrice / 2 : item.SilverPrice / 2;
 
-        if (data.ActiveSkin == skinId)
+        if (data.ActiveSkin == itemId || data.ActiveTrail == itemId)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Нельзя продать активный скин!");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Нельзя продать активный товар!");
             return;
         }
 
-        data.OwnedSkins.Remove(skinId);
+        if (item.Type == "skin")
+        {
+            data.OwnedSkins.Remove(itemId);
+        }
+        else if (item.Type == "trail")
+        {
+            data.OwnedTrails.Remove(itemId);
+        }
         
         if (item.GoldPrice > 0)
         {
@@ -419,7 +439,7 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        int ownedItems = data.OwnedSkins.Count;
+        int ownedItems = data.OwnedSkins.Count + data.OwnedTrails.Count;
         int totalItems = _shopItems.Count;
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {ChatColors.Gold}Золото: {data.Gold}{ChatColors.Default} | {ChatColors.Silver}Серебро: {data.Silver}");
@@ -434,24 +454,30 @@ public class ShopPlugin : BasePlugin
         var data = GetPlayerData(steamId);
 
         int ownedSkins = data.OwnedSkins.Count;
-        int totalSkins = _shopItems.Count;
+        int totalSkins = _shopItems.Values.Count(i => i.Type == "skin");
+        int ownedTrails = data.OwnedTrails.Count;
+        int totalTrails = _shopItems.Values.Count(i => i.Type == "trail");
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Категории товаров:");
         player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !11");
+        player.PrintToChat($" {ChatColors.Yellow}Следы [{ownedTrails}/{totalTrails}]{ChatColors.Default} - !12");
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Назад: !shop");
     }
 
-    private void ShowShopItems(CCSPlayerController player)
+    private void ShowShopItems(CCSPlayerController player, string itemType)
     {
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Доступные скины:");
+        string categoryName = itemType == "skin" ? "скины" : "следы";
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Доступные {categoryName}:");
 
         bool hasAvailableItems = false;
-        foreach (var item in _shopItems.Values)
+        var ownedList = itemType == "skin" ? data.OwnedSkins : data.OwnedTrails;
+
+        foreach (var item in _shopItems.Values.Where(i => i.Type == itemType))
         {
-            if (!data.OwnedSkins.Contains(item.Id))
+            if (!ownedList.Contains(item.Id))
             {
                 hasAvailableItems = true;
                 string price = item.GoldPrice > 0 
@@ -464,7 +490,7 @@ public class ShopPlugin : BasePlugin
 
         if (!hasAvailableItems)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все скины! - !1 назад");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все {categoryName}! - !1 назад");
         }
         else
         {
@@ -477,13 +503,14 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        if (data.OwnedSkins.Count == 0)
+        int totalItems = data.OwnedSkins.Count + data.OwnedTrails.Count;
+        if (totalItems == 0)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет скинов для продажи - !shop назад");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет товаров для продажи - !shop назад");
             return;
         }
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Ваши скины:");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Ваши товары:");
 
         foreach (var skinId in data.OwnedSkins)
         {
@@ -498,6 +525,19 @@ public class ShopPlugin : BasePlugin
             }
         }
 
+        foreach (var trailId in data.OwnedTrails)
+        {
+            if (_shopItems.ContainsKey(trailId))
+            {
+                var item = _shopItems[trailId];
+                int sellPrice = item.GoldPrice > 0 ? item.GoldPrice / 2 : item.SilverPrice / 2;
+                string currency = item.GoldPrice > 0 ? "🪙" : "⚪";
+                string active = trailId == data.ActiveTrail ? $" {ChatColors.Green}[АКТИВЕН]" : "";
+                
+                player.PrintToChat($" {ChatColors.Yellow}{trailId}{ChatColors.Default} - {item.Name} (продать за {sellPrice} {currency}){active}");
+            }
+        }
+
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продать: !sell <id> | Назад: !shop");
     }
 
@@ -506,22 +546,43 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        if (data.OwnedSkins.Count == 0)
+        int totalItems = data.OwnedSkins.Count + data.OwnedTrails.Count;
+        if (totalItems == 0)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас пока нет скинов - !shop назад");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас пока нет товаров - !shop назад");
             return;
         }
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Ваш инвентарь:");
-        foreach (var skinId in data.OwnedSkins)
+        
+        if (data.OwnedSkins.Count > 0)
         {
-            if (_shopItems.ContainsKey(skinId))
+            player.PrintToChat($" {ChatColors.Green}Скины:");
+            foreach (var skinId in data.OwnedSkins)
             {
-                var item = _shopItems[skinId];
-                string active = skinId == data.ActiveSkin ? $" {ChatColors.Green}[АКТИВЕН]" : "";
-                player.PrintToChat($" {ChatColors.Yellow}{skinId}{ChatColors.Default} - {item.Name}{active}");
+                if (_shopItems.ContainsKey(skinId))
+                {
+                    var item = _shopItems[skinId];
+                    string active = skinId == data.ActiveSkin ? $" {ChatColors.Green}[АКТИВЕН]" : "";
+                    player.PrintToChat($" {ChatColors.Yellow}{skinId}{ChatColors.Default} - {item.Name}{active}");
+                }
             }
         }
+
+        if (data.OwnedTrails.Count > 0)
+        {
+            player.PrintToChat($" {ChatColors.Green}Следы:");
+            foreach (var trailId in data.OwnedTrails)
+            {
+                if (_shopItems.ContainsKey(trailId))
+                {
+                    var item = _shopItems[trailId];
+                    string active = trailId == data.ActiveTrail ? $" {ChatColors.Green}[АКТИВЕН]" : "";
+                    player.PrintToChat($" {ChatColors.Yellow}{trailId}{ChatColors.Default} - {item.Name}{active}");
+                }
+            }
+        }
+
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Надеть: !setskin <id> | Назад: !shop");
     }
 
@@ -531,7 +592,9 @@ public class ShopPlugin : BasePlugin
         var data = GetPlayerData(steamId);
         var item = _shopItems[itemId];
 
-        if (data.OwnedSkins.Contains(itemId))
+        var ownedList = item.Type == "skin" ? data.OwnedSkins : data.OwnedTrails;
+        
+        if (ownedList.Contains(itemId))
         {
             player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} У вас уже есть этот товар!");
             return;
@@ -567,7 +630,14 @@ public class ShopPlugin : BasePlugin
             data.Silver -= item.SilverPrice;
         }
 
-        data.OwnedSkins.Add(itemId);
+        if (item.Type == "skin")
+        {
+            data.OwnedSkins.Add(itemId);
+        }
+        else if (item.Type == "trail")
+        {
+            data.OwnedTrails.Add(itemId);
+        }
         SaveData();
 
         player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Куплено: {ChatColors.Yellow}{item.Name}");
@@ -605,46 +675,19 @@ public class ShopPlugin : BasePlugin
         _shopItems["skin1"] = new ShopItem
         {
             Id = "skin1",
-            Name = "Огненный воин",
+            Name = "Джокер",
             GoldPrice = 0,
             SilverPrice = 100000,
             Type = "skin"
         };
 
-        _shopItems["skin2"] = new ShopItem
+        _shopItems["trail1"] = new ShopItem
         {
-            Id = "skin2",
-            Name = "Ледяной страж",
+            Id = "trail1",
+            Name = "Мяч",
             GoldPrice = 0,
             SilverPrice = 100000,
-            Type = "skin"
-        };
-
-        _shopItems["skin3"] = new ShopItem
-        {
-            Id = "skin3",
-            Name = "Темный рыцарь",
-            GoldPrice = 0,
-            SilverPrice = 100000,
-            Type = "skin"
-        };
-
-        _shopItems["skin4"] = new ShopItem
-        {
-            Id = "skin4",
-            Name = "Золотой боец",
-            GoldPrice = 0,
-            SilverPrice = 100000,
-            Type = "skin"
-        };
-
-        _shopItems["skin5"] = new ShopItem
-        {
-            Id = "skin5",
-            Name = "Призрак",
-            GoldPrice = 0,
-            SilverPrice = 100000,
-            Type = "skin"
+            Type = "trail"
         };
     }
 
