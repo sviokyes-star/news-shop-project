@@ -534,72 +534,35 @@ public class TimerPlugin : BasePlugin
             return;
 
         var zones = _mapZones[mapName];
+        var players = Utilities.GetPlayers();
         
-        if (zones.StartMin != null && zones.StartMax != null)
+        foreach (var player in players)
         {
-            DrawZoneBox(zones.StartMin, zones.StartMax, Color.Green);
+            if (player?.IsValid != true || player.PlayerPawn.Value == null)
+                continue;
+                
+            var position = player.PlayerPawn.Value.AbsOrigin;
+            if (position == null)
+                continue;
+            
+            if (zones.StartMin != null && zones.StartMax != null)
+            {
+                bool inStart = IsInZone(position, zones.StartMin, zones.StartMax);
+                if (inStart)
+                {
+                    player.PrintToCenterHtml($"<font color='#00FF00' class='fontSize-xl'>🟩 ЗОНА СТАРТА</font>");
+                }
+            }
+            
+            if (zones.EndMin != null && zones.EndMax != null)
+            {
+                bool inEnd = IsInZone(position, zones.EndMin, zones.EndMax);
+                if (inEnd)
+                {
+                    player.PrintToCenterHtml($"<font color='#FF0000' class='fontSize-xl'>🟥 ЗОНА ФИНИША</font>");
+                }
+            }
         }
-        
-        if (zones.EndMin != null && zones.EndMax != null)
-        {
-            DrawZoneBox(zones.EndMin, zones.EndMax, Color.Red);
-        }
-    }
-
-    private void DrawZoneBox(Vector min, Vector max, Color color)
-    {
-        float duration = 0.15f;
-        float width = 2.0f;
-        
-        var corners = new Vector[]
-        {
-            new Vector(min.X, min.Y, min.Z),
-            new Vector(max.X, min.Y, min.Z),
-            new Vector(max.X, max.Y, min.Z),
-            new Vector(min.X, max.Y, min.Z),
-            new Vector(min.X, min.Y, max.Z),
-            new Vector(max.X, min.Y, max.Z),
-            new Vector(max.X, max.Y, max.Z),
-            new Vector(min.X, max.Y, max.Z)
-        };
-        
-        int[] bottomEdges = { 0, 1, 1, 2, 2, 3, 3, 0 };
-        int[] topEdges = { 4, 5, 5, 6, 6, 7, 7, 4 };
-        int[] verticalEdges = { 0, 4, 1, 5, 2, 6, 3, 7 };
-        
-        for (int i = 0; i < bottomEdges.Length; i += 2)
-        {
-            DrawBeam(corners[bottomEdges[i]], corners[bottomEdges[i + 1]], color, duration, width);
-        }
-        
-        for (int i = 0; i < topEdges.Length; i += 2)
-        {
-            DrawBeam(corners[topEdges[i]], corners[topEdges[i + 1]], color, duration, width);
-        }
-        
-        for (int i = 0; i < verticalEdges.Length; i += 2)
-        {
-            DrawBeam(corners[verticalEdges[i]], corners[verticalEdges[i + 1]], color, duration, width);
-        }
-    }
-
-    private void DrawBeam(Vector start, Vector end, Color color, float duration, float width)
-    {
-        Utilities.CreateBeam(
-            start: start,
-            end: end,
-            modelIndex: -1,
-            haloIndex: -1,
-            startFrame: 0,
-            frameRate: 0,
-            life: duration,
-            width: width,
-            endWidth: width,
-            fadeLength: 0,
-            amplitude: 0,
-            color: color,
-            speed: 0
-        );
     }
 
     private void LoadZones()
