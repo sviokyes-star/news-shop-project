@@ -974,9 +974,7 @@ public class ShopPlugin : BasePlugin
                 if (target.PlayerPawn?.Value != null)
                 {
                     target.PlayerPawn.Value.Health -= 5;
-                    var vel = target.PlayerPawn.Value.AbsVelocity;
-                    vel.Z += 300;
-                    target.PlayerPawn.Value.AbsVelocity = vel;
+                    target.PlayerPawn.Value.Teleport(target.PlayerPawn.Value.AbsOrigin, target.PlayerPawn.Value.EyeAngles, new Vector(0, 0, 300));
                     admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} шлёпнут");
                 }
                 break;
@@ -986,15 +984,15 @@ public class ShopPlugin : BasePlugin
                 bool isFrozen = _playerFrozen.ContainsKey(targetId) && _playerFrozen[targetId];
                 _playerFrozen[targetId] = !isFrozen;
                 
-                if (_playerFrozen[targetId])
+                if (_playerFrozen[targetId] && target.PlayerPawn?.Value != null)
                 {
-                    target.PlayerPawn?.Value?.SetMoveType(MoveType_t.MOVETYPE_OBSOLETE);
+                    target.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_OBSOLETE;
                     admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} заморожен");
                     target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы заморожены администратором");
                 }
-                else
+                else if (target.PlayerPawn?.Value != null)
                 {
-                    target.PlayerPawn?.Value?.SetMoveType(MoveType_t.MOVETYPE_WALK);
+                    target.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_WALK;
                     admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} разморожен");
                     target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы разморожены");
                 }
@@ -1007,9 +1005,10 @@ public class ShopPlugin : BasePlugin
 
             case "teleport_to_me":
                 var adminPos = admin.PlayerPawn?.Value?.AbsOrigin;
-                if (adminPos != null && target.PlayerPawn?.Value != null)
+                var adminAngles = admin.PlayerPawn?.Value?.EyeAngles;
+                if (adminPos != null && adminAngles != null && target.PlayerPawn?.Value != null)
                 {
-                    target.PlayerPawn.Value.Teleport(adminPos, admin.PlayerPawn.Value.EyeAngles, new Vector(0, 0, 0));
+                    target.PlayerPawn.Value.Teleport(adminPos, adminAngles, new Vector(0, 0, 0));
                     admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} телепортирован к вам");
                     target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы телепортированы к администратору");
                 }
@@ -1017,9 +1016,10 @@ public class ShopPlugin : BasePlugin
 
             case "teleport_to_player":
                 var targetPos = target.PlayerPawn?.Value?.AbsOrigin;
-                if (targetPos != null && admin.PlayerPawn?.Value != null)
+                var targetAngles = target.PlayerPawn?.Value?.EyeAngles;
+                if (targetPos != null && targetAngles != null && admin.PlayerPawn?.Value != null)
                 {
-                    admin.PlayerPawn.Value.Teleport(targetPos, target.PlayerPawn.Value.EyeAngles, new Vector(0, 0, 0));
+                    admin.PlayerPawn.Value.Teleport(targetPos, targetAngles, new Vector(0, 0, 0));
                     admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы телепортированы к игроку {target.PlayerName}");
                 }
                 break;
@@ -1350,15 +1350,18 @@ public class ShopPlugin : BasePlugin
         
         _playerFlyMode[steamId] = !isEnabled;
         
-        if (_playerFlyMode[steamId])
+        if (player.PlayerPawn?.Value != null)
         {
-            player.PlayerPawn?.Value?.SetMoveType(MoveType_t.MOVETYPE_NOCLIP);
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Режим полёта {ChatColors.Green}включён");
-        }
-        else
-        {
-            player.PlayerPawn?.Value?.SetMoveType(MoveType_t.MOVETYPE_WALK);
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Режим полёта {ChatColors.Red}выключен");
+            if (_playerFlyMode[steamId])
+            {
+                player.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_NOCLIP;
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Режим полёта {ChatColors.Green}включён");
+            }
+            else
+            {
+                player.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_WALK;
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Режим полёта {ChatColors.Red}выключен");
+            }
         }
     }
 
