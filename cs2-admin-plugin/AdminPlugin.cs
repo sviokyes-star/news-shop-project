@@ -340,7 +340,7 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                controller.ExecuteClientCommand($"css_addgift 1000");
+                Server.NextFrame(() => controller.ExecuteClientCommand("say !addgift 1000"));
             }
             ShowGiftsMenu(controller);
         });
@@ -349,7 +349,7 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                controller.ExecuteClientCommand($"css_addgift 5000");
+                Server.NextFrame(() => controller.ExecuteClientCommand("say !addgift 5000"));
             }
             ShowGiftsMenu(controller);
         });
@@ -358,20 +358,20 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                controller.ExecuteClientCommand($"css_addgift 10000");
+                Server.NextFrame(() => controller.ExecuteClientCommand("say !addgift 10000"));
             }
             ShowGiftsMenu(controller);
         });
 
         menu.AddMenuOption("📋 Список всех подарков", (controller, option) =>
         {
-            controller.ExecuteClientCommand($"css_listgifts");
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !listgifts"));
             ShowGiftsMenu(controller);
         });
 
         menu.AddMenuOption("🗑️ Удалить все подарки", (controller, option) =>
         {
-            controller.ExecuteClientCommand($"css_removegifts");
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !removegifts"));
             ShowGiftsMenu(controller);
         });
 
@@ -391,7 +391,7 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                controller.ExecuteClientCommand($"css_addspawn CT");
+                Server.NextFrame(() => controller.ExecuteClientCommand("say !addspawn CT"));
             }
             ShowSpawnsMenu(controller);
         });
@@ -400,32 +400,32 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                controller.ExecuteClientCommand($"css_addspawn T");
+                Server.NextFrame(() => controller.ExecuteClientCommand("say !addspawn T"));
             }
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("📋 Список всех спавнов", (controller, option) =>
         {
-            controller.ExecuteClientCommand($"css_listspawns");
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !listspawns"));
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("👁️ Показать маркеры спавнов", (controller, option) =>
         {
-            controller.ExecuteClientCommand($"css_showspawns");
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !showspawns"));
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("🚫 Скрыть маркеры спавнов", (controller, option) =>
         {
-            controller.ExecuteClientCommand($"css_hidespawns");
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !hidespawns"));
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("🗑️ Удалить все спавны", (controller, option) =>
         {
-            controller.ExecuteClientCommand($"css_removespawns");
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !removespawns"));
             ShowSpawnsMenu(controller);
         });
 

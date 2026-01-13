@@ -154,6 +154,54 @@ public class ShopPlugin : BasePlugin
             OnStopPreviewCommand(player, info);
             return HookResult.Handled;
         }
+        else if (message.StartsWith("!addgift ", StringComparison.OrdinalIgnoreCase))
+        {
+            string amountStr = message.Substring(9).Trim();
+            if (int.TryParse(amountStr, out int amount))
+            {
+                player.ExecuteClientCommand($"css_addgift {amount}");
+            }
+            return HookResult.Handled;
+        }
+        else if (message.StartsWith("!addspawn ", StringComparison.OrdinalIgnoreCase))
+        {
+            string team = message.Substring(10).Trim().ToUpper();
+            if (team == "CT" || team == "T")
+            {
+                player.ExecuteClientCommand($"css_addspawn {team}");
+            }
+            return HookResult.Handled;
+        }
+        else if (message.Equals("!removegifts", StringComparison.OrdinalIgnoreCase))
+        {
+            player.ExecuteClientCommand("css_removegifts");
+            return HookResult.Handled;
+        }
+        else if (message.Equals("!listgifts", StringComparison.OrdinalIgnoreCase))
+        {
+            player.ExecuteClientCommand("css_listgifts");
+            return HookResult.Handled;
+        }
+        else if (message.Equals("!removespawns", StringComparison.OrdinalIgnoreCase))
+        {
+            player.ExecuteClientCommand("css_removespawns");
+            return HookResult.Handled;
+        }
+        else if (message.Equals("!listspawns", StringComparison.OrdinalIgnoreCase))
+        {
+            player.ExecuteClientCommand("css_listspawns");
+            return HookResult.Handled;
+        }
+        else if (message.Equals("!showspawns", StringComparison.OrdinalIgnoreCase))
+        {
+            player.ExecuteClientCommand("css_showspawns");
+            return HookResult.Handled;
+        }
+        else if (message.Equals("!hidespawns", StringComparison.OrdinalIgnoreCase))
+        {
+            player.ExecuteClientCommand("css_hidespawns");
+            return HookResult.Handled;
+        }
         else if (message.StartsWith("!s", StringComparison.OrdinalIgnoreCase) && message.Length == 3 && char.IsDigit(message[2]))
         {
             int choice = int.Parse(message.Substring(2));
