@@ -12,7 +12,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.2.1";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -25,6 +25,7 @@ public class ShopPlugin : BasePlugin
     private readonly List<GiftData> _giftPositions = new();
     private readonly List<CBaseModelEntity> _spawnMarkers = new();
     private readonly List<SpawnData> _customSpawns = new();
+    private readonly Dictionary<ulong, string> _playerMenuContext = new();
     private const float PreviewDuration = 30.0f;
     private const int GiftSilverReward = 1000;
     private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
@@ -96,57 +97,80 @@ public class ShopPlugin : BasePlugin
         if (player == null || !player.IsValid)
             return;
 
+        ulong steamId = player.SteamID;
+        _playerMenuContext[steamId] = "main";
         ShowShopMenu(player);
     }
 
-    [ConsoleCommand("css_1", "Товары")]
+    [ConsoleCommand("css_1", "Пункт меню 1")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu1Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
 
-        ShowShopCategories(player);
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "main";
+
+        switch (context)
+        {
+            case "main":
+                _playerMenuContext[steamId] = "categories";
+                ShowShopCategories(player);
+                break;
+            case "categories":
+                ShowShopItems(player, "skin");
+                break;
+            case "admin":
+                ShowGiftsManagement(player);
+                break;
+            default:
+                ShowShopCategories(player);
+                break;
+        }
     }
 
-    [ConsoleCommand("css_11", "Скины")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnMenu11Command(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        ShowShopItems(player, "skin");
-    }
-
-    [ConsoleCommand("css_12", "Следы")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnMenu12Command(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        ShowShopItems(player, "trail");
-    }
-
-    [ConsoleCommand("css_2", "Продать")]
+    [ConsoleCommand("css_2", "Пункт меню 2")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu2Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
 
-        ShowSellMenu(player);
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "main";
+
+        switch (context)
+        {
+            case "main":
+                ShowSellMenu(player);
+                break;
+            case "categories":
+                ShowShopItems(player, "trail");
+                break;
+            case "admin":
+                ShowSpawnsManagement(player);
+                break;
+            default:
+                ShowSellMenu(player);
+                break;
+        }
     }
 
-    [ConsoleCommand("css_3", "Инвентарь")]
+    [ConsoleCommand("css_3", "Пункт меню 3")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu3Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
 
-        ShowInventory(player);
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "main";
+
+        if (context == "main")
+        {
+            ShowInventory(player);
+        }
     }
 
     [ConsoleCommand("css_balance", "Показать баланс")]
@@ -172,30 +196,12 @@ public class ShopPlugin : BasePlugin
         if (player == null || !player.IsValid)
             return;
 
+        ulong steamId = player.SteamID;
+        _playerMenuContext[steamId] = "admin";
         ShowAdminPanel(player);
     }
 
-    [ConsoleCommand("css_admin_gifts", "Управление подарками")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnAdminGiftsCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
 
-        ShowGiftsManagement(player);
-    }
-
-    [ConsoleCommand("css_admin_spawns", "Управление спавнами")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnAdminSpawnsCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        ShowSpawnsManagement(player);
-    }
 
     [ConsoleCommand("css_buy", "Купить товар")]
     [CommandHelper(minArgs: 1, usage: "<id товара>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
@@ -747,6 +753,10 @@ public class ShopPlugin : BasePlugin
             {
                 _collectedGifts.Remove(steamId);
             }
+            if (_playerMenuContext.ContainsKey(steamId))
+            {
+                _playerMenuContext.Remove(steamId);
+            }
         }
         
         SaveData();
@@ -795,8 +805,8 @@ public class ShopPlugin : BasePlugin
         int totalTrails = _shopItems.Values.Count(i => i.Type == "trail");
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Категории товаров:");
-        player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !11");
-        player.PrintToChat($" {ChatColors.Yellow}Следы [{ownedTrails}/{totalTrails}]{ChatColors.Default} - !12");
+        player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !1");
+        player.PrintToChat($" {ChatColors.Yellow}Следы [{ownedTrails}/{totalTrails}]{ChatColors.Default} - !2");
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Назад: !shop");
     }
 
@@ -826,12 +836,13 @@ public class ShopPlugin : BasePlugin
 
         if (!hasAvailableItems)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все {categoryName}! - !1 назад");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все {categoryName}!");
         }
         else
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy <id> | Предпросмотр: !preview <id>");
         }
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Назад: !shop");
     }
 
     private void ShowSellMenu(CCSPlayerController player)
@@ -925,8 +936,8 @@ public class ShopPlugin : BasePlugin
     private void ShowAdminPanel(CCSPlayerController player)
     {
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Админ-панель:");
-        player.PrintToChat($" {ChatColors.Yellow}Подарки [{_giftPositions.Count}]{ChatColors.Default} - !admin_gifts");
-        player.PrintToChat($" {ChatColors.Yellow}Спавны [{_customSpawns.Count}]{ChatColors.Default} - !admin_spawns");
+        player.PrintToChat($" {ChatColors.Yellow}Подарки [{_giftPositions.Count}]{ChatColors.Default} - !1");
+        player.PrintToChat($" {ChatColors.Yellow}Спавны [{_customSpawns.Count}]{ChatColors.Default} - !2");
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !shop");
     }
 
