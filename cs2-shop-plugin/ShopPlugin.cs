@@ -117,6 +117,8 @@ public class ShopPlugin : BasePlugin
 
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
+        
+        Console.WriteLine($"[Admin] OnMenu1Command: context={context}, steamId={steamId}");
 
         // Приоритет админ-панели
         if (context == "admin_main")
@@ -1313,6 +1315,8 @@ public class ShopPlugin : BasePlugin
 
         var target = players[playerNum - 1];
         string action = _playerSelectionAction[steamId];
+        
+        Console.WriteLine($"[Admin] ExecutePlayerAction: action={action}, target={target.PlayerName}, playerNum={playerNum}");
 
         switch (action)
         {
