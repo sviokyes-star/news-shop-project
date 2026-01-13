@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.1.1";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -19,7 +19,9 @@ public class ShopPlugin : BasePlugin
     private readonly Dictionary<string, ShopItem> _shopItems = new();
     private readonly Dictionary<ulong, string?> _previewSkins = new();
     private readonly Dictionary<ulong, CounterStrikeSharp.API.Modules.Timers.Timer?> _previewTimers = new();
+    private readonly List<CBaseModelEntity> _giftBoxes = new();
     private const float PreviewDuration = 30.0f;
+    private const int GiftSilverReward = 1000;
     private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
 
     private class PlayerData
@@ -49,6 +51,8 @@ public class ShopPlugin : BasePlugin
         
         LoadData();
         InitializeShopItems();
+        
+        AddTimer(1.0f, CheckGiftPickups, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
         Console.WriteLine($"[{ModuleName}] Магазин содержит {_shopItems.Count} товаров");
@@ -402,6 +406,59 @@ public class ShopPlugin : BasePlugin
         Console.WriteLine($"[Shop] {target.PlayerName} получил {amount} серебра");
     }
 
+    [ConsoleCommand("css_addgift", "Добавить подарок на карту")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 1, usage: "<сумма серебра>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnAddGiftCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        if (!int.TryParse(command.GetArg(1), out int silverAmount))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Неверная сумма!");
+            return;
+        }
+
+        if (silverAmount <= 0)
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Сумма должна быть больше 0!");
+            return;
+        }
+
+        var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
+        if (playerPos == null)
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Не удалось получить позицию!");
+            return;
+        }
+
+        SpawnGiftBox(playerPos, silverAmount);
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Подарок создан! Награда: {ChatColors.Silver}{silverAmount} серебра");
+    }
+
+    [ConsoleCommand("css_removegifts", "Удалить все подарки")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnRemoveGiftsCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        int count = _giftBoxes.Count;
+        
+        foreach (var gift in _giftBoxes)
+        {
+            gift?.Remove();
+        }
+        
+        _giftBoxes.Clear();
+        
+        string msg = $" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Удалено подарков: {count}";
+        
+        if (caller != null)
+            caller.PrintToChat(msg);
+        else
+            Console.WriteLine($"[Shop] Удалено подарков: {count}");
+    }
+
     private HookResult OnPlayerConnect(EventPlayerConnectFull @event, GameEventInfo info)
     {
         var player = @event.Userid;
@@ -659,6 +716,76 @@ public class ShopPlugin : BasePlugin
     private void RemoveSkin(CCSPlayerController player)
     {
         Console.WriteLine($"[Shop] Снятие скина для игрока {player.PlayerName}");
+    }
+
+    private void SpawnGiftBox(Vector position, int silverAmount)
+    {
+        var gift = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
+        if (gift == null)
+            return;
+
+        gift.SetModel("models/props/cs_office/cardboard_box01.mdl");
+        gift.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+        gift.DispatchSpawn();
+
+        gift.Glow.GlowColorOverride = Color.FromArgb(255, 255, 215, 0);
+        gift.Glow.GlowRange = 2000;
+        gift.Glow.GlowRangeMin = 0;
+        gift.Glow.GlowType = 3;
+        gift.Glow.GlowTeam = -1;
+
+        _giftBoxes.Add(gift);
+        
+        Console.WriteLine($"[Shop] Подарок создан на позиции {position.X}, {position.Y}, {position.Z} | Награда: {silverAmount} серебра");
+    }
+
+    private void CheckGiftPickups()
+    {
+        var players = Utilities.GetPlayers().Where(p => p?.IsValid == true && p.PawnIsAlive).ToList();
+        
+        foreach (var player in players)
+        {
+            var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
+            if (playerPos == null)
+                continue;
+
+            for (int i = _giftBoxes.Count - 1; i >= 0; i--)
+            {
+                var gift = _giftBoxes[i];
+                if (gift == null || !gift.IsValid)
+                {
+                    _giftBoxes.RemoveAt(i);
+                    continue;
+                }
+
+                var giftPos = gift.AbsOrigin;
+                if (giftPos == null)
+                    continue;
+
+                float distance = CalculateDistance(playerPos, giftPos);
+                
+                if (distance < 100.0f)
+                {
+                    var data = GetPlayerData(player.SteamID);
+                    data.Silver += GiftSilverReward;
+                    SaveData();
+
+                    player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы подобрали подарок! +{ChatColors.Silver}{GiftSilverReward} серебра");
+                    Server.PrintToChatAll($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {player.PlayerName} подобрал подарок!");
+
+                    gift.Remove();
+                    _giftBoxes.RemoveAt(i);
+                }
+            }
+        }
+    }
+
+    private float CalculateDistance(Vector pos1, Vector pos2)
+    {
+        float dx = pos1.X - pos2.X;
+        float dy = pos1.Y - pos2.Y;
+        float dz = pos1.Z - pos2.Z;
+        return (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     private PlayerData GetPlayerData(ulong steamId)
