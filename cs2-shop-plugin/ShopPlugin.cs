@@ -5,14 +5,13 @@ using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json;
-using System.Text;
 
 namespace ShopPlugin;
 
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.0.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -58,7 +57,7 @@ public class ShopPlugin : BasePlugin
         if (player == null || !player.IsValid)
             return;
 
-        ShowShopHtml(player);
+        ShowShop(player);
     }
 
     [ConsoleCommand("css_balance", "Показать баланс")]
@@ -282,76 +281,26 @@ public class ShopPlugin : BasePlugin
         return HookResult.Continue;
     }
 
-    private void ShowShopHtml(CCSPlayerController player)
+    private void ShowShop(CCSPlayerController player)
     {
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        var html = new StringBuilder();
-        html.Append("<!DOCTYPE html><html><head><meta charset='UTF-8'><style>");
-        html.Append("body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.9); color: white; }");
-        html.Append(".header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #FFD700; padding-bottom: 10px; }");
-        html.Append(".balance { display: flex; justify-content: center; gap: 30px; font-size: 18px; margin-bottom: 20px; }");
-        html.Append(".gold { color: #FFD700; }");
-        html.Append(".silver { color: #C0C0C0; }");
-        html.Append(".items { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }");
-        html.Append(".item { background: rgba(255, 255, 255, 0.1); border: 2px solid #444; border-radius: 8px; padding: 15px; cursor: pointer; transition: all 0.3s; }");
-        html.Append(".item:hover { border-color: #FFD700; transform: scale(1.05); }");
-        html.Append(".item.owned { border-color: #00FF00; background: rgba(0, 255, 0, 0.1); }");
-        html.Append(".item-name { font-size: 16px; font-weight: bold; margin-bottom: 10px; }");
-        html.Append(".item-price { font-size: 14px; margin-bottom: 10px; }");
-        html.Append(".item-status { font-size: 12px; color: #00FF00; }");
-        html.Append(".item-buy { background: #FFD700; color: black; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }");
-        html.Append(".item-buy:hover { background: #FFA500; }");
-        html.Append(".footer { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #444; font-size: 14px; color: #888; }");
-        html.Append("</style></head><body>");
-        
-        html.Append("<div class='header'><h1>🛒 МАГАЗИН</h1></div>");
-        
-        html.Append("<div class='balance'>");
-        html.Append($"<div class='gold'>🪙 Золото: {data.Gold}</div>");
-        html.Append($"<div class='silver'>⚪ Серебро: {data.Silver}</div>");
-        html.Append("</div>");
-        
-        html.Append("<div class='items'>");
+        player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} ═══════════════════");
+        player.PrintToChat($" {ChatColors.Gold}🪙 Золото: {data.Gold} {ChatColors.Default}| {ChatColors.Silver}⚪ Серебро: {data.Silver}");
+        player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} ═══════════════════");
+
         foreach (var item in _shopItems.Values)
         {
-            bool owned = data.OwnedSkins.Contains(item.Id);
-            string ownedClass = owned ? " owned" : "";
-            string price = item.GoldPrice > 0 ? $"{item.GoldPrice} 🪙" : $"{item.SilverPrice} ⚪";
+            string owned = data.OwnedSkins.Contains(item.Id) ? $" {ChatColors.Green}✓ КУПЛЕНО" : "";
+            string price = item.GoldPrice > 0 
+                ? $"{ChatColors.Gold}{item.GoldPrice} золота" 
+                : $"{ChatColors.Silver}{item.SilverPrice} серебра";
             
-            html.Append($"<div class='item{ownedClass}' onclick='buyItem(\"{item.Id}\")'>");
-            html.Append($"<div class='item-name'>{item.Name}</div>");
-            html.Append($"<div class='item-price'>{price}</div>");
-            
-            if (owned)
-            {
-                html.Append("<div class='item-status'>✓ КУПЛЕНО</div>");
-                html.Append($"<button class='item-buy' onclick='event.stopPropagation(); setSkin(\"{item.Id}\")'>НАДЕТЬ</button>");
-            }
-            else
-            {
-                html.Append($"<button class='item-buy'>КУПИТЬ</button>");
-            }
-            
-            html.Append("</div>");
+            player.PrintToChat($" {ChatColors.Yellow}{item.Id}{ChatColors.Default} - {item.Name} ({price}){owned}");
         }
-        html.Append("</div>");
-        
-        html.Append("<div class='footer'>Используйте стрелки для навигации • ESC для выхода</div>");
-        
-        html.Append("<script>");
-        html.Append("function buyItem(id) { console.log('buy ' + id); if (typeof engine !== 'undefined') engine.call('buy', id); }");
-        html.Append("function setSkin(id) { console.log('setskin ' + id); if (typeof engine !== 'undefined') engine.call('setskin', id); }");
-        html.Append("document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { if (typeof engine !== 'undefined') engine.call('close'); } });");
-        html.Append("</script>");
-        
-        html.Append("</body></html>");
 
-        string htmlContent = html.ToString();
-        
-        player.ExecuteClientCommand($"motd_show {htmlContent}");
-        Console.WriteLine($"[Shop] Отправка HTML-панели для {player.PlayerName}");
+        player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Купить: /buy <id>");
     }
 
     private void BuyItem(CCSPlayerController player, string itemId)
