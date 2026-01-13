@@ -12,7 +12,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.2.2";
+    public override string ModuleVersion => "1.2.3";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -121,12 +121,7 @@ public class ShopPlugin : BasePlugin
             case "categories":
                 ShowShopItems(player, "skin");
                 break;
-            case "admin":
-                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
-                {
-                    ShowGiftsManagement(player);
-                }
-                break;
+
             default:
                 ShowShopCategories(player);
                 break;
@@ -151,12 +146,7 @@ public class ShopPlugin : BasePlugin
             case "categories":
                 ShowShopItems(player, "trail");
                 break;
-            case "admin":
-                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
-                {
-                    ShowSpawnsManagement(player);
-                }
-                break;
+
             default:
                 ShowSellMenu(player);
                 break;
@@ -179,6 +169,40 @@ public class ShopPlugin : BasePlugin
         }
     }
 
+    [ConsoleCommand("css_5", "Управление подарками")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnMenu5Command(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}У вас нет прав администратора!");
+            return;
+        }
+
+        ShowGiftsManagement(player);
+    }
+
+    [ConsoleCommand("css_6", "Управление спавнами")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnMenu6Command(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}У вас нет прав администратора!");
+            return;
+        }
+
+        ShowSpawnsManagement(player);
+    }
+
     [ConsoleCommand("css_balance", "Показать баланс")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnBalanceCommand(CCSPlayerController? player, CommandInfo command)
@@ -192,25 +216,6 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Ваш баланс:");
         player.PrintToChat($" {ChatColors.Gold}🪙 Золото: {data.Gold}");
         player.PrintToChat($" {ChatColors.Silver}⚪ Серебро: {data.Silver}");
-    }
-
-    [ConsoleCommand("css_admin", "Админ-панель")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnAdminCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}У вас нет прав администратора!");
-            return;
-        }
-
-        ulong steamId = player.SteamID;
-        _playerMenuContext[steamId] = "admin";
-        ShowAdminPanel(player);
     }
 
 
@@ -945,22 +950,13 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Надеть: !setskin <id> | Назад: !shop");
     }
 
-    private void ShowAdminPanel(CCSPlayerController player)
-    {
-        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Админ-панель:");
-        player.PrintToChat($" {ChatColors.Yellow}Подарки [{_giftPositions.Count}]{ChatColors.Default} - !1");
-        player.PrintToChat($" {ChatColors.Yellow}Спавны [{_customSpawns.Count}]{ChatColors.Default} - !2");
-        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !shop");
-    }
-
     private void ShowGiftsManagement(CCSPlayerController player)
     {
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление подарками:");
         player.PrintToChat($" {ChatColors.Yellow}Текущих подарков:{ChatColors.Default} {_giftPositions.Count}");
-        player.PrintToChat($" {ChatColors.Yellow}!addgift <сумма>{ChatColors.Default} - создать подарок (по умолчанию {GiftSilverReward})");
+        player.PrintToChat($" {ChatColors.Yellow}!addgift <сумма>{ChatColors.Default} - создать подарок");
         player.PrintToChat($" {ChatColors.Yellow}!removegifts{ChatColors.Default} - удалить все подарки");
         player.PrintToChat($" {ChatColors.Yellow}!listgifts{ChatColors.Default} - список всех подарков");
-        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
     private void ShowSpawnsManagement(CCSPlayerController player)
@@ -972,7 +968,6 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Yellow}!listspawns{ChatColors.Default} - список спавнов");
         player.PrintToChat($" {ChatColors.Yellow}!showspawns{ChatColors.Default} - показать маркеры спавнов");
         player.PrintToChat($" {ChatColors.Yellow}!hidespawns{ChatColors.Default} - скрыть маркеры");
-        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
     private void BuyItem(CCSPlayerController player, string itemId)
