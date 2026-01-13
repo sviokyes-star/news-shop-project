@@ -113,6 +113,8 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
+        player.PrintToChat($" {ChatColors.Red}[DEBUG] Контекст: '{context}'");
+
         // Приоритет админ-панели
         if (context == "admin_main")
         {
