@@ -7,6 +7,7 @@ using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Drawing;
 
 namespace TimerPlugin;
 
@@ -84,6 +85,8 @@ public class TimerPlugin : BasePlugin
     public override void Unload(bool hotReload)
     {
         _beamTimer?.Kill();
+        _playerTimers.Clear();
+        Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 
     [ConsoleCommand("css_timer", "Показать текущее время")]
@@ -799,9 +802,4 @@ public class TimerPlugin : BasePlugin
         }
     }
 
-    public override void Unload(bool hotReload)
-    {
-        _playerTimers.Clear();
-        Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
-    }
 }
