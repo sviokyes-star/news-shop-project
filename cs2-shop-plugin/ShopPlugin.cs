@@ -133,7 +133,16 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 _playerSelectionAction[steamId] = "kill";
+                _playerMenuContext[steamId] = "admin_player_select";
                 ShowPlayerList(player, "Выберите игрока для убийства:");
+            }
+            return;
+        }
+        else if (context == "admin_player_select")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ExecutePlayerAction(player, 1);
             }
             return;
         }
@@ -174,7 +183,16 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 _playerSelectionAction[steamId] = "kick";
+                _playerMenuContext[steamId] = "admin_player_select";
                 ShowPlayerList(player, "Выберите игрока для кика:");
+            }
+            return;
+        }
+        else if (context == "admin_player_select")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ExecutePlayerAction(player, 2);
             }
             return;
         }
@@ -231,7 +249,16 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 _playerSelectionAction[steamId] = "ban";
+                _playerMenuContext[steamId] = "admin_player_select";
                 ShowPlayerList(player, "Выберите игрока для бана:");
+            }
+            return;
+        }
+        else if (context == "admin_player_select")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ExecutePlayerAction(player, 3);
             }
             return;
         }
@@ -275,7 +302,16 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 _playerSelectionAction[steamId] = "slap";
+                _playerMenuContext[steamId] = "admin_player_select";
                 ShowPlayerList(player, "Выберите игрока для шлепка:");
+            }
+            return;
+        }
+        else if (context == "admin_player_select")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ExecutePlayerAction(player, 4);
             }
             return;
         }
@@ -334,7 +370,15 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 _playerSelectionAction[steamId] = "freeze";
+                _playerMenuContext[steamId] = "admin_player_select";
                 ShowPlayerList(player, "Выберите игрока для заморозки:");
+            }
+        }
+        else if (context == "admin_player_select")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ExecutePlayerAction(player, 5);
             }
         }
     }
@@ -365,7 +409,15 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 _playerSelectionAction[steamId] = "respawn";
+                _playerMenuContext[steamId] = "admin_player_select";
                 ShowPlayerList(player, "Выберите игрока для возрождения:");
+            }
+        }
+        else if (context == "admin_player_select")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ExecutePlayerAction(player, 6);
             }
         }
     }
@@ -383,7 +435,12 @@ public class ShopPlugin : BasePlugin
         if (context == "admin_players" && AdminManager.PlayerHasPermissions(player, "@css/root"))
         {
             _playerSelectionAction[steamId] = "teleport_to_me";
+            _playerMenuContext[steamId] = "admin_player_select";
             ShowPlayerList(player, "Выберите игрока для телепортации к себе:");
+        }
+        else if (context == "admin_player_select" && AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            ExecutePlayerAction(player, 7);
         }
     }
 
@@ -400,7 +457,12 @@ public class ShopPlugin : BasePlugin
         if (context == "admin_players" && AdminManager.PlayerHasPermissions(player, "@css/root"))
         {
             _playerSelectionAction[steamId] = "teleport_to_player";
+            _playerMenuContext[steamId] = "admin_player_select";
             ShowPlayerList(player, "Выберите игрока для телепортации к нему:");
+        }
+        else if (context == "admin_player_select" && AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            ExecutePlayerAction(player, 8);
         }
     }
 
@@ -918,116 +980,6 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Показано маркеров: {_spawnMarkers.Count}");
     }
 
-    [ConsoleCommand("css_selectplayer", "Выбрать игрока")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(minArgs: 1, usage: "<номер>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnSelectPlayerCommand(CCSPlayerController? admin, CommandInfo command)
-    {
-        if (admin == null || !admin.IsValid)
-            return;
-
-        if (!int.TryParse(command.GetArg(1), out int playerNum) || playerNum < 1)
-        {
-            admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Неверный номер игрока!");
-            return;
-        }
-
-        ulong steamId = admin.SteamID;
-        if (!_playerSelectionAction.ContainsKey(steamId))
-        {
-            admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Сначала выберите действие!");
-            return;
-        }
-
-        var players = Utilities.GetPlayers().Where(p => p?.IsValid == true && !p.IsBot).ToList();
-        
-        if (playerNum > players.Count)
-        {
-            admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Игрок не найден!");
-            return;
-        }
-
-        var target = players[playerNum - 1];
-        string action = _playerSelectionAction[steamId];
-
-        switch (action)
-        {
-            case "kill":
-                if (target.PlayerPawn?.Value != null)
-                {
-                    target.PlayerPawn.Value.CommitSuicide(false, true);
-                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} убит");
-                }
-                break;
-
-            case "kick":
-                Server.ExecuteCommand($"kickid {target.UserId}");
-                admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} кикнут");
-                break;
-
-            case "ban":
-                Server.ExecuteCommand($"banid 60 {target.UserId}");
-                admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} забанен на 60 минут");
-                break;
-
-            case "slap":
-                if (target.PlayerPawn?.Value != null)
-                {
-                    target.PlayerPawn.Value.Health -= 5;
-                    target.PlayerPawn.Value.Teleport(target.PlayerPawn.Value.AbsOrigin, target.PlayerPawn.Value.EyeAngles, new Vector(0, 0, 300));
-                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} шлёпнут");
-                }
-                break;
-
-            case "freeze":
-                ulong targetId = target.SteamID;
-                bool isFrozen = _playerFrozen.ContainsKey(targetId) && _playerFrozen[targetId];
-                _playerFrozen[targetId] = !isFrozen;
-                
-                if (_playerFrozen[targetId] && target.PlayerPawn?.Value != null)
-                {
-                    target.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_OBSOLETE;
-                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} заморожен");
-                    target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы заморожены администратором");
-                }
-                else if (target.PlayerPawn?.Value != null)
-                {
-                    target.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_WALK;
-                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} разморожен");
-                    target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы разморожены");
-                }
-                break;
-
-            case "respawn":
-                target.Respawn();
-                admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} возрождён");
-                break;
-
-            case "teleport_to_me":
-                var adminPos = admin.PlayerPawn?.Value?.AbsOrigin;
-                var adminAngles = admin.PlayerPawn?.Value?.EyeAngles;
-                if (adminPos != null && adminAngles != null && target.PlayerPawn?.Value != null)
-                {
-                    target.PlayerPawn.Value.Teleport(adminPos, adminAngles, new Vector(0, 0, 0));
-                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} телепортирован к вам");
-                    target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы телепортированы к администратору");
-                }
-                break;
-
-            case "teleport_to_player":
-                var targetPos = target.PlayerPawn?.Value?.AbsOrigin;
-                var targetAngles = target.PlayerPawn?.Value?.EyeAngles;
-                if (targetPos != null && targetAngles != null && admin.PlayerPawn?.Value != null)
-                {
-                    admin.PlayerPawn.Value.Teleport(targetPos, targetAngles, new Vector(0, 0, 0));
-                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы телепортированы к игроку {target.PlayerName}");
-                }
-                break;
-        }
-
-        _playerSelectionAction.Remove(steamId);
-    }
-
     [ConsoleCommand("css_hidespawns", "Скрыть маркеры спавнов")]
     [RequiresPermissions("@css/root")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
@@ -1337,10 +1289,109 @@ public class ShopPlugin : BasePlugin
         for (int i = 0; i < Math.Min(players.Count, 8); i++)
         {
             var p = players[i];
-            admin.PrintToChat($" {ChatColors.Yellow}{i + 1}.{ChatColors.Default} {p.PlayerName}");
+            admin.PrintToChat($" {ChatColors.Yellow}!{i + 1}{ChatColors.Default} {p.PlayerName}");
         }
+    }
+
+    private void ExecutePlayerAction(CCSPlayerController admin, int playerNum)
+    {
+        ulong steamId = admin.SteamID;
         
-        admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Используйте: !selectplayer <номер>");
+        if (!_playerSelectionAction.ContainsKey(steamId))
+        {
+            admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Ошибка выбора действия!");
+            return;
+        }
+
+        var players = Utilities.GetPlayers().Where(p => p?.IsValid == true && !p.IsBot).ToList();
+        
+        if (playerNum < 1 || playerNum > players.Count || playerNum > 8)
+        {
+            admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Игрок не найден!");
+            return;
+        }
+
+        var target = players[playerNum - 1];
+        string action = _playerSelectionAction[steamId];
+
+        switch (action)
+        {
+            case "kill":
+                if (target.PlayerPawn?.Value != null)
+                {
+                    target.PlayerPawn.Value.CommitSuicide(false, true);
+                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} убит");
+                }
+                break;
+
+            case "kick":
+                Server.ExecuteCommand($"kickid {target.UserId}");
+                admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} кикнут");
+                break;
+
+            case "ban":
+                Server.ExecuteCommand($"banid 60 {target.UserId}");
+                admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} забанен на 60 минут");
+                break;
+
+            case "slap":
+                if (target.PlayerPawn?.Value != null)
+                {
+                    target.PlayerPawn.Value.Health -= 5;
+                    target.PlayerPawn.Value.Teleport(target.PlayerPawn.Value.AbsOrigin, target.PlayerPawn.Value.EyeAngles, new Vector(0, 0, 300));
+                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} шлёпнут");
+                }
+                break;
+
+            case "freeze":
+                ulong targetId = target.SteamID;
+                bool isFrozen = _playerFrozen.ContainsKey(targetId) && _playerFrozen[targetId];
+                _playerFrozen[targetId] = !isFrozen;
+                
+                if (_playerFrozen[targetId] && target.PlayerPawn?.Value != null)
+                {
+                    target.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_OBSOLETE;
+                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} заморожен");
+                    target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы заморожены администратором");
+                }
+                else if (target.PlayerPawn?.Value != null)
+                {
+                    target.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_WALK;
+                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} разморожен");
+                    target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы разморожены");
+                }
+                break;
+
+            case "respawn":
+                target.Respawn();
+                admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} возрождён");
+                break;
+
+            case "teleport_to_me":
+                var adminPos = admin.PlayerPawn?.Value?.AbsOrigin;
+                var adminAngles = admin.PlayerPawn?.Value?.EyeAngles;
+                if (adminPos != null && adminAngles != null && target.PlayerPawn?.Value != null)
+                {
+                    target.PlayerPawn.Value.Teleport(adminPos, adminAngles, new Vector(0, 0, 0));
+                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Игрок {target.PlayerName} телепортирован к вам");
+                    target.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы телепортированы к администратору");
+                }
+                break;
+
+            case "teleport_to_player":
+                var targetPos = target.PlayerPawn?.Value?.AbsOrigin;
+                var targetAngles = target.PlayerPawn?.Value?.EyeAngles;
+                if (targetPos != null && targetAngles != null && admin.PlayerPawn?.Value != null)
+                {
+                    admin.PlayerPawn.Value.Teleport(targetPos, targetAngles, new Vector(0, 0, 0));
+                    admin.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Вы телепортированы к игроку {target.PlayerName}");
+                }
+                break;
+        }
+
+        _playerSelectionAction.Remove(steamId);
+        _playerMenuContext[steamId] = "admin_players";
+        ShowPlayersManagement(admin);
     }
 
     private void ToggleFlyMode(CCSPlayerController player)
