@@ -13,7 +13,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Okyes - Map Timer";
-    public override string ModuleVersion => "1.3.1";
+    public override string ModuleVersion => "1.4.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -26,6 +26,8 @@ public class TimerPlugin : BasePlugin
     private readonly Dictionary<int, bool> _inEndZone = new();
     private readonly Dictionary<int, float> _lastFinishTime = new();
     private float _lastDebugLog = 0f;
+    
+    private CounterStrikeSharp.API.Modules.Timers.Timer? _beamTimer;
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
@@ -74,7 +76,14 @@ public class TimerPlugin : BasePlugin
         LoadRecordHolders();
         LoadPlayerRecords();
         
+        _beamTimer = AddTimer(0.1f, DrawZoneBeams, TimerFlags.REPEAT);
+        
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
+    }
+
+    public override void Unload(bool hotReload)
+    {
+        _beamTimer?.Kill();
     }
 
     [ConsoleCommand("css_timer", "Показать текущее время")]
@@ -513,6 +522,82 @@ public class TimerPlugin : BasePlugin
         }
         
         return result;
+    }
+
+    private void DrawZoneBeams()
+    {
+        string mapName = Server.MapName;
+        
+        if (!_mapZones.ContainsKey(mapName))
+            return;
+
+        var zones = _mapZones[mapName];
+        
+        if (zones.StartMin != null && zones.StartMax != null)
+        {
+            DrawZoneBox(zones.StartMin, zones.StartMax, Color.FromArgb(0, 255, 0));
+        }
+        
+        if (zones.EndMin != null && zones.EndMax != null)
+        {
+            DrawZoneBox(zones.EndMin, zones.EndMax, Color.FromArgb(255, 0, 0));
+        }
+    }
+
+    private void DrawZoneBox(Vector min, Vector max, Color color)
+    {
+        float duration = 0.15f;
+        float width = 2.0f;
+        
+        var corners = new Vector[]
+        {
+            new Vector(min.X, min.Y, min.Z),
+            new Vector(max.X, min.Y, min.Z),
+            new Vector(max.X, max.Y, min.Z),
+            new Vector(min.X, max.Y, min.Z),
+            new Vector(min.X, min.Y, max.Z),
+            new Vector(max.X, min.Y, max.Z),
+            new Vector(max.X, max.Y, max.Z),
+            new Vector(min.X, max.Y, max.Z)
+        };
+        
+        int[] bottomEdges = { 0, 1, 1, 2, 2, 3, 3, 0 };
+        int[] topEdges = { 4, 5, 5, 6, 6, 7, 7, 4 };
+        int[] verticalEdges = { 0, 4, 1, 5, 2, 6, 3, 7 };
+        
+        for (int i = 0; i < bottomEdges.Length; i += 2)
+        {
+            DrawBeam(corners[bottomEdges[i]], corners[bottomEdges[i + 1]], color, duration, width);
+        }
+        
+        for (int i = 0; i < topEdges.Length; i += 2)
+        {
+            DrawBeam(corners[topEdges[i]], corners[topEdges[i + 1]], color, duration, width);
+        }
+        
+        for (int i = 0; i < verticalEdges.Length; i += 2)
+        {
+            DrawBeam(corners[verticalEdges[i]], corners[verticalEdges[i + 1]], color, duration, width);
+        }
+    }
+
+    private void DrawBeam(Vector start, Vector end, Color color, float duration, float width)
+    {
+        Utilities.CreateBeam(
+            start: start,
+            end: end,
+            modelIndex: -1,
+            haloIndex: -1,
+            startFrame: 0,
+            frameRate: 0,
+            life: duration,
+            width: width,
+            endWidth: width,
+            fadeLength: 0,
+            amplitude: 0,
+            color: color,
+            speed: 0
+        );
     }
 
     private void LoadZones()
