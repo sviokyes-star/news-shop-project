@@ -856,9 +856,6 @@ public class ShopPlugin : BasePlugin
             case 3:
                 ShowInventory(player);
                 break;
-            case 4:
-                OnBalanceCommand(player, null!);
-                break;
         }
     }
 
