@@ -4,7 +4,6 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Admin;
-using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Timers;
 
 namespace MapTimeLimitPlugin;
@@ -25,9 +24,12 @@ public class MapTimeLimitPlugin : BasePlugin
     {
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         
-        SetMapTimeLimit(_timeLimitMinutes);
-        
         _mapStartTime = Server.CurrentTime;
+        
+        Server.NextFrame(() =>
+        {
+            SetMapTimeLimit(_timeLimitMinutes);
+        });
         
         _checkTimer = AddTimer(10.0f, CheckTimeRemaining, TimerFlags.REPEAT);
         
@@ -188,15 +190,14 @@ public class MapTimeLimitPlugin : BasePlugin
 
     private void SetMapTimeLimit(int minutes)
     {
-        var timeLimit = ConVar.Find("mp_timelimit");
-        if (timeLimit != null)
+        try
         {
-            timeLimit.SetValue(minutes);
+            Server.ExecuteCommand($"mp_timelimit {minutes}");
             Console.WriteLine($"[Map Time] mp_timelimit установлен на {minutes} минут");
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("[Map Time] Ошибка: не удалось найти mp_timelimit");
+            Console.WriteLine($"[Map Time] Ошибка установки mp_timelimit: {ex.Message}");
         }
     }
 
