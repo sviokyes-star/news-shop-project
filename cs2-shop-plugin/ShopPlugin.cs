@@ -179,6 +179,14 @@ public class ShopPlugin : BasePlugin
             }
             return;
         }
+        else if (context == "admin_zones")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Установить зону финиша");
+            }
+            return;
+        }
 
         // Магазин
         if (context == "shop_main")
@@ -249,7 +257,8 @@ public class ShopPlugin : BasePlugin
         {
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 4: Настройки зон карт");
+                _playerMenuContext[steamId] = "admin_zones";
+                ShowZonesManagement(player);
             }
             return;
         }
@@ -258,6 +267,14 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Шлепнуть");
+            }
+            return;
+        }
+        else if (context == "admin_zones")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Установить зону старта");
             }
             return;
         }
@@ -1171,6 +1188,14 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Читы и настройки:");
         player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Режим полёта");
         player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Режим неуязвимости");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
+    }
+
+    private void ShowZonesManagement(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Настройки зон карт:");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Установить зону старта");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Установить зону финиша");
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
