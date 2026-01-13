@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -484,8 +484,8 @@ public class ShopPlugin : BasePlugin
         {
             Id = "skin1",
             Name = "Огненный воин",
-            GoldPrice = 10,
-            SilverPrice = 0,
+            GoldPrice = 0,
+            SilverPrice = 100000,
             Type = "skin"
         };
 
@@ -493,8 +493,8 @@ public class ShopPlugin : BasePlugin
         {
             Id = "skin2",
             Name = "Ледяной страж",
-            GoldPrice = 15,
-            SilverPrice = 0,
+            GoldPrice = 0,
+            SilverPrice = 100000,
             Type = "skin"
         };
 
@@ -502,8 +502,8 @@ public class ShopPlugin : BasePlugin
         {
             Id = "skin3",
             Name = "Темный рыцарь",
-            GoldPrice = 20,
-            SilverPrice = 0,
+            GoldPrice = 0,
+            SilverPrice = 100000,
             Type = "skin"
         };
 
@@ -512,7 +512,7 @@ public class ShopPlugin : BasePlugin
             Id = "skin4",
             Name = "Золотой боец",
             GoldPrice = 0,
-            SilverPrice = 100,
+            SilverPrice = 100000,
             Type = "skin"
         };
 
@@ -521,7 +521,7 @@ public class ShopPlugin : BasePlugin
             Id = "skin5",
             Name = "Призрак",
             GoldPrice = 0,
-            SilverPrice = 150,
+            SilverPrice = 100000,
             Type = "skin"
         };
     }
