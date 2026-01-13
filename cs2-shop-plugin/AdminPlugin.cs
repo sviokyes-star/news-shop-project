@@ -251,7 +251,15 @@ public class AdminPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        if (context == "admin_players")
+        if (context == "admin_main")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ShowGiftsInfo(player);
+            }
+            return;
+        }
+        else if (context == "admin_players")
         {
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
@@ -279,7 +287,15 @@ public class AdminPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        if (context == "admin_players")
+        if (context == "admin_main")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                ShowSpawnsInfo(player);
+            }
+            return;
+        }
+        else if (context == "admin_players")
         {
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
@@ -290,8 +306,7 @@ public class AdminPlugin : BasePlugin
         }
         else if (context == "admin_player_select")
         {
-            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))\n            {
                 ExecutePlayerAction(player, 6);
             }
         }
@@ -347,7 +362,14 @@ public class AdminPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Управление игроками");
         player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Модерация");
         player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Читы и настройки");
-        player.PrintToChat($" {ChatColors.Yellow}!4{ChatColors.Default} - Настройки зон карт");
+        
+        AddTimer(0.1f, () =>
+        {
+            if (!player.IsValid) return;
+            player.PrintToChat($" {ChatColors.Yellow}!4{ChatColors.Default} - Настройки зон карт");
+            player.PrintToChat($" {ChatColors.Yellow}!5{ChatColors.Default} - Управление подарками");
+            player.PrintToChat($" {ChatColors.Yellow}!6{ChatColors.Default} - Управление спавнами");
+        });
     }
 
     private void ShowPlayersManagement(CCSPlayerController player)
@@ -575,6 +597,28 @@ public class AdminPlugin : BasePlugin
         
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Зона финиша установлена на ({pos.X:F1}, {pos.Y:F1}, {pos.Z:F1})");
         Console.WriteLine($"[Admin] Зона финиша: ({pos.X:F1}, {pos.Y:F1}, {pos.Z:F1})");
+    }
+
+    private void ShowGiftsInfo(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление подарками:");
+        player.PrintToChat($" {ChatColors.Yellow}Используйте команды из магазина:");
+        player.PrintToChat($" {ChatColors.Yellow}!addgift <сумма>{ChatColors.Default} - создать подарок");
+        player.PrintToChat($" {ChatColors.Yellow}!removegifts{ChatColors.Default} - удалить все подарки");
+        player.PrintToChat($" {ChatColors.Yellow}!listgifts{ChatColors.Default} - список всех подарков");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
+    }
+
+    private void ShowSpawnsInfo(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление спавнами:");
+        player.PrintToChat($" {ChatColors.Yellow}Используйте команды из магазина:");
+        player.PrintToChat($" {ChatColors.Yellow}!addspawn <CT/T>{ChatColors.Default} - добавить спавн");
+        player.PrintToChat($" {ChatColors.Yellow}!removespawns{ChatColors.Default} - удалить все спавны");
+        player.PrintToChat($" {ChatColors.Yellow}!listspawns{ChatColors.Default} - список спавнов");
+        player.PrintToChat($" {ChatColors.Yellow}!showspawns{ChatColors.Default} - показать маркеры спавнов");
+        player.PrintToChat($" {ChatColors.Yellow}!hidespawns{ChatColors.Default} - скрыть маркеры");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
     public override void Unload(bool hotReload)
