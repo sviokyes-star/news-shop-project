@@ -113,23 +113,25 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        switch (context)
+        // Приоритет админ-панели
+        if (context == "admin_main")
         {
-            case "shop_main":
-                _playerMenuContext[steamId] = "shop_categories";
-                ShowShopCategories(player);
-                break;
-            case "shop_categories":
-                ShowShopItems(player, "skin");
-                break;
-            case "admin_main":
-                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
-                {
-                    player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 1: Управление игроками");
-                }
-                break;
-            default:
-                break;
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 1: Управление игроками");
+            }
+            return;
+        }
+
+        // Магазин
+        if (context == "shop_main")
+        {
+            _playerMenuContext[steamId] = "shop_categories";
+            ShowShopCategories(player);
+        }
+        else if (context == "shop_categories")
+        {
+            ShowShopItems(player, "skin");
         }
     }
 
@@ -143,22 +145,24 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        switch (context)
+        // Приоритет админ-панели
+        if (context == "admin_main")
         {
-            case "shop_main":
-                ShowSellMenu(player);
-                break;
-            case "shop_categories":
-                ShowShopItems(player, "trail");
-                break;
-            case "admin_main":
-                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
-                {
-                    player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 2: Модерация");
-                }
-                break;
-            default:
-                break;
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 2: Модерация");
+            }
+            return;
+        }
+
+        // Магазин
+        if (context == "shop_main")
+        {
+            ShowSellMenu(player);
+        }
+        else if (context == "shop_categories")
+        {
+            ShowShopItems(player, "trail");
         }
     }
 
@@ -172,17 +176,20 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        switch (context)
+        // Приоритет админ-панели
+        if (context == "admin_main")
         {
-            case "shop_main":
-                ShowInventory(player);
-                break;
-            case "admin_main":
-                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
-                {
-                    player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 3: Читы и настройки");
-                }
-                break;
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 3: Читы и настройки");
+            }
+            return;
+        }
+
+        // Магазин
+        if (context == "shop_main")
+        {
+            ShowInventory(player);
         }
     }
 
