@@ -171,6 +171,14 @@ public class ShopPlugin : BasePlugin
             }
             return;
         }
+        else if (context == "admin_cheats")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Режим неуязвимости");
+            }
+            return;
+        }
 
         // Магазин
         if (context == "shop_main")
@@ -198,7 +206,8 @@ public class ShopPlugin : BasePlugin
         {
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 3: Читы и настройки");
+                _playerMenuContext[steamId] = "admin_cheats";
+                ShowCheatsManagement(player);
             }
             return;
         }
@@ -207,6 +216,14 @@ public class ShopPlugin : BasePlugin
             if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
                 player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Забанить");
+            }
+            return;
+        }
+        else if (context == "admin_cheats")
+        {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Выберите действие: Режим полёта");
             }
             return;
         }
@@ -1147,6 +1164,14 @@ public class ShopPlugin : BasePlugin
             player.PrintToChat($" {ChatColors.Yellow}!8{ChatColors.Default} - Телепортироваться к игроку");
             player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
         });
+    }
+
+    private void ShowCheatsManagement(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Читы и настройки:");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Режим полёта");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Режим неуязвимости");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
     private void ShowGiftsManagement(CCSPlayerController player)
