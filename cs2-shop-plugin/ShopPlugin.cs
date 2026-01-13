@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.1.1";
+    public override string ModuleVersion => "1.1.2";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -20,6 +20,7 @@ public class ShopPlugin : BasePlugin
     private readonly Dictionary<ulong, string?> _previewSkins = new();
     private readonly Dictionary<ulong, CounterStrikeSharp.API.Modules.Timers.Timer?> _previewTimers = new();
     private readonly List<CBaseModelEntity> _giftBoxes = new();
+    private readonly Dictionary<ulong, HashSet<int>> _collectedGifts = new();
     private const float PreviewDuration = 30.0f;
     private const int GiftSilverReward = 1000;
     private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
@@ -48,6 +49,7 @@ public class ShopPlugin : BasePlugin
     {
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
+        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         
         LoadData();
         InitializeShopItems();
@@ -485,7 +487,32 @@ public class ShopPlugin : BasePlugin
 
     private HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
     {
+        var player = @event.Userid;
+        if (player != null && player.IsValid)
+        {
+            ulong steamId = player.SteamID;
+            if (_collectedGifts.ContainsKey(steamId))
+            {
+                _collectedGifts.Remove(steamId);
+            }
+        }
+        
         SaveData();
+        return HookResult.Continue;
+    }
+
+    private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player == null || !player.IsValid)
+            return HookResult.Continue;
+
+        ulong steamId = player.SteamID;
+        if (_collectedGifts.ContainsKey(steamId))
+        {
+            _collectedGifts[steamId].Clear();
+        }
+
         return HookResult.Continue;
     }
 
@@ -766,15 +793,24 @@ public class ShopPlugin : BasePlugin
                 
                 if (distance < 100.0f)
                 {
-                    var data = GetPlayerData(player.SteamID);
+                    ulong steamId = player.SteamID;
+                    
+                    if (!_collectedGifts.ContainsKey(steamId))
+                    {
+                        _collectedGifts[steamId] = new HashSet<int>();
+                    }
+
+                    if (_collectedGifts[steamId].Contains(i))
+                        continue;
+
+                    _collectedGifts[steamId].Add(i);
+
+                    var data = GetPlayerData(steamId);
                     data.Silver += GiftSilverReward;
                     SaveData();
 
                     player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы подобрали подарок! +{ChatColors.Silver}{GiftSilverReward} серебра");
                     Server.PrintToChatAll($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {player.PlayerName} подобрал подарок!");
-
-                    gift.Remove();
-                    _giftBoxes.RemoveAt(i);
                 }
             }
         }
