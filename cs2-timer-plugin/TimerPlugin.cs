@@ -7,7 +7,6 @@ using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Drawing;
 
 namespace TimerPlugin;
 
@@ -538,12 +537,12 @@ public class TimerPlugin : BasePlugin
         
         if (zones.StartMin != null && zones.StartMax != null)
         {
-            DrawZoneBox(zones.StartMin, zones.StartMax, Color.FromArgb(0, 255, 0));
+            DrawZoneBox(zones.StartMin, zones.StartMax, Color.Green);
         }
         
         if (zones.EndMin != null && zones.EndMax != null)
         {
-            DrawZoneBox(zones.EndMin, zones.EndMax, Color.FromArgb(255, 0, 0));
+            DrawZoneBox(zones.EndMin, zones.EndMax, Color.Red);
         }
     }
 
