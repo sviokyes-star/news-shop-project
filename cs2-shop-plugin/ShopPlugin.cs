@@ -234,7 +234,13 @@ public class ShopPlugin : BasePlugin
             return;
         }
 
-        ShowGiftsManagement(player);
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
+
+        if (context == "admin_main")
+        {
+            ShowGiftsManagement(player);
+        }
     }
 
     [ConsoleCommand("css_6", "Управление спавнами")]
@@ -251,7 +257,13 @@ public class ShopPlugin : BasePlugin
             return;
         }
 
-        ShowSpawnsManagement(player);
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
+
+        if (context == "admin_main")
+        {
+            ShowSpawnsManagement(player);
+        }
     }
 
     [ConsoleCommand("css_balance", "Показать баланс")]
