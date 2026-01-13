@@ -597,7 +597,7 @@ public class AdminPlugin : BasePlugin
     private void ShowGiftsInfo(CCSPlayerController player)
     {
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление подарками:");
-        player.PrintToChat($" {ChatColors.Yellow}Используйте команды из магазина:");
+        player.PrintToChat($" {ChatColors.Yellow}Используйте команды из SpawnManagerPlugin:");
         player.PrintToChat($" {ChatColors.Yellow}!addgift <сумма>{ChatColors.Default} - создать подарок");
         player.PrintToChat($" {ChatColors.Yellow}!removegifts{ChatColors.Default} - удалить все подарки");
         player.PrintToChat($" {ChatColors.Yellow}!listgifts{ChatColors.Default} - список всех подарков");
@@ -607,7 +607,7 @@ public class AdminPlugin : BasePlugin
     private void ShowSpawnsInfo(CCSPlayerController player)
     {
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление спавнами:");
-        player.PrintToChat($" {ChatColors.Yellow}Используйте команды из магазина:");
+        player.PrintToChat($" {ChatColors.Yellow}Используйте команды из SpawnManagerPlugin:");
         player.PrintToChat($" {ChatColors.Yellow}!addspawn <CT/T>{ChatColors.Default} - добавить спавн");
         player.PrintToChat($" {ChatColors.Yellow}!removespawns{ChatColors.Default} - удалить все спавны");
         player.PrintToChat($" {ChatColors.Yellow}!listspawns{ChatColors.Default} - список спавнов");
