@@ -11,12 +11,13 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.7";
+    public override string ModuleVersion => "1.0.8";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
     private readonly Dictionary<ulong, PlayerData> _playerData = new();
     private readonly Dictionary<string, ShopItem> _shopItems = new();
+    private readonly Dictionary<ulong, string?> _previewSkins = new();
     private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
 
     private class PlayerData
@@ -25,6 +26,7 @@ public class ShopPlugin : BasePlugin
         public int Silver { get; set; } = 0;
         public List<string> OwnedSkins { get; set; } = new();
         public string? ActiveSkin { get; set; }
+        public string? PreviewSkin { get; set; }
     }
 
     private class ShopItem
@@ -131,6 +133,66 @@ public class ShopPlugin : BasePlugin
         BuyItem(player, itemId);
     }
 
+    [ConsoleCommand("css_preview", "Предпросмотр скина")]
+    [CommandHelper(minArgs: 1, usage: "<id скина>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnPreviewCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        string skinId = command.GetArg(1).ToLower();
+        ulong steamId = player.SteamID;
+        var data = GetPlayerData(steamId);
+
+        if (!_shopItems.ContainsKey(skinId))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Скин не найден!");
+            return;
+        }
+
+        if (data.OwnedSkins.Contains(skinId))
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас уже есть этот скин! Используйте !setskin {skinId}");
+            return;
+        }
+
+        _previewSkins[steamId] = skinId;
+        var item = _shopItems[skinId];
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр: {ChatColors.Yellow}{item.Name}");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy {skinId} | Отменить: !stoppreview");
+        
+        ApplySkin(player, skinId);
+    }
+
+    [ConsoleCommand("css_stoppreview", "Остановить предпросмотр")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnStopPreviewCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ulong steamId = player.SteamID;
+        var data = GetPlayerData(steamId);
+
+        if (!_previewSkins.ContainsKey(steamId) || _previewSkins[steamId] == null)
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр не активен");
+            return;
+        }
+
+        _previewSkins.Remove(steamId);
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр отменён");
+
+        if (data.ActiveSkin != null)
+        {
+            ApplySkin(player, data.ActiveSkin);
+        }
+        else
+        {
+            RemoveSkin(player);
+        }
+    }
+
     [ConsoleCommand("css_setskin", "Надеть скин")]
     [CommandHelper(minArgs: 1, usage: "<id скина>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnSetSkinCommand(CCSPlayerController? player, CommandInfo command)
@@ -146,6 +208,11 @@ public class ShopPlugin : BasePlugin
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет этого скина!");
             return;
+        }
+
+        if (_previewSkins.ContainsKey(steamId))
+        {
+            _previewSkins.Remove(steamId);
         }
 
         data.ActiveSkin = skinId;
@@ -362,7 +429,7 @@ public class ShopPlugin : BasePlugin
         }
         else
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy <id> | Назад: !1");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy <id> | Предпросмотр: !preview <id>");
         }
     }
 
@@ -431,6 +498,11 @@ public class ShopPlugin : BasePlugin
             return;
         }
 
+        if (_previewSkins.ContainsKey(steamId))
+        {
+            _previewSkins.Remove(steamId);
+        }
+
         if (item.GoldPrice > 0)
         {
             if (data.Gold < item.GoldPrice)
@@ -467,6 +539,11 @@ public class ShopPlugin : BasePlugin
         var item = _shopItems[skinId];
         
         Console.WriteLine($"[Shop] Применение скина {item.Name} для игрока {player.PlayerName}");
+    }
+
+    private void RemoveSkin(CCSPlayerController player)
+    {
+        Console.WriteLine($"[Shop] Снятие скина для игрока {player.PlayerName}");
     }
 
     private PlayerData GetPlayerData(ulong steamId)
