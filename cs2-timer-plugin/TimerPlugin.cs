@@ -29,6 +29,7 @@ public class TimerPlugin : BasePlugin
     private float _lastDebugLog = 0f;
     
     private CounterStrikeSharp.API.Modules.Timers.Timer? _beamTimer;
+    private readonly List<CBeam> _zoneBeams = new();
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
@@ -85,6 +86,7 @@ public class TimerPlugin : BasePlugin
     public override void Unload(bool hotReload)
     {
         _beamTimer?.Kill();
+        ClearBeams();
         _playerTimers.Clear();
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
@@ -534,23 +536,35 @@ public class TimerPlugin : BasePlugin
         if (!_mapZones.ContainsKey(mapName))
             return;
 
+        ClearBeams();
+
         var zones = _mapZones[mapName];
         
         if (zones.StartMin != null && zones.StartMax != null)
         {
-            DrawBox(zones.StartMin, zones.StartMax, Color.FromArgb(100, 0, 255, 0));
+            CreateZoneBeams(zones.StartMin, zones.StartMax, Color.FromArgb(255, 0, 255, 0));
         }
         
         if (zones.EndMin != null && zones.EndMax != null)
         {
-            DrawBox(zones.EndMin, zones.EndMax, Color.FromArgb(100, 255, 0, 0));
+            CreateZoneBeams(zones.EndMin, zones.EndMax, Color.FromArgb(255, 255, 0, 0));
         }
     }
 
-    private void DrawBox(Vector min, Vector max, Color color)
+    private void ClearBeams()
     {
-        float duration = 0.2f;
-        
+        foreach (var beam in _zoneBeams)
+        {
+            if (beam?.IsValid == true)
+            {
+                beam.Remove();
+            }
+        }
+        _zoneBeams.Clear();
+    }
+
+    private void CreateZoneBeams(Vector min, Vector max, Color color)
+    {
         var corners = new Vector[]
         {
             new Vector(min.X, min.Y, min.Z),
@@ -563,20 +577,29 @@ public class TimerPlugin : BasePlugin
             new Vector(min.X, max.Y, max.Z)
         };
         
-        NativeAPI.DebugOverlayLine(corners[0], corners[1], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[1], corners[2], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[2], corners[3], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[3], corners[0], color.R, color.G, color.B, color.A, false, duration);
-        
-        NativeAPI.DebugOverlayLine(corners[4], corners[5], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[5], corners[6], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[6], corners[7], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[7], corners[4], color.R, color.G, color.B, color.A, false, duration);
-        
-        NativeAPI.DebugOverlayLine(corners[0], corners[4], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[1], corners[5], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[2], corners[6], color.R, color.G, color.B, color.A, false, duration);
-        NativeAPI.DebugOverlayLine(corners[3], corners[7], color.R, color.G, color.B, color.A, false, duration);
+        int[][] edges = new int[][]
+        {
+            new int[] {0, 1}, new int[] {1, 2}, new int[] {2, 3}, new int[] {3, 0},
+            new int[] {4, 5}, new int[] {5, 6}, new int[] {6, 7}, new int[] {7, 4},
+            new int[] {0, 4}, new int[] {1, 5}, new int[] {2, 6}, new int[] {3, 7}
+        };
+
+        foreach (var edge in edges)
+        {
+            var beam = Utilities.CreateEntityByName<CBeam>("beam");
+            if (beam == null)
+                continue;
+
+            beam.Teleport(corners[edge[0]], new QAngle(0, 0, 0), new Vector(0, 0, 0));
+            beam.EndPos.X = corners[edge[1]].X;
+            beam.EndPos.Y = corners[edge[1]].Y;
+            beam.EndPos.Z = corners[edge[1]].Z;
+            beam.Width = 2.0f;
+            beam.Render = color;
+            
+            beam.DispatchSpawn();
+            _zoneBeams.Add(beam);
+        }
     }
 
     private void LoadZones()
