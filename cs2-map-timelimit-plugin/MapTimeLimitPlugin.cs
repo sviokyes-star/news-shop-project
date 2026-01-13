@@ -23,18 +23,17 @@ public class MapTimeLimitPlugin : BasePlugin
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
+        RegisterEventHandler<EventCsIntermission>(OnMapEnd);
         
-        _mapStartTime = Server.CurrentTime;
-        
-        Server.NextFrame(() =>
+        AddTimer(5.0f, () =>
         {
+            _mapStartTime = Server.CurrentTime;
             SetMapTimeLimit(_timeLimitMinutes);
+            _checkTimer = AddTimer(10.0f, CheckTimeRemaining, TimerFlags.REPEAT);
         });
         
-        _checkTimer = AddTimer(10.0f, CheckTimeRemaining, TimerFlags.REPEAT);
-        
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
-        Console.WriteLine($"[{ModuleName}] Время карты установлено: {_timeLimitMinutes} минут");
+        Console.WriteLine($"[{ModuleName}] Время карты: {_timeLimitMinutes} минут");
     }
 
     [ConsoleCommand("css_timelimit", "Установить время карты")]
@@ -157,34 +156,46 @@ public class MapTimeLimitPlugin : BasePlugin
         return HookResult.Continue;
     }
 
+    private HookResult OnMapEnd(EventCsIntermission @event, GameEventInfo info)
+    {
+        return HookResult.Continue;
+    }
+
     private void CheckTimeRemaining()
     {
-        if (_timeLimitMinutes == 0)
+        if (_timeLimitMinutes == 0 || _mapStartTime == 0f)
             return;
 
-        float elapsedSeconds = Server.CurrentTime - _mapStartTime;
-        float totalSeconds = _timeLimitMinutes * 60f;
-        float remainingSeconds = totalSeconds - elapsedSeconds;
+        try
+        {
+            float elapsedSeconds = Server.CurrentTime - _mapStartTime;
+            float totalSeconds = _timeLimitMinutes * 60f;
+            float remainingSeconds = totalSeconds - elapsedSeconds;
 
-        if (remainingSeconds <= 60 && !_warningShown)
-        {
-            _warningShown = true;
-            Server.PrintToChatAll($" {ChatColors.Green}[Map Time]{ChatColors.Default} {ChatColors.Red}Осталась 1 минута до смены карты!");
-        }
-        else if (remainingSeconds <= 300 && remainingSeconds > 240 && !_warningShown)
-        {
-            Server.PrintToChatAll($" {ChatColors.Green}[Map Time]{ChatColors.Default} {ChatColors.Yellow}Осталось 5 минут до смены карты!");
-        }
-
-        if (remainingSeconds <= 0)
-        {
-            Server.PrintToChatAll($" {ChatColors.Green}[Map Time]{ChatColors.Default} {ChatColors.Red}Время истекло! Смена карты...");
-            Console.WriteLine("[Map Time] Лимит времени достигнут, смена карты");
-            
-            AddTimer(3.0f, () =>
+            if (remainingSeconds <= 60 && !_warningShown)
             {
-                Server.ExecuteCommand("mp_timelimit 0.1");
-            });
+                _warningShown = true;
+                Server.PrintToChatAll($" {ChatColors.Green}[Map Time]{ChatColors.Default} {ChatColors.Red}Осталась 1 минута до смены карты!");
+            }
+            else if (remainingSeconds <= 300 && remainingSeconds > 240 && !_warningShown)
+            {
+                Server.PrintToChatAll($" {ChatColors.Green}[Map Time]{ChatColors.Default} {ChatColors.Yellow}Осталось 5 минут до смены карты!");
+            }
+
+            if (remainingSeconds <= 0)
+            {
+                Server.PrintToChatAll($" {ChatColors.Green}[Map Time]{ChatColors.Default} {ChatColors.Red}Время истекло! Смена карты...");
+                Console.WriteLine("[Map Time] Лимит времени достигнут, смена карты");
+                
+                AddTimer(3.0f, () =>
+                {
+                    Server.ExecuteCommand("mp_timelimit 0.1");
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Map Time] Ошибка в CheckTimeRemaining: {ex.Message}");
         }
     }
 
