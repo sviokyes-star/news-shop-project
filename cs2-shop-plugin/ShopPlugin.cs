@@ -331,7 +331,7 @@ public class ShopPlugin : BasePlugin
                 if (marker == null)
                     continue;
 
-                marker.SetModel("models/weapons/w_eq_healthshot.vmdl");
+                marker.SetModel("models/weapons/w_c4_planted.vmdl");
                 var position = new Vector(spawn.X, spawn.Y, spawn.Z);
                 marker.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
                 marker.DispatchSpawn();
@@ -930,7 +930,7 @@ public class ShopPlugin : BasePlugin
             if (marker == null)
                 continue;
 
-            marker.SetModel("models/weapons/w_eq_healthshot.vmdl");
+            marker.SetModel("models/weapons/w_c4_planted.vmdl");
             var position = new Vector(spawn.X, spawn.Y, spawn.Z);
             marker.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
             marker.DispatchSpawn();
@@ -1441,7 +1441,7 @@ public class ShopPlugin : BasePlugin
         if (gift == null)
             return;
 
-        gift.SetModel("models/props/cs_office/cardboard_box01.mdl");
+        gift.SetModel("models/weapons/w_c4_planted.vmdl");
         gift.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
         gift.DispatchSpawn();
 
