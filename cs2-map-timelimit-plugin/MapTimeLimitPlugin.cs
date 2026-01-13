@@ -11,7 +11,7 @@ namespace MapTimeLimitPlugin;
 public class MapTimeLimitPlugin : BasePlugin
 {
     public override string ModuleName => "Map Time Limit";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.3";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Устанавливает время карты на 30 минут в CS2";
 
@@ -19,18 +19,12 @@ public class MapTimeLimitPlugin : BasePlugin
     private float _mapStartTime = 0f;
     private CounterStrikeSharp.API.Modules.Timers.Timer? _checkTimer;
     private bool _warningShown = false;
+    private bool _initialized = false;
 
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         RegisterEventHandler<EventCsIntermission>(OnMapEnd);
-        
-        AddTimer(5.0f, () =>
-        {
-            _mapStartTime = Server.CurrentTime;
-            SetMapTimeLimit(_timeLimitMinutes);
-            _checkTimer = AddTimer(10.0f, CheckTimeRemaining, TimerFlags.REPEAT);
-        });
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
         Console.WriteLine($"[{ModuleName}] Время карты: {_timeLimitMinutes} минут");
@@ -147,10 +141,16 @@ public class MapTimeLimitPlugin : BasePlugin
 
     private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
     {
-        if (_mapStartTime == 0f)
+        if (!_initialized)
         {
+            _initialized = true;
             _mapStartTime = Server.CurrentTime;
             _warningShown = false;
+            
+            SetMapTimeLimit(_timeLimitMinutes);
+            _checkTimer = AddTimer(10.0f, CheckTimeRemaining, TimerFlags.REPEAT);
+            
+            Console.WriteLine($"[{ModuleName}] Инициализация завершена, таймер запущен");
         }
 
         return HookResult.Continue;
