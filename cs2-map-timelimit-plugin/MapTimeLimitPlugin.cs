@@ -11,7 +11,7 @@ namespace MapTimeLimitPlugin;
 public class MapTimeLimitPlugin : BasePlugin
 {
     public override string ModuleName => "Map Time Limit";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Устанавливает время карты на 30 минут в CS2";
 
@@ -26,13 +26,18 @@ public class MapTimeLimitPlugin : BasePlugin
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         RegisterEventHandler<EventCsIntermission>(OnMapEnd);
         
-        Server.ExecuteCommand($"mp_roundtime {_timeLimitMinutes}");
-        Server.ExecuteCommand("mp_roundtime_deployment 0");
-        Server.ExecuteCommand("mp_roundtime_defuse 0");
-        Server.ExecuteCommand("mp_roundtime_hostage 0");
+        AddTimer(1.0f, () =>
+        {
+            Server.ExecuteCommand($"mp_roundtime {_timeLimitMinutes}");
+            Server.ExecuteCommand($"mp_roundtime_deployment {_timeLimitMinutes}");
+            Server.ExecuteCommand($"mp_roundtime_defuse {_timeLimitMinutes}");
+            Server.ExecuteCommand($"mp_roundtime_hostage {_timeLimitMinutes}");
+            Server.ExecuteCommand("mp_ignore_round_win_conditions 1");
+            
+            Console.WriteLine($"[{ModuleName}] Время раунда установлено: {_timeLimitMinutes} минут");
+        });
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
-        Console.WriteLine($"[{ModuleName}] Время раунда установлено: {_timeLimitMinutes} минут");
     }
 
     [ConsoleCommand("css_timelimit", "Установить время карты")]
@@ -54,6 +59,9 @@ public class MapTimeLimitPlugin : BasePlugin
         _warningShown = false;
         
         Server.ExecuteCommand($"mp_roundtime {minutes}");
+        Server.ExecuteCommand($"mp_roundtime_deployment {minutes}");
+        Server.ExecuteCommand($"mp_roundtime_defuse {minutes}");
+        Server.ExecuteCommand($"mp_roundtime_hostage {minutes}");
 
         string message = minutes == 0 
             ? "Лимит времени раунда отключен" 
