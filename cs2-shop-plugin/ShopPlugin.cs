@@ -103,8 +103,7 @@ public class ShopPlugin : BasePlugin
         ShowShopMenu(player);
     }
 
-    [ConsoleCommand("css_s1", "Пункт магазина 1")]
-    [ConsoleCommand("css_a1", "Пункт админ-панели 1")]
+    [ConsoleCommand("css_1", "Пункт меню 1")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu1Command(CCSPlayerController? player, CommandInfo command)
     {
@@ -136,8 +135,7 @@ public class ShopPlugin : BasePlugin
         }
     }
 
-    [ConsoleCommand("css_s2", "Пункт магазина 2")]
-    [ConsoleCommand("css_a2", "Пункт админ-панели 2")]
+    [ConsoleCommand("css_2", "Пункт меню 2")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu2Command(CCSPlayerController? player, CommandInfo command)
     {
@@ -168,8 +166,7 @@ public class ShopPlugin : BasePlugin
         }
     }
 
-    [ConsoleCommand("css_s3", "Пункт магазина 3")]
-    [ConsoleCommand("css_a3", "Пункт админ-панели 3")]
+    [ConsoleCommand("css_3", "Пункт меню 3")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu3Command(CCSPlayerController? player, CommandInfo command)
     {
@@ -196,7 +193,7 @@ public class ShopPlugin : BasePlugin
         }
     }
 
-    [ConsoleCommand("css_a4", "Пункт админ-панели 4")]
+    [ConsoleCommand("css_4", "Пункт меню 4")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu4Command(CCSPlayerController? player, CommandInfo command)
     {
@@ -235,7 +232,7 @@ public class ShopPlugin : BasePlugin
         ShowAdminPanel(player);
     }
 
-    [ConsoleCommand("css_a5", "Управление подарками")]
+    [ConsoleCommand("css_5", "Управление подарками")]
     [RequiresPermissions("@css/root")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu5Command(CCSPlayerController? player, CommandInfo command)
@@ -258,7 +255,7 @@ public class ShopPlugin : BasePlugin
         }
     }
 
-    [ConsoleCommand("css_a6", "Управление спавнами")]
+    [ConsoleCommand("css_6", "Управление спавнами")]
     [RequiresPermissions("@css/root")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu6Command(CCSPlayerController? player, CommandInfo command)
@@ -894,9 +891,9 @@ public class ShopPlugin : BasePlugin
         int totalItems = _shopItems.Count;
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {ChatColors.Gold}Золото: {data.Gold}{ChatColors.Default} | {ChatColors.Silver}Серебро: {data.Silver}");
-        player.PrintToChat($" {ChatColors.Yellow}Товары [{ownedItems}/{totalItems}]{ChatColors.Default} - !s1");
-        player.PrintToChat($" {ChatColors.Yellow}Продать [{ownedItems}]{ChatColors.Default} - !s2");
-        player.PrintToChat($" {ChatColors.Yellow}Инвентарь [{ownedItems}]{ChatColors.Default} - !s3");
+        player.PrintToChat($" {ChatColors.Yellow}Товары [{ownedItems}/{totalItems}]{ChatColors.Default} - !1");
+        player.PrintToChat($" {ChatColors.Yellow}Продать [{ownedItems}]{ChatColors.Default} - !2");
+        player.PrintToChat($" {ChatColors.Yellow}Инвентарь [{ownedItems}]{ChatColors.Default} - !3");
     }
 
     private void ShowShopCategories(CCSPlayerController player)
@@ -910,8 +907,8 @@ public class ShopPlugin : BasePlugin
         int totalTrails = _shopItems.Values.Count(i => i.Type == "trail");
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Категории товаров:");
-        player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !s1");
-        player.PrintToChat($" {ChatColors.Yellow}Следы [{ownedTrails}/{totalTrails}]{ChatColors.Default} - !s2");
+        player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !1");
+        player.PrintToChat($" {ChatColors.Yellow}Следы [{ownedTrails}/{totalTrails}]{ChatColors.Default} - !2");
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Назад: !shop");
     }
 
@@ -1041,16 +1038,16 @@ public class ShopPlugin : BasePlugin
     private void ShowAdminPanel(CCSPlayerController player)
     {
         player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Админ-панель:");
-        player.PrintToChat($" {ChatColors.Yellow}!a1{ChatColors.Default} - Управление игроками");
-        player.PrintToChat($" {ChatColors.Yellow}!a2{ChatColors.Default} - Модерация");
-        player.PrintToChat($" {ChatColors.Yellow}!a3{ChatColors.Default} - Читы и настройки");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Управление игроками");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Модерация");
+        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Читы и настройки");
         
         AddTimer(0.1f, () =>
         {
             if (!player.IsValid) return;
-            player.PrintToChat($" {ChatColors.Yellow}!a4{ChatColors.Default} - Настройки зон карт");
-            player.PrintToChat($" {ChatColors.Yellow}!a5{ChatColors.Default} - Управление подарками");
-            player.PrintToChat($" {ChatColors.Yellow}!a6{ChatColors.Default} - Управление спавнами");
+            player.PrintToChat($" {ChatColors.Yellow}!4{ChatColors.Default} - Настройки зон карт");
+            player.PrintToChat($" {ChatColors.Yellow}!5{ChatColors.Default} - Управление подарками");
+            player.PrintToChat($" {ChatColors.Yellow}!6{ChatColors.Default} - Управление спавнами");
         });
     }
 
