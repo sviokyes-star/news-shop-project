@@ -11,7 +11,7 @@ namespace MapTimeLimitPlugin;
 public class MapTimeLimitPlugin : BasePlugin
 {
     public override string ModuleName => "Map Time Limit";
-    public override string ModuleVersion => "1.0.3";
+    public override string ModuleVersion => "1.0.4";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Устанавливает время карты на 30 минут в CS2";
 
@@ -45,7 +45,7 @@ public class MapTimeLimitPlugin : BasePlugin
         }
 
         _timeLimitMinutes = minutes;
-        SetMapTimeLimit(minutes);
+        _mapStartTime = Server.CurrentTime;
         _warningShown = false;
 
         string message = minutes == 0 
@@ -105,7 +105,6 @@ public class MapTimeLimitPlugin : BasePlugin
         }
 
         _timeLimitMinutes += minutes;
-        SetMapTimeLimit(_timeLimitMinutes);
         _warningShown = false;
 
         if (caller != null)
@@ -147,10 +146,10 @@ public class MapTimeLimitPlugin : BasePlugin
             _mapStartTime = Server.CurrentTime;
             _warningShown = false;
             
-            SetMapTimeLimit(_timeLimitMinutes);
             _checkTimer = AddTimer(10.0f, CheckTimeRemaining, TimerFlags.REPEAT);
             
             Console.WriteLine($"[{ModuleName}] Инициализация завершена, таймер запущен");
+            Console.WriteLine($"[{ModuleName}] Карта будет играться {_timeLimitMinutes} минут с текущего момента");
         }
 
         return HookResult.Continue;
@@ -199,18 +198,7 @@ public class MapTimeLimitPlugin : BasePlugin
         }
     }
 
-    private void SetMapTimeLimit(int minutes)
-    {
-        try
-        {
-            Server.ExecuteCommand($"mp_timelimit {minutes}");
-            Console.WriteLine($"[Map Time] mp_timelimit установлен на {minutes} минут");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Map Time] Ошибка установки mp_timelimit: {ex.Message}");
-        }
-    }
+
 
     public override void Unload(bool hotReload)
     {
