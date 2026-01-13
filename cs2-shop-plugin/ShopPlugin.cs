@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -61,6 +61,16 @@ public class ShopPlugin : BasePlugin
     [ConsoleCommand("css_1", "Товары")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnMenu1Command(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ShowShopCategories(player);
+    }
+
+    [ConsoleCommand("css_1_1", "Скины")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnMenu1_1Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
@@ -312,12 +322,25 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Yellow}Инвентарь [{ownedItems}]{ChatColors.Default} - !3");
     }
 
+    private void ShowShopCategories(CCSPlayerController player)
+    {
+        ulong steamId = player.SteamID;
+        var data = GetPlayerData(steamId);
+
+        int ownedSkins = data.OwnedSkins.Count;
+        int totalSkins = _shopItems.Count;
+
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Категории товаров:");
+        player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !1.1");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Назад: !shop");
+    }
+
     private void ShowShopItems(CCSPlayerController player)
     {
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Доступные товары:");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Доступные скины:");
 
         bool hasAvailableItems = false;
         foreach (var item in _shopItems.Values)
@@ -335,11 +358,11 @@ public class ShopPlugin : BasePlugin
 
         if (!hasAvailableItems)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все товары! - !shop назад");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы купили все скины! - !1 назад");
         }
         else
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy <id> | Назад: !shop");
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy <id> | Назад: !1");
         }
     }
 
