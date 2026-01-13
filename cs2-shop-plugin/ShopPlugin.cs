@@ -902,8 +902,8 @@ public class ShopPlugin : BasePlugin
         {
             var item = items[i].Value;
             string price = item.GoldPrice > 0 
-                ? $"{ChatColors.Gold}{item.GoldPrice} 🪙" 
-                : $"{ChatColors.Silver}{item.SilverPrice} ⚪";
+                ? $"{item.GoldPrice:N0} золота".Replace(",", " ")
+                : $"{item.SilverPrice:N0} серебра".Replace(",", " ");
             
             string owned = (category == "skin" ? data.OwnedSkins : data.OwnedTrails).Contains(item.Id) 
                 ? $" {ChatColors.Green}[КУПЛЕНО]" 
