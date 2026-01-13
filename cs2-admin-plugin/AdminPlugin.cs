@@ -81,11 +81,6 @@ public class AdminPlugin : BasePlugin
             ShowPlayerManagementMenu(controller);
         });
 
-        menu.AddMenuOption("Модерация", (controller, option) =>
-        {
-            ShowModerationMenu(controller);
-        });
-
         menu.AddMenuOption("Читы и настройки", (controller, option) =>
         {
             ShowCheatsMenu(controller);
@@ -106,68 +101,6 @@ public class AdminPlugin : BasePlugin
     {
         var menu = new ChatMenu("Управление игроками");
 
-        menu.AddMenuOption("Телепортация к игроку", (controller, option) =>
-        {
-            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
-            {
-                if (controller.PlayerPawn.Value != null && target.PlayerPawn.Value != null)
-                {
-                    var targetPos = target.PlayerPawn.Value.AbsOrigin;
-                    if (targetPos != null)
-                    {
-                        controller.PlayerPawn.Value.Teleport(targetPos, target.PlayerPawn.Value.AbsRotation, new Vector(0, 0, 0));
-                        controller.PrintToChat($" {ChatColors.Green}[ADMIN] Телепортация к {target.PlayerName}");
-                    }
-                }
-            });
-        });
-
-        menu.AddMenuOption("Притянуть игрока", (controller, option) =>
-        {
-            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
-            {
-                if (controller.PlayerPawn.Value != null && target.PlayerPawn.Value != null)
-                {
-                    var callerPos = controller.PlayerPawn.Value.AbsOrigin;
-                    if (callerPos != null)
-                    {
-                        target.PlayerPawn.Value.Teleport(callerPos, controller.PlayerPawn.Value.AbsRotation, new Vector(0, 0, 0));
-                        controller.PrintToChat($" {ChatColors.Green}[ADMIN] {target.PlayerName} телепортирован к вам");
-                    }
-                }
-            });
-        });
-
-        menu.AddMenuOption("Возродить игрока", (controller, option) =>
-        {
-            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
-            {
-                target.Respawn();
-                controller.PrintToChat($" {ChatColors.Green}[ADMIN] {target.PlayerName} возрождён");
-            });
-        });
-
-        menu.AddMenuOption("← Назад", (controller, option) =>
-        {
-            ShowMainMenu(controller);
-        });
-
-        MenuManager.OpenChatMenu(player, menu);
-    }
-
-    private void ShowModerationMenu(CCSPlayerController player)
-    {
-        var menu = new ChatMenu("Модерация");
-
-        menu.AddMenuOption("Кикнуть игрока", (controller, option) =>
-        {
-            ShowPlayerSelectMenu(controller, "Выберите игрока для кика", (target) =>
-            {
-                Server.ExecuteCommand($"kickid {target.UserId}");
-                Server.PrintToChatAll($" {ChatColors.Red}[ADMIN] {controller.PlayerName} кикнул {target.PlayerName}");
-            });
-        });
-
         menu.AddMenuOption("Убить игрока", (controller, option) =>
         {
             ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
@@ -180,18 +113,33 @@ public class AdminPlugin : BasePlugin
             });
         });
 
-        menu.AddMenuOption("Ударить (10 урона)", (controller, option) =>
+        menu.AddMenuOption("Кикнуть игрока", (controller, option) =>
+        {
+            ShowPlayerSelectMenu(controller, "Выберите игрока для кика", (target) =>
+            {
+                Server.ExecuteCommand($"kickid {target.UserId}");
+                Server.PrintToChatAll($" {ChatColors.Red}[ADMIN] {controller.PlayerName} кикнул {target.PlayerName}");
+            });
+        });
+
+        menu.AddMenuOption("Забанить игрока", (controller, option) =>
+        {
+            ShowPlayerSelectMenu(controller, "Выберите игрока для бана", (target) =>
+            {
+                Server.ExecuteCommand($"banid 60 {target.UserId}");
+                Server.PrintToChatAll($" {ChatColors.Red}[ADMIN] {controller.PlayerName} забанил {target.PlayerName} на 60 минут");
+            });
+        });
+
+        menu.AddMenuOption("Шлепнуть игрока", (controller, option) =>
         {
             ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
             {
                 if (target.PlayerPawn.Value != null)
                 {
                     var pawn = target.PlayerPawn.Value;
-                    pawn.Health -= 10;
+                    pawn.Health -= 5;
                     
-                    if (pawn.Health <= 0)
-                        pawn.CommitSuicide(false, true);
-
                     var velocity = new Vector(
                         Random.Shared.Next(-100, 100),
                         Random.Shared.Next(-100, 100),
@@ -199,7 +147,7 @@ public class AdminPlugin : BasePlugin
                     );
                     pawn.Teleport(pawn.AbsOrigin, pawn.AbsRotation, velocity);
 
-                    Server.PrintToChatAll($" {ChatColors.Yellow}[ADMIN] {controller.PlayerName} ударил {target.PlayerName}");
+                    Server.PrintToChatAll($" {ChatColors.Yellow}[ADMIN] {controller.PlayerName} шлепнул {target.PlayerName}");
                 }
             });
         });
@@ -224,8 +172,48 @@ public class AdminPlugin : BasePlugin
                         target.PrintToChat($" {ChatColors.Red}[ADMIN] Вы заморожены");
                     }
 
-                    string status = isFrozen ? "разморозил" : "заморозил";
-                    Server.PrintToChatAll($" {ChatColors.Yellow}[ADMIN] {controller.PlayerName} {status} {target.PlayerName}");
+                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] {target.PlayerName} {(isFrozen ? "разморожен" : "заморожен")}");
+                }
+            });
+        });
+
+        menu.AddMenuOption("Возродить игрока", (controller, option) =>
+        {
+            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
+            {
+                target.Respawn();
+                controller.PrintToChat($" {ChatColors.Green}[ADMIN] {target.PlayerName} возрождён");
+            });
+        });
+
+        menu.AddMenuOption("Телепортировать к себе", (controller, option) =>
+        {
+            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
+            {
+                if (controller.PlayerPawn.Value != null && target.PlayerPawn.Value != null)
+                {
+                    var callerPos = controller.PlayerPawn.Value.AbsOrigin;
+                    if (callerPos != null)
+                    {
+                        target.PlayerPawn.Value.Teleport(callerPos, controller.PlayerPawn.Value.AbsRotation, new Vector(0, 0, 0));
+                        controller.PrintToChat($" {ChatColors.Green}[ADMIN] {target.PlayerName} телепортирован к вам");
+                    }
+                }
+            });
+        });
+
+        menu.AddMenuOption("Телепортироваться к игроку", (controller, option) =>
+        {
+            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
+            {
+                if (controller.PlayerPawn.Value != null && target.PlayerPawn.Value != null)
+                {
+                    var targetPos = target.PlayerPawn.Value.AbsOrigin;
+                    if (targetPos != null)
+                    {
+                        controller.PlayerPawn.Value.Teleport(targetPos, target.PlayerPawn.Value.AbsRotation, new Vector(0, 0, 0));
+                        controller.PrintToChat($" {ChatColors.Green}[ADMIN] Телепортация к {target.PlayerName}");
+                    }
                 }
             });
         });
@@ -238,11 +226,13 @@ public class AdminPlugin : BasePlugin
         MenuManager.OpenChatMenu(player, menu);
     }
 
+
+
     private void ShowCheatsMenu(CCSPlayerController player)
     {
         var menu = new ChatMenu("Читы и настройки");
 
-        menu.AddMenuOption("Noclip (себе)", (controller, option) =>
+        menu.AddMenuOption("Режим полёта (Noclip)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -252,18 +242,18 @@ public class AdminPlugin : BasePlugin
                 if (currentMode == MoveType_t.MOVETYPE_NOCLIP)
                 {
                     pawn.MoveType = MoveType_t.MOVETYPE_WALK;
-                    controller.PrintToChat($" {ChatColors.Red}[ADMIN] Noclip выключен");
+                    controller.PrintToChat($" {ChatColors.Red}[ADMIN] Режим полёта выключен");
                 }
                 else
                 {
                     pawn.MoveType = MoveType_t.MOVETYPE_NOCLIP;
-                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Noclip включен");
+                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Режим полёта включен");
                 }
             }
             ShowCheatsMenu(controller);
         });
 
-        menu.AddMenuOption("God Mode (себе)", (controller, option) =>
+        menu.AddMenuOption("Режим неуязвимости (God Mode)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -273,49 +263,14 @@ public class AdminPlugin : BasePlugin
                 pawn.TakesDamage = !isGod;
 
                 if (!isGod)
-                    controller.PrintToChat($" {ChatColors.Red}[ADMIN] Режим бога выключен");
+                    controller.PrintToChat($" {ChatColors.Red}[ADMIN] Режим неуязвимости выключен");
                 else
-                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Режим бога включен");
+                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Режим неуязвимости включен");
             }
             ShowCheatsMenu(controller);
         });
 
-        menu.AddMenuOption("Здоровье 200 HP", (controller, option) =>
-        {
-            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
-            {
-                if (target.PlayerPawn.Value != null)
-                {
-                    target.PlayerPawn.Value.Health = 200;
-                    target.PlayerPawn.Value.MaxHealth = 200;
-                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] {target.PlayerName} установлено 200 HP");
-                }
-            });
-        });
 
-        menu.AddMenuOption("Скорость x2", (controller, option) =>
-        {
-            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
-            {
-                if (target.PlayerPawn.Value != null)
-                {
-                    target.PlayerPawn.Value.VelocityModifier = 2.0f;
-                    controller.PrintToChat($" {ChatColors.Yellow}[ADMIN] {target.PlayerName} скорость x2");
-                }
-            });
-        });
-
-        menu.AddMenuOption("Гравитация 0.5x", (controller, option) =>
-        {
-            ShowPlayerSelectMenu(controller, "Выберите игрока", (target) =>
-            {
-                if (target.PlayerPawn.Value != null)
-                {
-                    target.PlayerPawn.Value.GravityScale = 0.5f;
-                    controller.PrintToChat($" {ChatColors.Yellow}[ADMIN] {target.PlayerName} гравитация 0.5x");
-                }
-            });
-        });
 
         menu.AddMenuOption("← Назад", (controller, option) =>
         {
