@@ -1033,12 +1033,14 @@ public class ShopPlugin : BasePlugin
 
     private void ShowAdminPanel(CCSPlayerController player)
     {
-        Server.NextFrame(() =>
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Админ-панель:");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Управление игроками");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Модерация");
+        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Читы и настройки");
+        
+        AddTimer(0.1f, () =>
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Админ-панель:");
-            player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Управление игроками");
-            player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Модерация");
-            player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Читы и настройки");
+            if (!player.IsValid) return;
             player.PrintToChat($" {ChatColors.Yellow}!4{ChatColors.Default} - Настройки зон карт");
             player.PrintToChat($" {ChatColors.Yellow}!5{ChatColors.Default} - Управление подарками");
             player.PrintToChat($" {ChatColors.Yellow}!6{ChatColors.Default} - Управление спавнами");
