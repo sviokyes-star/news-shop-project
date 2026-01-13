@@ -156,50 +156,223 @@ public class ShopPlugin : BasePlugin
         }
         else if (message.StartsWith("!addgift ", StringComparison.OrdinalIgnoreCase))
         {
-            string amountStr = message.Substring(9).Trim();
-            if (int.TryParse(amountStr, out int amount))
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
-                player.ExecuteClientCommand($"css_addgift {amount}");
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
             }
+
+            string amountStr = message.Substring(9).Trim();
+            if (!int.TryParse(amountStr, out int amount) || amount <= 0)
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Используйте: !addgift <сумма>");
+                return HookResult.Handled;
+            }
+
+            var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
+            if (playerPos == null)
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Не удалось получить позицию!");
+                return HookResult.Handled;
+            }
+
+            SpawnGiftBox(playerPos, amount);
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Подарок создан! Награда: {ChatColors.Silver}{amount} серебра");
             return HookResult.Handled;
         }
         else if (message.StartsWith("!addspawn ", StringComparison.OrdinalIgnoreCase))
         {
-            string team = message.Substring(10).Trim().ToUpper();
-            if (team == "CT" || team == "T")
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
             {
-                player.ExecuteClientCommand($"css_addspawn {team}");
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
             }
+
+            string team = message.Substring(10).Trim().ToUpper();
+            if (team != "CT" && team != "T")
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Используйте: !addspawn <CT/T>");
+                return HookResult.Handled;
+            }
+
+            var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
+            var playerAng = player.PlayerPawn?.Value?.EyeAngles;
+            
+            if (playerPos == null || playerAng == null)
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Не удалось получить позицию!");
+                return HookResult.Handled;
+            }
+
+            var spawnData = new SpawnData
+            {
+                X = playerPos.X,
+                Y = playerPos.Y,
+                Z = playerPos.Z,
+                AngleX = playerAng.X,
+                AngleY = playerAng.Y,
+                AngleZ = playerAng.Z,
+                Team = team
+            };
+
+            _customSpawns.Add(spawnData);
+            SaveSpawns();
+
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавн для {ChatColors.Yellow}{team}{ChatColors.Default} добавлен!");
             return HookResult.Handled;
         }
         else if (message.Equals("!removegifts", StringComparison.OrdinalIgnoreCase))
         {
-            player.ExecuteClientCommand("css_removegifts");
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
+            }
+
+            int count = _giftBoxes.Count;
+            
+            foreach (var gift in _giftBoxes)
+            {
+                gift?.Remove();
+            }
+            
+            _giftBoxes.Clear();
+            _giftPositions.Clear();
+            SaveGifts();
+            
+            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Удалено подарков: {count}");
             return HookResult.Handled;
         }
         else if (message.Equals("!listgifts", StringComparison.OrdinalIgnoreCase))
         {
-            player.ExecuteClientCommand("css_listgifts");
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
+            }
+
+            if (_giftPositions.Count == 0)
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Подарков нет");
+                return HookResult.Handled;
+            }
+
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список подарков:");
+
+            for (int i = 0; i < _giftPositions.Count; i++)
+            {
+                var gift = _giftPositions[i];
+                player.PrintToChat($" {ChatColors.Yellow}#{i + 1}{ChatColors.Default} Позиция: ({gift.X:F1}, {gift.Y:F1}, {gift.Z:F1}) | Награда: {gift.SilverAmount}");
+            }
             return HookResult.Handled;
         }
         else if (message.Equals("!removespawns", StringComparison.OrdinalIgnoreCase))
         {
-            player.ExecuteClientCommand("css_removespawns");
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
+            }
+
+            int count = _customSpawns.Count;
+            _customSpawns.Clear();
+            
+            foreach (var marker in _spawnMarkers)
+            {
+                marker?.Remove();
+            }
+            _spawnMarkers.Clear();
+            
+            SaveSpawns();
+            
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Удалено спавнов: {count}");
             return HookResult.Handled;
         }
         else if (message.Equals("!listspawns", StringComparison.OrdinalIgnoreCase))
         {
-            player.ExecuteClientCommand("css_listspawns");
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
+            }
+
+            if (_customSpawns.Count == 0)
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавнов нет");
+                return HookResult.Handled;
+            }
+
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список спавнов:");
+
+            for (int i = 0; i < _customSpawns.Count; i++)
+            {
+                var spawn = _customSpawns[i];
+                player.PrintToChat($" {ChatColors.Yellow}#{i + 1} [{spawn.Team}]{ChatColors.Default} Позиция: ({spawn.X:F1}, {spawn.Y:F1}, {spawn.Z:F1})");
+            }
             return HookResult.Handled;
         }
         else if (message.Equals("!showspawns", StringComparison.OrdinalIgnoreCase))
         {
-            player.ExecuteClientCommand("css_showspawns");
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
+            }
+
+            foreach (var marker in _spawnMarkers)
+            {
+                marker?.Remove();
+            }
+            _spawnMarkers.Clear();
+
+            foreach (var spawn in _customSpawns)
+            {
+                var marker = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
+                if (marker == null)
+                    continue;
+
+                marker.SetModel("models/weapons/w_eq_healthshot.vmdl");
+                var position = new Vector(spawn.X, spawn.Y, spawn.Z);
+                marker.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+                marker.DispatchSpawn();
+
+                if (spawn.Team == "CT")
+                {
+                    marker.Glow.GlowColorOverride = Color.FromArgb(255, 0, 150, 255);
+                }
+                else
+                {
+                    marker.Glow.GlowColorOverride = Color.FromArgb(255, 255, 50, 0);
+                }
+                
+                marker.Glow.GlowRange = 1000;
+                marker.Glow.GlowRangeMin = 0;
+                marker.Glow.GlowType = 3;
+                marker.Glow.GlowTeam = -1;
+
+                _spawnMarkers.Add(marker);
+            }
+
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Показано маркеров: {_spawnMarkers.Count}");
             return HookResult.Handled;
         }
         else if (message.Equals("!hidespawns", StringComparison.OrdinalIgnoreCase))
         {
-            player.ExecuteClientCommand("css_hidespawns");
+            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
+                return HookResult.Handled;
+            }
+
+            foreach (var marker in _spawnMarkers)
+            {
+                marker?.Remove();
+            }
+            
+            int count = _spawnMarkers.Count;
+            _spawnMarkers.Clear();
+
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Скрыто маркеров: {count}");
             return HookResult.Handled;
         }
         else if (message.StartsWith("!s", StringComparison.OrdinalIgnoreCase) && message.Length == 3 && char.IsDigit(message[2]))
