@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магазин</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #FFD700;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .balance {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            font-size: 24px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .balance-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .gold {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .silver {
+            color: #C0C0C0;
+            text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+        }
+
+        .items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 2px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .item:hover::before {
+            left: 100%;
+        }
+
+        .item:hover {
+            border-color: #FFD700;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .item.owned {
+            border-color: #00FF00;
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.15) 0%, rgba(0, 255, 0, 0.05) 100%);
+        }
+
+        .item.owned:hover {
+            border-color: #00FF00;
+            box-shadow: 0 10px 30px rgba(0, 255, 0, 0.3);
+        }
+
+        .item.selected {
+            border-color: #FFD700;
+            border-width: 3px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .item-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .item-price {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .item-status {
+            font-size: 14px;
+            color: #00FF00;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .item-button {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: black;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .item-button:hover {
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            transform: scale(1.05);
+        }
+
+        .item-button.set-skin {
+            background: linear-gradient(135deg, #00FF00 0%, #00CC00 100%);
+        }
+
+        .item-button.set-skin:hover {
+            background: linear-gradient(135deg, #00CC00 0%, #009900 100%);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #444;
+            font-size: 16px;
+            color: #888;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-hint {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .item.selected .item-name {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 МАГАЗИН</h1>
+        </div>
+
+        <div class="balance">
+            <div class="balance-item gold">
+                <span>🪙 Золото:</span>
+                <span id="gold-amount">0</span>
+            </div>
+            <div class="balance-item silver">
+                <span>⚪ Серебро:</span>
+                <span id="silver-amount">0</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-hint">⬅️ ➡️ Навигация</div>
+            <div class="control-hint">ENTER Купить/Надеть</div>
+            <div class="control-hint">ESC Закрыть</div>
+        </div>
+
+        <div class="items" id="items-container">
+            <!-- Товары будут добавлены через JavaScript -->
+        </div>
+
+        <div class="footer">
+            Убивайте врагов за серебро • Получайте MVP за золото • Покупайте скины
+        </div>
+    </div>
+
+    <script>
+        let selectedIndex = 0;
+        let shopData = {
+            gold: 0,
+            silver: 0,
+            items: [],
+            ownedSkins: []
+        };
+
+        // Инициализация данных магазина
+        function initShop(data) {
+            shopData = data;
+            updateBalance();
+            renderItems();
+        }
+
+        // Обновление баланса
+        function updateBalance() {
+            document.getElementById('gold-amount').textContent = shopData.gold;
+            document.getElementById('silver-amount').textContent = shopData.silver;
+        }
+
+        // Рендеринг товаров
+        function renderItems() {
+            const container = document.getElementById('items-container');
+            container.innerHTML = '';
+
+            shopData.items.forEach((item, index) => {
+                const isOwned = shopData.ownedSkins.includes(item.id);
+                const isSelected = index === selectedIndex;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `item${isOwned ? ' owned' : ''}${isSelected ? ' selected' : ''}`;
+                itemDiv.onclick = () => selectItem(index);
+                
+                const price = item.goldPrice > 0 ? `${item.goldPrice} 🪙` : `${item.silverPrice} ⚪`;
+                
+                itemDiv.innerHTML = `
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">${price}</div>
+                    ${isOwned ? '<div class="item-status">✓ КУПЛЕНО</div>' : ''}
+                    <button class="item-button ${isOwned ? 'set-skin' : ''}" 
+                            onclick="event.stopPropagation(); ${isOwned ? `setSkin('${item.id}')` : `buyItem('${item.id}')`}">
+                        ${isOwned ? 'НАДЕТЬ' : 'КУПИТЬ'}
+                    </button>
+                `;
+                
+                container.appendChild(itemDiv);
+            });
+        }
+
+        // Выбор товара
+        function selectItem(index) {
+            selectedIndex = index;
+            renderItems();
+        }
+
+        // Навигация клавишами
+        document.addEventListener('keydown', function(e) {
+            const itemsCount = shopData.items.length;
+            
+            if (e.key === 'ArrowRight') {
+                selectedIndex = (selectedIndex + 1) % itemsCount;
+                renderItems();
+                e.preventDefault();
+            } else if (e.key === 'ArrowLeft') {
+                selectedIndex = (selectedIndex - 1 + itemsCount) % itemsCount;
+                renderItems();
+                e.preventDefault();
+            } else if (e.key === 'ArrowDown') {
+                selectedIndex = Math.min(selectedIndex + 3, itemsCount - 1);
+                renderItems();
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+                selectedIndex = Math.max(selectedIndex - 3, 0);
+                renderItems();
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                const item = shopData.items[selectedIndex];
+                const isOwned = shopData.ownedSkins.includes(item.id);
+                if (isOwned) {
+                    setSkin(item.id);
+                } else {
+                    buyItem(item.id);
+                }
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                closeShop();
+                e.preventDefault();
+            }
+        });
+
+        // Покупка товара
+        function buyItem(itemId) {
+            console.log('buy', itemId);
+            if (typeof engine !== 'undefined') {
+                engine.call('BuyItem', itemId);
+            } else {
+                // Эмуляция для тестирования
+                alert('Покупка: ' + itemId);
+            }
+        }
+
+        // Надеть скин
+        function setSkin(itemId) {
+            console.log('setskin', itemId);
+            if (typeof engine !== 'undefined') {
+                engine.call('SetSkin', itemId);
+            } else {
+                // Эмуляция для тестирования
+                alert('Надеть скин: ' + itemId);
+            }
+        }
+
+        // Закрыть магазин
+        function closeShop() {
+            console.log('close shop');
+            if (typeof engine !== 'undefined') {
+                engine.call('CloseShop');
+            } else {
+                window.close();
+            }
+        }
+
+        // Тестовые данные (для разработки)
+        if (typeof engine === 'undefined') {
+            initShop({
+                gold: 25,
+                silver: 150,
+                items: [
+                    { id: 'skin1', name: 'Огненный воин', goldPrice: 10, silverPrice: 0 },
+                    { id: 'skin2', name: 'Ледяной страж', goldPrice: 15, silverPrice: 0 },
+                    { id: 'skin3', name: 'Темный рыцарь', goldPrice: 20, silverPrice: 0 },
+                    { id: 'skin4', name: 'Золотой боец', goldPrice: 0, silverPrice: 100 },
+                    { id: 'skin5', name: 'Призрак', goldPrice: 0, silverPrice: 150 }
+                ],
+                ownedSkins: ['skin1', 'skin4']
+            });
+        }
+    </script>
+</body>
+</html>
