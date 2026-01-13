@@ -98,7 +98,7 @@ public class ShopPlugin : BasePlugin
             return;
 
         ulong steamId = player.SteamID;
-        _playerMenuContext[steamId] = "main";
+        _playerMenuContext[steamId] = "shop_main";
         ShowShopMenu(player);
     }
 
@@ -110,20 +110,21 @@ public class ShopPlugin : BasePlugin
             return;
 
         ulong steamId = player.SteamID;
-        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "main";
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
         switch (context)
         {
-            case "main":
-                _playerMenuContext[steamId] = "categories";
+            case "shop_main":
+                _playerMenuContext[steamId] = "shop_categories";
                 ShowShopCategories(player);
                 break;
-            case "categories":
+            case "shop_categories":
                 ShowShopItems(player, "skin");
                 break;
-
+            case "admin_main":
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 1: Управление игроками");
+                break;
             default:
-                ShowShopCategories(player);
                 break;
         }
     }
@@ -136,19 +137,20 @@ public class ShopPlugin : BasePlugin
             return;
 
         ulong steamId = player.SteamID;
-        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "main";
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
         switch (context)
         {
-            case "main":
+            case "shop_main":
                 ShowSellMenu(player);
                 break;
-            case "categories":
+            case "shop_categories":
                 ShowShopItems(player, "trail");
                 break;
-
+            case "admin_main":
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 2: Модерация");
+                break;
             default:
-                ShowSellMenu(player);
                 break;
         }
     }
@@ -161,11 +163,32 @@ public class ShopPlugin : BasePlugin
             return;
 
         ulong steamId = player.SteamID;
-        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "main";
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        if (context == "main")
+        switch (context)
         {
-            ShowInventory(player);
+            case "shop_main":
+                ShowInventory(player);
+                break;
+            case "admin_main":
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 3: Читы и настройки");
+                break;
+        }
+    }
+
+    [ConsoleCommand("css_4", "Пункт меню 4")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnMenu4Command(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
+
+        if (context == "admin_main")
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 4: Настройки зон карт");
         }
     }
 
@@ -183,6 +206,8 @@ public class ShopPlugin : BasePlugin
             return;
         }
 
+        ulong steamId = player.SteamID;
+        _playerMenuContext[steamId] = "admin_main";
         ShowAdminPanel(player);
     }
 
