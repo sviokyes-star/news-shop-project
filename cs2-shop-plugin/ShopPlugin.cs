@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.6";
+    public override string ModuleVersion => "1.0.7";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -68,9 +68,9 @@ public class ShopPlugin : BasePlugin
         ShowShopCategories(player);
     }
 
-    [ConsoleCommand("css_1_1", "Скины")]
+    [ConsoleCommand("css_11", "Скины")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnMenu1_1Command(CCSPlayerController? player, CommandInfo command)
+    public void OnMenu11Command(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
@@ -331,7 +331,7 @@ public class ShopPlugin : BasePlugin
         int totalSkins = _shopItems.Count;
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Категории товаров:");
-        player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !1.1");
+        player.PrintToChat($" {ChatColors.Yellow}Скины [{ownedSkins}/{totalSkins}]{ChatColors.Default} - !11");
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Назад: !shop");
     }
 
