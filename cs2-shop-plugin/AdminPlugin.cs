@@ -302,7 +302,8 @@ public class AdminPlugin : BasePlugin
         }
         else if (context == "admin_player_select")
         {
-            if (AdminManager.PlayerHasPermissions(player, "@css/root"))\n            {
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
                 ExecutePlayerAction(player, 6);
             }
         }
