@@ -113,6 +113,8 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
+        Console.WriteLine($"[Shop DEBUG] Игрок {player.PlayerName} нажал !1, контекст: '{context}'");
+
         // Приоритет админ-панели
         if (context == "admin_main")
         {
