@@ -203,9 +203,13 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        if (context == "admin_main" && AdminManager.PlayerHasPermissions(player, "@css/root"))
+        if (context == "admin_main")
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 4: Настройки зон карт");
+            if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            {
+                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 4: Настройки зон карт");
+            }
+            return;
         }
     }
 
