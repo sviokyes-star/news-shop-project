@@ -3,19 +3,18 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
-using CounterStrikeSharp.API.Modules.Cvars;
+using CounterStrikeSharp.API.Modules.Timers;
 
 namespace NoSuicideKickPlugin;
 
 public class NoSuicideKickPlugin : BasePlugin
 {
     public override string ModuleName => "No Suicide Kick";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Отключает кик игроков за самоубийства в CS2";
 
     private readonly Dictionary<int, int> _suicideCount = new();
-    private ConVar? _maxSuicides;
 
     public override void Load(bool hotReload)
     {
@@ -23,19 +22,12 @@ public class NoSuicideKickPlugin : BasePlugin
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
         
-        _maxSuicides = ConVar.Find("mp_autokick");
-        
-        if (_maxSuicides != null)
+        AddTimer(1.0f, () =>
         {
-            _maxSuicides.SetValue(false);
-            Console.WriteLine($"[{ModuleName}] mp_autokick отключен");
-        }
-        
-        var teamKillKick = ConVar.Find("mp_autoteambalance");
-        if (teamKillKick != null)
-        {
-            Console.WriteLine($"[{ModuleName}] Текущее значение mp_autoteambalance: {teamKillKick.GetPrimitiveValue<bool>()}");
-        }
+            Server.ExecuteCommand("mp_autokick 0");
+            Server.ExecuteCommand("mp_tkpunish 0");
+            Console.WriteLine($"[{ModuleName}] mp_autokick и mp_tkpunish отключены");
+        });
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
