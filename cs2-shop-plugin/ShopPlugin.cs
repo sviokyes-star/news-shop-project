@@ -12,7 +12,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.1.3";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -23,10 +23,13 @@ public class ShopPlugin : BasePlugin
     private readonly List<CBaseModelEntity> _giftBoxes = new();
     private readonly Dictionary<ulong, HashSet<int>> _collectedGifts = new();
     private readonly List<GiftData> _giftPositions = new();
+    private readonly List<CBaseModelEntity> _spawnMarkers = new();
+    private readonly List<SpawnData> _customSpawns = new();
     private const float PreviewDuration = 30.0f;
     private const int GiftSilverReward = 1000;
     private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
     private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts_data.json");
+    private string SpawnsFilePath => Path.Combine(ModuleDirectory, "spawns_data.json");
 
     private class PlayerData
     {
@@ -56,6 +59,17 @@ public class ShopPlugin : BasePlugin
         public int SilverAmount { get; set; }
     }
 
+    private class SpawnData
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+        public float AngleX { get; set; }
+        public float AngleY { get; set; }
+        public float AngleZ { get; set; }
+        public string Team { get; set; } = "CT";
+    }
+
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
@@ -64,6 +78,7 @@ public class ShopPlugin : BasePlugin
         
         LoadData();
         LoadGifts();
+        LoadSpawns();
         InitializeShopItems();
         
         AddTimer(1.0f, CheckGiftPickups, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
@@ -71,6 +86,7 @@ public class ShopPlugin : BasePlugin
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
         Console.WriteLine($"[{ModuleName}] Магазин содержит {_shopItems.Count} товаров");
         Console.WriteLine($"[{ModuleName}] Загружено подарков: {_giftPositions.Count}");
+        Console.WriteLine($"[{ModuleName}] Загружено спавнов: {_customSpawns.Count}");
     }
 
     [ConsoleCommand("css_shop", "Открыть магазин")]
@@ -146,6 +162,39 @@ public class ShopPlugin : BasePlugin
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Ваш баланс:");
         player.PrintToChat($" {ChatColors.Gold}🪙 Золото: {data.Gold}");
         player.PrintToChat($" {ChatColors.Silver}⚪ Серебро: {data.Silver}");
+    }
+
+    [ConsoleCommand("css_admin", "Админ-панель")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnAdminCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ShowAdminPanel(player);
+    }
+
+    [ConsoleCommand("css_admin_gifts", "Управление подарками")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnAdminGiftsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ShowGiftsManagement(player);
+    }
+
+    [ConsoleCommand("css_admin_spawns", "Управление спавнами")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnAdminSpawnsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        ShowSpawnsManagement(player);
     }
 
     [ConsoleCommand("css_buy", "Купить товар")]
@@ -476,6 +525,194 @@ public class ShopPlugin : BasePlugin
             Console.WriteLine($"[Shop] Удалено подарков: {count}");
     }
 
+    [ConsoleCommand("css_listgifts", "Список всех подарков")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnListGiftsCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (_giftPositions.Count == 0)
+        {
+            if (caller != null)
+                caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Подарков нет");
+            else
+                Console.WriteLine("[Shop] Подарков нет");
+            return;
+        }
+
+        if (caller != null)
+            caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список подарков:");
+
+        for (int i = 0; i < _giftPositions.Count; i++)
+        {
+            var gift = _giftPositions[i];
+            string msg = $" {ChatColors.Yellow}#{i + 1}{ChatColors.Default} Позиция: ({gift.X:F1}, {gift.Y:F1}, {gift.Z:F1}) | Награда: {gift.SilverAmount}";
+            
+            if (caller != null)
+                caller.PrintToChat(msg);
+            else
+                Console.WriteLine($"[Shop] #{i + 1} Позиция: ({gift.X:F1}, {gift.Y:F1}, {gift.Z:F1}) | Награда: {gift.SilverAmount}");
+        }
+    }
+
+    [ConsoleCommand("css_addspawn", "Добавить спавн")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 1, usage: "<CT/T>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnAddSpawnCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        string team = command.GetArg(1).ToUpper();
+        if (team != "CT" && team != "T")
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Используйте: !addspawn <CT/T>");
+            return;
+        }
+
+        var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
+        var playerAng = player.PlayerPawn?.Value?.EyeAngles;
+        
+        if (playerPos == null || playerAng == null)
+        {
+            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Не удалось получить позицию!");
+            return;
+        }
+
+        var spawnData = new SpawnData
+        {
+            X = playerPos.X,
+            Y = playerPos.Y,
+            Z = playerPos.Z,
+            AngleX = playerAng.X,
+            AngleY = playerAng.Y,
+            AngleZ = playerAng.Z,
+            Team = team
+        };
+
+        _customSpawns.Add(spawnData);
+        SaveSpawns();
+
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавн для {ChatColors.Yellow}{team}{ChatColors.Default} добавлен!");
+        Console.WriteLine($"[Shop] Спавн добавлен: {team} на ({playerPos.X:F1}, {playerPos.Y:F1}, {playerPos.Z:F1})");
+    }
+
+    [ConsoleCommand("css_removespawns", "Удалить все спавны")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnRemoveSpawnsCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        int count = _customSpawns.Count;
+        _customSpawns.Clear();
+        
+        foreach (var marker in _spawnMarkers)
+        {
+            marker?.Remove();
+        }
+        _spawnMarkers.Clear();
+        
+        SaveSpawns();
+        
+        string msg = $" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Удалено спавнов: {count}";
+        
+        if (caller != null)
+            caller.PrintToChat(msg);
+        else
+            Console.WriteLine($"[Shop] Удалено спавнов: {count}");
+    }
+
+    [ConsoleCommand("css_listspawns", "Список всех спавнов")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnListSpawnsCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (_customSpawns.Count == 0)
+        {
+            if (caller != null)
+                caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавнов нет");
+            else
+                Console.WriteLine("[Shop] Спавнов нет");
+            return;
+        }
+
+        if (caller != null)
+            caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список спавнов:");
+
+        for (int i = 0; i < _customSpawns.Count; i++)
+        {
+            var spawn = _customSpawns[i];
+            string msg = $" {ChatColors.Yellow}#{i + 1} [{spawn.Team}]{ChatColors.Default} Позиция: ({spawn.X:F1}, {spawn.Y:F1}, {spawn.Z:F1})";
+            
+            if (caller != null)
+                caller.PrintToChat(msg);
+            else
+                Console.WriteLine($"[Shop] #{i + 1} [{spawn.Team}] Позиция: ({spawn.X:F1}, {spawn.Y:F1}, {spawn.Z:F1})");
+        }
+    }
+
+    [ConsoleCommand("css_showspawns", "Показать маркеры спавнов")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnShowSpawnsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        foreach (var marker in _spawnMarkers)
+        {
+            marker?.Remove();
+        }
+        _spawnMarkers.Clear();
+
+        foreach (var spawn in _customSpawns)
+        {
+            var marker = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
+            if (marker == null)
+                continue;
+
+            marker.SetModel("models/props/cs_office/cardboard_box01.mdl");
+            var position = new Vector(spawn.X, spawn.Y, spawn.Z);
+            marker.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+            marker.DispatchSpawn();
+
+            if (spawn.Team == "CT")
+            {
+                marker.Glow.GlowColorOverride = Color.FromArgb(255, 0, 150, 255);
+            }
+            else
+            {
+                marker.Glow.GlowColorOverride = Color.FromArgb(255, 255, 50, 0);
+            }
+            
+            marker.Glow.GlowRange = 1000;
+            marker.Glow.GlowRangeMin = 0;
+            marker.Glow.GlowType = 3;
+            marker.Glow.GlowTeam = -1;
+
+            _spawnMarkers.Add(marker);
+        }
+
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Показано маркеров: {_spawnMarkers.Count}");
+    }
+
+    [ConsoleCommand("css_hidespawns", "Скрыть маркеры спавнов")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnHideSpawnsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        foreach (var marker in _spawnMarkers)
+        {
+            marker?.Remove();
+        }
+        
+        int count = _spawnMarkers.Count;
+        _spawnMarkers.Clear();
+
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Скрыто маркеров: {count}");
+    }
+
     private HookResult OnPlayerConnect(EventPlayerConnectFull @event, GameEventInfo info)
     {
         var player = @event.Userid;
@@ -683,6 +920,36 @@ public class ShopPlugin : BasePlugin
         }
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Надеть: !setskin <id> | Назад: !shop");
+    }
+
+    private void ShowAdminPanel(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Админ-панель:");
+        player.PrintToChat($" {ChatColors.Yellow}Подарки [{_giftPositions.Count}]{ChatColors.Default} - !admin_gifts");
+        player.PrintToChat($" {ChatColors.Yellow}Спавны [{_customSpawns.Count}]{ChatColors.Default} - !admin_spawns");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !shop");
+    }
+
+    private void ShowGiftsManagement(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление подарками:");
+        player.PrintToChat($" {ChatColors.Yellow}Текущих подарков:{ChatColors.Default} {_giftPositions.Count}");
+        player.PrintToChat($" {ChatColors.Yellow}!addgift <сумма>{ChatColors.Default} - создать подарок (по умолчанию {GiftSilverReward})");
+        player.PrintToChat($" {ChatColors.Yellow}!removegifts{ChatColors.Default} - удалить все подарки");
+        player.PrintToChat($" {ChatColors.Yellow}!listgifts{ChatColors.Default} - список всех подарков");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
+    }
+
+    private void ShowSpawnsManagement(CCSPlayerController player)
+    {
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Управление спавнами:");
+        player.PrintToChat($" {ChatColors.Yellow}Текущих спавнов:{ChatColors.Default} {_customSpawns.Count}");
+        player.PrintToChat($" {ChatColors.Yellow}!addspawn <CT/T>{ChatColors.Default} - добавить спавн");
+        player.PrintToChat($" {ChatColors.Yellow}!removespawns{ChatColors.Default} - удалить все спавны");
+        player.PrintToChat($" {ChatColors.Yellow}!listspawns{ChatColors.Default} - список спавнов");
+        player.PrintToChat($" {ChatColors.Yellow}!showspawns{ChatColors.Default} - показать маркеры спавнов");
+        player.PrintToChat($" {ChatColors.Yellow}!hidespawns{ChatColors.Default} - скрыть маркеры");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Назад: !admin");
     }
 
     private void BuyItem(CCSPlayerController player, string itemId)
@@ -976,10 +1243,47 @@ public class ShopPlugin : BasePlugin
         _giftBoxes.Add(gift);
     }
 
+    private void LoadSpawns()
+    {
+        try
+        {
+            if (!File.Exists(SpawnsFilePath))
+                return;
+
+            string json = File.ReadAllText(SpawnsFilePath);
+            var spawns = JsonSerializer.Deserialize<List<SpawnData>>(json);
+
+            if (spawns == null)
+                return;
+
+            _customSpawns.AddRange(spawns);
+
+            Console.WriteLine($"[{ModuleName}] Загружено спавнов: {_customSpawns.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки спавнов: {ex.Message}");
+        }
+    }
+
+    private void SaveSpawns()
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(_customSpawns, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(SpawnsFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения спавнов: {ex.Message}");
+        }
+    }
+
     public override void Unload(bool hotReload)
     {
         SaveData();
         SaveGifts();
+        SaveSpawns();
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 }
