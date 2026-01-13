@@ -7,6 +7,7 @@ using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Drawing;
 
 namespace TimerPlugin;
 
@@ -534,35 +535,48 @@ public class TimerPlugin : BasePlugin
             return;
 
         var zones = _mapZones[mapName];
-        var players = Utilities.GetPlayers();
         
-        foreach (var player in players)
+        if (zones.StartMin != null && zones.StartMax != null)
         {
-            if (player?.IsValid != true || player.PlayerPawn.Value == null)
-                continue;
-                
-            var position = player.PlayerPawn.Value.AbsOrigin;
-            if (position == null)
-                continue;
-            
-            if (zones.StartMin != null && zones.StartMax != null)
-            {
-                bool inStart = IsInZone(position, zones.StartMin, zones.StartMax);
-                if (inStart)
-                {
-                    player.PrintToCenterHtml($"<font color='#00FF00' class='fontSize-xl'>🟩 ЗОНА СТАРТА</font>");
-                }
-            }
-            
-            if (zones.EndMin != null && zones.EndMax != null)
-            {
-                bool inEnd = IsInZone(position, zones.EndMin, zones.EndMax);
-                if (inEnd)
-                {
-                    player.PrintToCenterHtml($"<font color='#FF0000' class='fontSize-xl'>🟥 ЗОНА ФИНИША</font>");
-                }
-            }
+            DrawBox(zones.StartMin, zones.StartMax, Color.FromArgb(100, 0, 255, 0));
         }
+        
+        if (zones.EndMin != null && zones.EndMax != null)
+        {
+            DrawBox(zones.EndMin, zones.EndMax, Color.FromArgb(100, 255, 0, 0));
+        }
+    }
+
+    private void DrawBox(Vector min, Vector max, Color color)
+    {
+        float duration = 0.2f;
+        
+        var corners = new Vector[]
+        {
+            new Vector(min.X, min.Y, min.Z),
+            new Vector(max.X, min.Y, min.Z),
+            new Vector(max.X, max.Y, min.Z),
+            new Vector(min.X, max.Y, min.Z),
+            new Vector(min.X, min.Y, max.Z),
+            new Vector(max.X, min.Y, max.Z),
+            new Vector(max.X, max.Y, max.Z),
+            new Vector(min.X, max.Y, max.Z)
+        };
+        
+        NativeAPI.DebugOverlayLine(corners[0], corners[1], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[1], corners[2], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[2], corners[3], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[3], corners[0], color.R, color.G, color.B, color.A, false, duration);
+        
+        NativeAPI.DebugOverlayLine(corners[4], corners[5], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[5], corners[6], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[6], corners[7], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[7], corners[4], color.R, color.G, color.B, color.A, false, duration);
+        
+        NativeAPI.DebugOverlayLine(corners[0], corners[4], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[1], corners[5], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[2], corners[6], color.R, color.G, color.B, color.A, false, duration);
+        NativeAPI.DebugOverlayLine(corners[3], corners[7], color.R, color.G, color.B, color.A, false, duration);
     }
 
     private void LoadZones()
