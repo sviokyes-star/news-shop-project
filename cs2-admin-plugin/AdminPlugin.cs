@@ -304,13 +304,7 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                var position = controller.PlayerPawn.Value.AbsOrigin;
-                if (position != null)
-                {
-                    Server.ExecuteCommand($"css_setstart");
-                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Зона старта установлена!");
-                    controller.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
-                }
+                controller.ExecuteClientCommand($"css_setstart");
             }
             ShowZonesMenu(controller);
         });
@@ -319,20 +313,14 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                var position = controller.PlayerPawn.Value.AbsOrigin;
-                if (position != null)
-                {
-                    Server.ExecuteCommand($"css_setend");
-                    controller.PrintToChat($" {ChatColors.Green}[ADMIN] Зона финиша установлена!");
-                    controller.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
-                }
+                controller.ExecuteClientCommand($"css_setend");
             }
             ShowZonesMenu(controller);
         });
 
         menu.AddMenuOption("📋 Показать текущие зоны", (controller, option) =>
         {
-            Server.ExecuteCommand($"css_showzones");
+            controller.ExecuteClientCommand($"css_showzones");
             ShowZonesMenu(controller);
         });
 
@@ -352,8 +340,7 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                Server.ExecuteCommand($"css_addgift 1000");
-                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Подарок добавлен на вашей позиции!");
+                controller.ExecuteClientCommand($"css_addgift 1000");
             }
             ShowGiftsMenu(controller);
         });
@@ -362,8 +349,7 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                Server.ExecuteCommand($"css_addgift 5000");
-                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Подарок добавлен на вашей позиции!");
+                controller.ExecuteClientCommand($"css_addgift 5000");
             }
             ShowGiftsMenu(controller);
         });
@@ -372,22 +358,20 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                Server.ExecuteCommand($"css_addgift 10000");
-                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Подарок добавлен на вашей позиции!");
+                controller.ExecuteClientCommand($"css_addgift 10000");
             }
             ShowGiftsMenu(controller);
         });
 
         menu.AddMenuOption("📋 Список всех подарков", (controller, option) =>
         {
-            Server.ExecuteCommand($"css_listgifts");
+            controller.ExecuteClientCommand($"css_listgifts");
             ShowGiftsMenu(controller);
         });
 
         menu.AddMenuOption("🗑️ Удалить все подарки", (controller, option) =>
         {
-            Server.ExecuteCommand($"css_removegifts");
-            controller.PrintToChat($" {ChatColors.Red}[ADMIN] Все подарки удалены!");
+            controller.ExecuteClientCommand($"css_removegifts");
             ShowGiftsMenu(controller);
         });
 
@@ -407,8 +391,7 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                Server.ExecuteCommand($"css_addspawn CT");
-                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Спавн CT добавлен на вашей позиции!");
+                controller.ExecuteClientCommand($"css_addspawn CT");
             }
             ShowSpawnsMenu(controller);
         });
@@ -417,36 +400,32 @@ public class AdminPlugin : BasePlugin
         {
             if (controller.PlayerPawn.Value != null)
             {
-                Server.ExecuteCommand($"css_addspawn T");
-                controller.PrintToChat($" {ChatColors.Green}[ADMIN] Спавн T добавлен на вашей позиции!");
+                controller.ExecuteClientCommand($"css_addspawn T");
             }
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("📋 Список всех спавнов", (controller, option) =>
         {
-            Server.ExecuteCommand($"css_listspawns");
+            controller.ExecuteClientCommand($"css_listspawns");
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("👁️ Показать маркеры спавнов", (controller, option) =>
         {
-            Server.ExecuteCommand($"css_showspawns");
-            controller.PrintToChat($" {ChatColors.Green}[ADMIN] Маркеры спавнов показаны!");
+            controller.ExecuteClientCommand($"css_showspawns");
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("🚫 Скрыть маркеры спавнов", (controller, option) =>
         {
-            Server.ExecuteCommand($"css_hidespawns");
-            controller.PrintToChat($" {ChatColors.Green}[ADMIN] Маркеры спавнов скрыты!");
+            controller.ExecuteClientCommand($"css_hidespawns");
             ShowSpawnsMenu(controller);
         });
 
         menu.AddMenuOption("🗑️ Удалить все спавны", (controller, option) =>
         {
-            Server.ExecuteCommand($"css_removespawns");
-            controller.PrintToChat($" {ChatColors.Red}[ADMIN] Все спавны удалены!");
+            controller.ExecuteClientCommand($"css_removespawns");
             ShowSpawnsMenu(controller);
         });
 
