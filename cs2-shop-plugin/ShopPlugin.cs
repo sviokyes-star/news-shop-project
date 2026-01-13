@@ -122,7 +122,10 @@ public class ShopPlugin : BasePlugin
                 ShowShopItems(player, "skin");
                 break;
             case "admin_main":
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 1: Управление игроками");
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                {
+                    player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 1: Управление игроками");
+                }
                 break;
             default:
                 break;
@@ -148,7 +151,10 @@ public class ShopPlugin : BasePlugin
                 ShowShopItems(player, "trail");
                 break;
             case "admin_main":
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 2: Модерация");
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                {
+                    player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 2: Модерация");
+                }
                 break;
             default:
                 break;
@@ -171,7 +177,10 @@ public class ShopPlugin : BasePlugin
                 ShowInventory(player);
                 break;
             case "admin_main":
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 3: Читы и настройки");
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                {
+                    player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 3: Читы и настройки");
+                }
                 break;
         }
     }
@@ -186,7 +195,7 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "";
 
-        if (context == "admin_main")
+        if (context == "admin_main" && AdminManager.PlayerHasPermissions(player, "@css/root"))
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Раздел 4: Настройки зон карт");
         }
