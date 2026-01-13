@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.3";
+    public override string ModuleVersion => "1.0.4";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -40,8 +40,6 @@ public class ShopPlugin : BasePlugin
     {
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
-        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
-        RegisterEventHandler<EventRoundMvp>(OnRoundMvp);
         
         LoadData();
         InitializeShopItems();
@@ -298,39 +296,7 @@ public class ShopPlugin : BasePlugin
         return HookResult.Continue;
     }
 
-    private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
-    {
-        var attacker = @event.Attacker;
-        
-        if (attacker == null || !attacker.IsValid || attacker.IsBot)
-            return HookResult.Continue;
 
-        var victim = @event.Userid;
-        if (victim == attacker)
-            return HookResult.Continue;
-
-        var data = GetPlayerData(attacker.SteamID);
-        data.Silver += 1;
-        
-        attacker.PrintToCenter($"+1 ⚪ Серебро");
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnRoundMvp(EventRoundMvp @event, GameEventInfo info)
-    {
-        var player = @event.Userid;
-        
-        if (player == null || !player.IsValid || player.IsBot)
-            return HookResult.Continue;
-
-        var data = GetPlayerData(player.SteamID);
-        data.Gold += 1;
-        
-        player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} MVP! +1 {ChatColors.Gold}🪙 Золото");
-
-        return HookResult.Continue;
-    }
 
     private void ShowShopMenu(CCSPlayerController player)
     {
