@@ -831,13 +831,12 @@ public class ShopPlugin : BasePlugin
 
         int ownedItems = data.OwnedSkins.Count + data.OwnedTrails.Count;
         int totalItems = _shopItems.Count;
+        int availableItems = totalItems - ownedItems;
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Главное меню");
-        player.PrintToChat($" {ChatColors.Gold}🪙 Золото: {data.Gold}{ChatColors.Default} | {ChatColors.Silver}⚪ Серебро: {data.Silver}");
-        player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Купить товары");
-        player.PrintToChat($" {ChatColors.Yellow}!s2{ChatColors.Default} - Продать товары");
-        player.PrintToChat($" {ChatColors.Yellow}!s3{ChatColors.Default} - Мой инвентарь ({ownedItems}/{totalItems})");
-        player.PrintToChat($" {ChatColors.Yellow}!s4{ChatColors.Default} - Показать баланс");
+        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Серебро: {ChatColors.Silver}{data.Silver}{ChatColors.Default} | Золото: {ChatColors.Gold}{data.Gold}");
+        player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Купить товары [{availableItems}/{totalItems}]");
+        player.PrintToChat($" {ChatColors.Yellow}!s2{ChatColors.Default} - Продать товары [{ownedItems}]");
+        player.PrintToChat($" {ChatColors.Yellow}!s3{ChatColors.Default} - Мой инвентарь [{ownedItems}]");
         
         _playerMenuContext[steamId] = "shop_main";
     }
