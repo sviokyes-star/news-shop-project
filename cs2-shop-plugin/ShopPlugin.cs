@@ -11,7 +11,7 @@ namespace ShopPlugin;
 public class ShopPlugin : BasePlugin
 {
     public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
 
@@ -337,12 +337,11 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         var data = GetPlayerData(steamId);
 
-        int availableItems = _shopItems.Count - data.OwnedSkins.Count;
-        int totalItems = _shopItems.Count;
         int ownedItems = data.OwnedSkins.Count;
+        int totalItems = _shopItems.Count;
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {ChatColors.Gold}Золото: {data.Gold}{ChatColors.Default} | {ChatColors.Silver}Серебро: {data.Silver}");
-        player.PrintToChat($" {ChatColors.Yellow}Товары [{availableItems}/{totalItems}]{ChatColors.Default} - /shop_items");
+        player.PrintToChat($" {ChatColors.Yellow}Товары [{ownedItems}/{totalItems}]{ChatColors.Default} - /shop_items");
         player.PrintToChat($" {ChatColors.Yellow}Продать [{ownedItems}]{ChatColors.Default} - /shop_sell");
         player.PrintToChat($" {ChatColors.Yellow}Инвентарь [{ownedItems}]{ChatColors.Default} - /shop_inventory");
     }
