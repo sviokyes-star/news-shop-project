@@ -294,31 +294,31 @@ public class AdminPlugin : BasePlugin
     {
         _playerMenuContext[player.SteamID] = "main";
         
-        var menu = new ChatMenu("Админ-Меню [!a1-!a5]");
+        var menu = new ChatMenu("Админ-Меню (!a1-!a5)");
 
-        menu.AddMenuOption("!a1 → Управление игроками", (controller, option) =>
+        menu.AddMenuOption("Управление игроками", (controller, option) =>
         {
             ShowPlayerManagementMenu(controller);
         });
 
-        menu.AddMenuOption("!a2 → Читы и настройки", (controller, option) =>
+        menu.AddMenuOption("Читы и настройки", (controller, option) =>
         {
             ShowCheatsMenu(controller);
         });
 
         if (AdminManager.PlayerHasPermissions(player, "@css/root"))
         {
-            menu.AddMenuOption("!a3 → ⚙️ Настройка зон карты", (controller, option) =>
+            menu.AddMenuOption("⚙️ Настройка зон карты", (controller, option) =>
             {
                 ShowZonesMenu(controller);
             });
 
-            menu.AddMenuOption("!a4 → 🎁 Управление подарками", (controller, option) =>
+            menu.AddMenuOption("🎁 Управление подарками", (controller, option) =>
             {
                 ShowGiftsMenu(controller);
             });
 
-            menu.AddMenuOption("!a5 → 📍 Управление спавнами", (controller, option) =>
+            menu.AddMenuOption("📍 Управление спавнами", (controller, option) =>
             {
                 ShowSpawnsMenu(controller);
             });
@@ -331,7 +331,7 @@ public class AdminPlugin : BasePlugin
     {
         _playerMenuContext[player.SteamID] = "players";
         
-        var menu = new ChatMenu("Управление игроками [!a9=Назад]");
+        var menu = new ChatMenu("Управление игроками (!a9=Назад)");
 
         menu.AddMenuOption("Убить игрока", (controller, option) =>
         {
@@ -450,7 +450,7 @@ public class AdminPlugin : BasePlugin
             });
         });
 
-        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
+        menu.AddMenuOption("← Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -464,9 +464,9 @@ public class AdminPlugin : BasePlugin
     {
         _playerMenuContext[player.SteamID] = "cheats";
         
-        var menu = new ChatMenu("Читы и настройки [!a1-!a2, !a9=Назад]");
+        var menu = new ChatMenu("Читы и настройки (!a1-!a2, !a9)");
 
-        menu.AddMenuOption("!a1 → Режим полёта (Noclip)", (controller, option) =>
+        menu.AddMenuOption("Режим полёта (Noclip)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -487,7 +487,7 @@ public class AdminPlugin : BasePlugin
             ShowCheatsMenu(controller);
         });
 
-        menu.AddMenuOption("!a2 → Режим неуязвимости (God Mode)", (controller, option) =>
+        menu.AddMenuOption("Режим неуязвимости (God Mode)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -506,7 +506,7 @@ public class AdminPlugin : BasePlugin
 
 
 
-        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
+        menu.AddMenuOption("← Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -518,9 +518,9 @@ public class AdminPlugin : BasePlugin
     {
         _playerMenuContext[player.SteamID] = "zones";
         
-        var menu = new ChatMenu("Настройка зон карты [!a1-!a4, !a9=Назад]");
+        var menu = new ChatMenu("Настройка зон карты (!a1-!a4, !a9)");
 
-        menu.AddMenuOption("!a1 → 🟩 Установить зону СТАРТА", (controller, option) =>
+        menu.AddMenuOption("🟩 Установить зону СТАРТА", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -529,7 +529,7 @@ public class AdminPlugin : BasePlugin
             ShowZonesMenu(controller);
         });
 
-        menu.AddMenuOption("!a2 → 🟥 Установить зону ФИНИША", (controller, option) =>
+        menu.AddMenuOption("🟥 Установить зону ФИНИША", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -538,13 +538,13 @@ public class AdminPlugin : BasePlugin
             ShowZonesMenu(controller);
         });
 
-        menu.AddMenuOption("!a3 → 📋 Показать текущие зоны", (controller, option) =>
+        menu.AddMenuOption("📋 Показать текущие зоны", (controller, option) =>
         {
             controller.ExecuteClientCommand($"css_showzones");
             ShowZonesMenu(controller);
         });
 
-        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
+        menu.AddMenuOption("← Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -556,9 +556,9 @@ public class AdminPlugin : BasePlugin
     {
         _playerMenuContext[player.SteamID] = "gifts";
         
-        var menu = new ChatMenu("Управление подарками [!a1-!a5, !a9=Назад]");
+        var menu = new ChatMenu("Управление подарками (!a1-!a5, !a9)");
 
-        menu.AddMenuOption("!a1 → ➕ Добавить подарок (1000 серебра)", (controller, option) =>
+        menu.AddMenuOption("➕ Добавить подарок (1000 серебра)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -567,7 +567,7 @@ public class AdminPlugin : BasePlugin
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("!a2 → ➕ Добавить подарок (5000 серебра)", (controller, option) =>
+        menu.AddMenuOption("➕ Добавить подарок (5000 серебра)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -576,7 +576,7 @@ public class AdminPlugin : BasePlugin
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("!a3 → ➕ Добавить подарок (10000 серебра)", (controller, option) =>
+        menu.AddMenuOption("➕ Добавить подарок (10000 серебра)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -585,19 +585,19 @@ public class AdminPlugin : BasePlugin
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("!a4 → 📋 Список всех подарков", (controller, option) =>
+        menu.AddMenuOption("📋 Список всех подарков", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !listgifts"));
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("!a5 → 🗑️ Удалить все подарки", (controller, option) =>
+        menu.AddMenuOption("🗑️ Удалить все подарки", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !removegifts"));
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
+        menu.AddMenuOption("← Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -609,9 +609,9 @@ public class AdminPlugin : BasePlugin
     {
         _playerMenuContext[player.SteamID] = "spawns";
         
-        var menu = new ChatMenu("Управление спавнами [!a1-!a8, !a9=Назад]");
+        var menu = new ChatMenu("Управление спавнами (!a1-!a8, !a9)");
 
-        menu.AddMenuOption("!a1 → ➕ Добавить спавн CT", (controller, option) =>
+        menu.AddMenuOption("➕ Добавить спавн CT", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -620,7 +620,7 @@ public class AdminPlugin : BasePlugin
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a2 → ➕ Добавить спавн T", (controller, option) =>
+        menu.AddMenuOption("➕ Добавить спавн T", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -629,7 +629,7 @@ public class AdminPlugin : BasePlugin
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a3 → 🗑️ Удалить ближайший спавн", (controller, option) =>
+        menu.AddMenuOption("🗑️ Удалить ближайший спавн", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -638,37 +638,37 @@ public class AdminPlugin : BasePlugin
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a4 → 📋 Список всех спавнов", (controller, option) =>
+        menu.AddMenuOption("📋 Список всех спавнов", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !listspawns"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a5 → 👁️ Показать CT спавны", (controller, option) =>
+        menu.AddMenuOption("👁️ Показать CT спавны", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !showspawns CT"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a6 → 👁️ Показать T спавны", (controller, option) =>
+        menu.AddMenuOption("👁️ Показать T спавны", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !showspawns T"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a7 → 🚫 Скрыть маркеры спавнов", (controller, option) =>
+        menu.AddMenuOption("🚫 Скрыть маркеры спавнов", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !hidespawns"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a8 → 🗑️ Удалить все спавны", (controller, option) =>
+        menu.AddMenuOption("🗑️ Удалить все спавны", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !removespawns"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
+        menu.AddMenuOption("← Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
