@@ -11,9 +11,11 @@ namespace AdminPlugin;
 public class AdminPlugin : BasePlugin
 {
     public override string ModuleName => "Admin Tools";
-    public override string ModuleVersion => "1.0.7";
+    public override string ModuleVersion => "1.0.8";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Полнофункциональная админка для CS2";
+
+    private readonly Dictionary<ulong, string> _playerMenuContext = new();
 
     public override void Load(bool hotReload)
     {
@@ -55,41 +57,223 @@ public class AdminPlugin : BasePlugin
             return HookResult.Handled;
         }
 
-        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            return HookResult.Continue;
-
-        switch (message.ToLower())
+        if (message.StartsWith("!a") && message.Length == 3 && char.IsDigit(message[2]))
         {
-            case "!a1":
-                Server.ExecuteCommand("css_showspawns CT");
-                return HookResult.Handled;
-            case "!a2":
-                Server.ExecuteCommand("css_showspawns T");
-                return HookResult.Handled;
-            case "!a3":
-                Server.ExecuteCommand("css_hidespawns");
-                return HookResult.Handled;
-            case "!a4":
-                Server.ExecuteCommand("css_addspawn CT");
-                return HookResult.Handled;
-            case "!a5":
-                Server.ExecuteCommand("css_addspawn T");
-                return HookResult.Handled;
-            case "!a6":
-                Server.ExecuteCommand("css_removespawn");
-                return HookResult.Handled;
-            case "!a7":
-                Server.ExecuteCommand("css_addgift 1000");
-                return HookResult.Handled;
-            case "!a8":
-                Server.ExecuteCommand("css_listgifts");
-                return HookResult.Handled;
-            case "!a9":
-                Server.ExecuteCommand("css_removegifts");
-                return HookResult.Handled;
+            if (!AdminManager.PlayerHasPermissions(player, "@css/kick"))
+                return HookResult.Continue;
+
+            string context = _playerMenuContext.ContainsKey(player.SteamID) ? _playerMenuContext[player.SteamID] : "main";
+            int num = int.Parse(message[2].ToString());
+
+            HandleQuickCommand(player, context, num);
+            return HookResult.Handled;
         }
 
         return HookResult.Continue;
+    }
+
+    private void HandleQuickCommand(CCSPlayerController player, string context, int num)
+    {
+        switch (context)
+        {
+            case "main":
+                HandleMainMenuCommand(player, num);
+                break;
+            case "players":
+                HandlePlayersMenuCommand(player, num);
+                break;
+            case "cheats":
+                HandleCheatsMenuCommand(player, num);
+                break;
+            case "zones":
+                HandleZonesMenuCommand(player, num);
+                break;
+            case "gifts":
+                HandleGiftsMenuCommand(player, num);
+                break;
+            case "spawns":
+                HandleSpawnsMenuCommand(player, num);
+                break;
+        }
+    }
+
+    private void HandleMainMenuCommand(CCSPlayerController player, int num)
+    {
+        switch (num)
+        {
+            case 1:
+                ShowPlayerManagementMenu(player);
+                break;
+            case 2:
+                ShowCheatsMenu(player);
+                break;
+            case 3:
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                    ShowZonesMenu(player);
+                break;
+            case 4:
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                    ShowGiftsMenu(player);
+                break;
+            case 5:
+                if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+                    ShowSpawnsMenu(player);
+                break;
+        }
+    }
+
+    private void HandlePlayersMenuCommand(CCSPlayerController player, int num)
+    {
+        switch (num)
+        {
+            case 1:
+                player.PrintToChat($" {ChatColors.Yellow}[ADMIN] Выберите игрока для убийства через меню");
+                ShowPlayerManagementMenu(player);
+                break;
+            case 2:
+                player.PrintToChat($" {ChatColors.Yellow}[ADMIN] Выберите игрока для кика через меню");
+                ShowPlayerManagementMenu(player);
+                break;
+            case 3:
+                player.PrintToChat($" {ChatColors.Yellow}[ADMIN] Выберите игрока для бана через меню");
+                ShowPlayerManagementMenu(player);
+                break;
+            case 9:
+                ShowMainMenu(player);
+                break;
+        }
+    }
+
+    private void HandleCheatsMenuCommand(CCSPlayerController player, int num)
+    {
+        switch (num)
+        {
+            case 1:
+                if (player.PlayerPawn.Value != null)
+                {
+                    var pawn = player.PlayerPawn.Value;
+                    var currentMode = pawn.MoveType;
+                    if (currentMode == MoveType_t.MOVETYPE_NOCLIP)
+                    {
+                        pawn.MoveType = MoveType_t.MOVETYPE_WALK;
+                        player.PrintToChat($" {ChatColors.Red}[ADMIN] Noclip выключен");
+                    }
+                    else
+                    {
+                        pawn.MoveType = MoveType_t.MOVETYPE_NOCLIP;
+                        player.PrintToChat($" {ChatColors.Green}[ADMIN] Noclip включен");
+                    }
+                }
+                break;
+            case 2:
+                if (player.PlayerPawn.Value != null)
+                {
+                    var pawn = player.PlayerPawn.Value;
+                    bool isGod = pawn.TakesDamage;
+                    pawn.TakesDamage = !isGod;
+                    if (!isGod)
+                        player.PrintToChat($" {ChatColors.Red}[ADMIN] Режим бога выключен");
+                    else
+                        player.PrintToChat($" {ChatColors.Green}[ADMIN] Режим бога включен");
+                }
+                break;
+            case 9:
+                ShowMainMenu(player);
+                break;
+        }
+    }
+
+    private void HandleZonesMenuCommand(CCSPlayerController player, int num)
+    {
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            return;
+
+        switch (num)
+        {
+            case 1:
+                Server.ExecuteCommand("css_setstart");
+                player.PrintToChat($" {ChatColors.Green}[ADMIN] Зона старта установлена");
+                break;
+            case 2:
+                Server.ExecuteCommand("css_setend");
+                player.PrintToChat($" {ChatColors.Green}[ADMIN] Зона финиша установлена");
+                break;
+            case 3:
+                Server.ExecuteCommand("css_showzones");
+                break;
+            case 4:
+                Server.ExecuteCommand("css_removezones");
+                player.PrintToChat($" {ChatColors.Red}[ADMIN] Зоны удалены");
+                break;
+            case 9:
+                ShowMainMenu(player);
+                break;
+        }
+    }
+
+    private void HandleGiftsMenuCommand(CCSPlayerController player, int num)
+    {
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            return;
+
+        switch (num)
+        {
+            case 1:
+                Server.ExecuteCommand("css_addgift 1000");
+                break;
+            case 2:
+                Server.ExecuteCommand("css_addgift 5000");
+                break;
+            case 3:
+                Server.ExecuteCommand("css_addgift 10000");
+                break;
+            case 4:
+                Server.ExecuteCommand("css_listgifts");
+                break;
+            case 5:
+                Server.ExecuteCommand("css_removegifts");
+                break;
+            case 9:
+                ShowMainMenu(player);
+                break;
+        }
+    }
+
+    private void HandleSpawnsMenuCommand(CCSPlayerController player, int num)
+    {
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            return;
+
+        switch (num)
+        {
+            case 1:
+                Server.ExecuteCommand("css_addspawn CT");
+                break;
+            case 2:
+                Server.ExecuteCommand("css_addspawn T");
+                break;
+            case 3:
+                Server.ExecuteCommand("css_removespawn");
+                break;
+            case 4:
+                Server.ExecuteCommand("css_listspawns");
+                break;
+            case 5:
+                Server.ExecuteCommand("css_showspawns CT");
+                break;
+            case 6:
+                Server.ExecuteCommand("css_showspawns T");
+                break;
+            case 7:
+                Server.ExecuteCommand("css_hidespawns");
+                break;
+            case 8:
+                Server.ExecuteCommand("css_removespawns");
+                break;
+            case 9:
+                ShowMainMenu(player);
+                break;
+        }
     }
 
     public void OnAdminMenuCommand(CCSPlayerController? caller, CommandInfo command)
@@ -108,31 +292,33 @@ public class AdminPlugin : BasePlugin
 
     private void ShowMainMenu(CCSPlayerController player)
     {
-        var menu = new ChatMenu("Админ-Меню");
+        _playerMenuContext[player.SteamID] = "main";
+        
+        var menu = new ChatMenu("Админ-Меню [!a1-!a5]");
 
-        menu.AddMenuOption("Управление игроками", (controller, option) =>
+        menu.AddMenuOption("!a1 → Управление игроками", (controller, option) =>
         {
             ShowPlayerManagementMenu(controller);
         });
 
-        menu.AddMenuOption("Читы и настройки", (controller, option) =>
+        menu.AddMenuOption("!a2 → Читы и настройки", (controller, option) =>
         {
             ShowCheatsMenu(controller);
         });
 
         if (AdminManager.PlayerHasPermissions(player, "@css/root"))
         {
-            menu.AddMenuOption("⚙️ Настройка зон карты", (controller, option) =>
+            menu.AddMenuOption("!a3 → ⚙️ Настройка зон карты", (controller, option) =>
             {
                 ShowZonesMenu(controller);
             });
 
-            menu.AddMenuOption("🎁 Управление подарками", (controller, option) =>
+            menu.AddMenuOption("!a4 → 🎁 Управление подарками", (controller, option) =>
             {
                 ShowGiftsMenu(controller);
             });
 
-            menu.AddMenuOption("📍 Управление спавнами", (controller, option) =>
+            menu.AddMenuOption("!a5 → 📍 Управление спавнами", (controller, option) =>
             {
                 ShowSpawnsMenu(controller);
             });
@@ -143,7 +329,9 @@ public class AdminPlugin : BasePlugin
 
     private void ShowPlayerManagementMenu(CCSPlayerController player)
     {
-        var menu = new ChatMenu("Управление игроками");
+        _playerMenuContext[player.SteamID] = "players";
+        
+        var menu = new ChatMenu("Управление игроками [!a9=Назад]");
 
         menu.AddMenuOption("Убить игрока", (controller, option) =>
         {
@@ -262,7 +450,7 @@ public class AdminPlugin : BasePlugin
             });
         });
 
-        menu.AddMenuOption("← Назад", (controller, option) =>
+        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -274,9 +462,11 @@ public class AdminPlugin : BasePlugin
 
     private void ShowCheatsMenu(CCSPlayerController player)
     {
-        var menu = new ChatMenu("Читы и настройки");
+        _playerMenuContext[player.SteamID] = "cheats";
+        
+        var menu = new ChatMenu("Читы и настройки [!a1-!a2, !a9=Назад]");
 
-        menu.AddMenuOption("Режим полёта (Noclip)", (controller, option) =>
+        menu.AddMenuOption("!a1 → Режим полёта (Noclip)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -297,7 +487,7 @@ public class AdminPlugin : BasePlugin
             ShowCheatsMenu(controller);
         });
 
-        menu.AddMenuOption("Режим неуязвимости (God Mode)", (controller, option) =>
+        menu.AddMenuOption("!a2 → Режим неуязвимости (God Mode)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -316,7 +506,7 @@ public class AdminPlugin : BasePlugin
 
 
 
-        menu.AddMenuOption("← Назад", (controller, option) =>
+        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -326,9 +516,11 @@ public class AdminPlugin : BasePlugin
 
     private void ShowZonesMenu(CCSPlayerController player)
     {
-        var menu = new ChatMenu("Настройка зон карты");
+        _playerMenuContext[player.SteamID] = "zones";
+        
+        var menu = new ChatMenu("Настройка зон карты [!a1-!a4, !a9=Назад]");
 
-        menu.AddMenuOption("🟩 Установить зону СТАРТА", (controller, option) =>
+        menu.AddMenuOption("!a1 → 🟩 Установить зону СТАРТА", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -337,7 +529,7 @@ public class AdminPlugin : BasePlugin
             ShowZonesMenu(controller);
         });
 
-        menu.AddMenuOption("🟥 Установить зону ФИНИША", (controller, option) =>
+        menu.AddMenuOption("!a2 → 🟥 Установить зону ФИНИША", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -346,13 +538,13 @@ public class AdminPlugin : BasePlugin
             ShowZonesMenu(controller);
         });
 
-        menu.AddMenuOption("📋 Показать текущие зоны", (controller, option) =>
+        menu.AddMenuOption("!a3 → 📋 Показать текущие зоны", (controller, option) =>
         {
             controller.ExecuteClientCommand($"css_showzones");
             ShowZonesMenu(controller);
         });
 
-        menu.AddMenuOption("← Назад", (controller, option) =>
+        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -362,9 +554,11 @@ public class AdminPlugin : BasePlugin
 
     private void ShowGiftsMenu(CCSPlayerController player)
     {
-        var menu = new ChatMenu("Управление подарками");
+        _playerMenuContext[player.SteamID] = "gifts";
+        
+        var menu = new ChatMenu("Управление подарками [!a1-!a5, !a9=Назад]");
 
-        menu.AddMenuOption("➕ Добавить подарок (1000 серебра)", (controller, option) =>
+        menu.AddMenuOption("!a1 → ➕ Добавить подарок (1000 серебра)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -373,7 +567,7 @@ public class AdminPlugin : BasePlugin
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("➕ Добавить подарок (5000 серебра)", (controller, option) =>
+        menu.AddMenuOption("!a2 → ➕ Добавить подарок (5000 серебра)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -382,7 +576,7 @@ public class AdminPlugin : BasePlugin
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("➕ Добавить подарок (10000 серебра)", (controller, option) =>
+        menu.AddMenuOption("!a3 → ➕ Добавить подарок (10000 серебра)", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -391,19 +585,19 @@ public class AdminPlugin : BasePlugin
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("📋 Список всех подарков", (controller, option) =>
+        menu.AddMenuOption("!a4 → 📋 Список всех подарков", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !listgifts"));
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("🗑️ Удалить все подарки", (controller, option) =>
+        menu.AddMenuOption("!a5 → 🗑️ Удалить все подарки", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !removegifts"));
             ShowGiftsMenu(controller);
         });
 
-        menu.AddMenuOption("← Назад", (controller, option) =>
+        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
@@ -413,9 +607,11 @@ public class AdminPlugin : BasePlugin
 
     private void ShowSpawnsMenu(CCSPlayerController player)
     {
-        var menu = new ChatMenu("Управление спавнами");
+        _playerMenuContext[player.SteamID] = "spawns";
+        
+        var menu = new ChatMenu("Управление спавнами [!a1-!a8, !a9=Назад]");
 
-        menu.AddMenuOption("➕ Добавить спавн CT", (controller, option) =>
+        menu.AddMenuOption("!a1 → ➕ Добавить спавн CT", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -424,7 +620,7 @@ public class AdminPlugin : BasePlugin
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("➕ Добавить спавн T", (controller, option) =>
+        menu.AddMenuOption("!a2 → ➕ Добавить спавн T", (controller, option) =>
         {
             if (controller.PlayerPawn.Value != null)
             {
@@ -433,31 +629,46 @@ public class AdminPlugin : BasePlugin
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("📋 Список всех спавнов", (controller, option) =>
+        menu.AddMenuOption("!a3 → 🗑️ Удалить ближайший спавн", (controller, option) =>
+        {
+            if (controller.PlayerPawn.Value != null)
+            {
+                Server.NextFrame(() => controller.ExecuteClientCommand("say !removespawn"));
+            }
+            ShowSpawnsMenu(controller);
+        });
+
+        menu.AddMenuOption("!a4 → 📋 Список всех спавнов", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !listspawns"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("👁️ Показать маркеры спавнов", (controller, option) =>
+        menu.AddMenuOption("!a5 → 👁️ Показать CT спавны", (controller, option) =>
         {
-            Server.NextFrame(() => controller.ExecuteClientCommand("say !showspawns"));
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !showspawns CT"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("🚫 Скрыть маркеры спавнов", (controller, option) =>
+        menu.AddMenuOption("!a6 → 👁️ Показать T спавны", (controller, option) =>
+        {
+            Server.NextFrame(() => controller.ExecuteClientCommand("say !showspawns T"));
+            ShowSpawnsMenu(controller);
+        });
+
+        menu.AddMenuOption("!a7 → 🚫 Скрыть маркеры спавнов", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !hidespawns"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("🗑️ Удалить все спавны", (controller, option) =>
+        menu.AddMenuOption("!a8 → 🗑️ Удалить все спавны", (controller, option) =>
         {
             Server.NextFrame(() => controller.ExecuteClientCommand("say !removespawns"));
             ShowSpawnsMenu(controller);
         });
 
-        menu.AddMenuOption("← Назад", (controller, option) =>
+        menu.AddMenuOption("!a9 → Назад", (controller, option) =>
         {
             ShowMainMenu(controller);
         });
