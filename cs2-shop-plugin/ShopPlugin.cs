@@ -142,6 +142,12 @@ public class ShopPlugin : BasePlugin
             }
             return HookResult.Handled;
         }
+        else if (message.StartsWith("!s") && message.Length == 3 && char.IsDigit(message[2]))
+        {
+            int num = int.Parse(message[2].ToString());
+            HandleQuickShopCommand(player, num);
+            return HookResult.Handled;
+        }
         else if (message.StartsWith("!preview ", StringComparison.OrdinalIgnoreCase))
         {
             string skinId = message.Substring(9).Trim().ToLower();
@@ -1049,6 +1055,40 @@ public class ShopPlugin : BasePlugin
 
 
 
+    private void HandleQuickShopCommand(CCSPlayerController player, int num)
+    {
+        ulong steamId = player.SteamID;
+        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "shop_main";
+
+        if (context == "shop_main")
+        {
+            HandleShopMainChoice(player, num);
+        }
+        else if (context == "shop_categories")
+        {
+            HandleCategoryChoice(player, num);
+        }
+        else if (context.StartsWith("shop_items_"))
+        {
+            HandleItemChoice(player, num, context);
+        }
+        else if (context == "shop_sell")
+        {
+            HandleSellChoice(player, num);
+        }
+        else if (context == "shop_inventory")
+        {
+            HandleInventoryChoice(player, num);
+        }
+        else if (context == "shop_empty_sell" || context == "shop_empty_inventory")
+        {
+            if (num == 1)
+            {
+                ShowShopMenu(player);
+            }
+        }
+    }
+
     private void ShowShopMenu(CCSPlayerController player)
     {
         ulong steamId = player.SteamID;
@@ -1274,6 +1314,7 @@ public class ShopPlugin : BasePlugin
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет товаров для продажи");
             player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Назад в главное меню");
+            _playerMenuContext[steamId] = "shop_empty_sell";
             return;
         }
 
@@ -1322,6 +1363,7 @@ public class ShopPlugin : BasePlugin
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас пока нет товаров");
             player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Назад в главное меню");
+            _playerMenuContext[steamId] = "shop_empty_inventory";
             return;
         }
 
