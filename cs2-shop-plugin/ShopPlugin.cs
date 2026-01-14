@@ -86,6 +86,8 @@ public class ShopPlugin : BasePlugin
         LoadSpawns();
         InitializeShopItems();
         
+        Server.NextFrame(() => SpawnAllGifts());
+        
         AddTimer(1.0f, CheckGiftPickups, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
