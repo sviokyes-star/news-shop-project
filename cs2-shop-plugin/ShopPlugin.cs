@@ -145,6 +145,7 @@ public class ShopPlugin : BasePlugin
         else if (message.StartsWith("!s") && message.Length == 3 && char.IsDigit(message[2]))
         {
             int num = int.Parse(message[2].ToString());
+            Console.WriteLine($"[Shop] Player {player.PlayerName} использует !s{num}");
             HandleQuickShopCommand(player, num);
             return HookResult.Handled;
         }
@@ -1059,9 +1060,12 @@ public class ShopPlugin : BasePlugin
     {
         ulong steamId = player.SteamID;
         string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "shop_main";
+        
+        Console.WriteLine($"[Shop] HandleQuickShopCommand: player={player.PlayerName}, num={num}, context={context}");
 
         if (context == "shop_main")
         {
+            Console.WriteLine($"[Shop] Вызываем HandleShopMainChoice с choice={num}");
             HandleShopMainChoice(player, num);
         }
         else if (context == "shop_categories")
@@ -1110,15 +1114,20 @@ public class ShopPlugin : BasePlugin
     {
         ulong steamId = player.SteamID;
         
+        Console.WriteLine($"[Shop] HandleShopMainChoice: choice={choice}");
+        
         switch (choice)
         {
             case 1:
+                Console.WriteLine($"[Shop] Открываем категории магазина");
                 ShowShopCategories(player);
                 break;
             case 2:
+                Console.WriteLine($"[Shop] Открываем меню продажи");
                 ShowSellMenu(player);
                 break;
             case 3:
+                Console.WriteLine($"[Shop] Открываем инвентарь");
                 ShowInventory(player);
                 break;
         }
