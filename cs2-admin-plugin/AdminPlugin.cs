@@ -694,6 +694,78 @@ public class AdminPlugin : BasePlugin
         }
     }
 
+    [ConsoleCommand("css_a1", "Админ: Показать спавны CT")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnA1Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_showspawns CT");
+    }
+
+    [ConsoleCommand("css_a2", "Админ: Показать спавны T")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnA2Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_showspawns T");
+    }
+
+    [ConsoleCommand("css_a3", "Админ: Скрыть маркеры")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnA3Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_hidespawns");
+    }
+
+    [ConsoleCommand("css_a4", "Админ: Добавить спавн CT")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnA4Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_addspawn CT");
+    }
+
+    [ConsoleCommand("css_a5", "Админ: Добавить спавн T")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnA5Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_addspawn T");
+    }
+
+    [ConsoleCommand("css_a6", "Админ: Удалить ближайший спавн")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnA6Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_removespawn");
+    }
+
+    [ConsoleCommand("css_a7", "Админ: Добавить подарок 1000")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnA7Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_addgift 1000");
+    }
+
+    [ConsoleCommand("css_a8", "Админ: Список подарков")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnA8Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_listgifts");
+    }
+
+    [ConsoleCommand("css_a9", "Админ: Удалить все подарки")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnA9Command(CCSPlayerController? caller, CommandInfo command)
+    {
+        Server.ExecuteCommand("css_removegifts");
+    }
+
     [ConsoleCommand("css_respawn", "Возродить игрока")]
     [RequiresPermissions("@css/cheats")]
     [CommandHelper(minArgs: 1, usage: "<имя/userid>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
