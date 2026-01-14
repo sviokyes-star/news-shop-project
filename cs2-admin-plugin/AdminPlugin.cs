@@ -55,6 +55,40 @@ public class AdminPlugin : BasePlugin
             return HookResult.Handled;
         }
 
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+            return HookResult.Continue;
+
+        switch (message.ToLower())
+        {
+            case "!a1":
+                Server.ExecuteCommand("css_showspawns CT");
+                return HookResult.Handled;
+            case "!a2":
+                Server.ExecuteCommand("css_showspawns T");
+                return HookResult.Handled;
+            case "!a3":
+                Server.ExecuteCommand("css_hidespawns");
+                return HookResult.Handled;
+            case "!a4":
+                Server.ExecuteCommand("css_addspawn CT");
+                return HookResult.Handled;
+            case "!a5":
+                Server.ExecuteCommand("css_addspawn T");
+                return HookResult.Handled;
+            case "!a6":
+                Server.ExecuteCommand("css_removespawn");
+                return HookResult.Handled;
+            case "!a7":
+                Server.ExecuteCommand("css_addgift 1000");
+                return HookResult.Handled;
+            case "!a8":
+                Server.ExecuteCommand("css_listgifts");
+                return HookResult.Handled;
+            case "!a9":
+                Server.ExecuteCommand("css_removegifts");
+                return HookResult.Handled;
+        }
+
         return HookResult.Continue;
     }
 
