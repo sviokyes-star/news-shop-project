@@ -142,12 +142,16 @@ public class ShopPlugin : BasePlugin
             }
             return HookResult.Handled;
         }
-        else if (message.StartsWith("!s") && message.Length == 3 && char.IsDigit(message[2]))
+        else if ((message.StartsWith("!s") || message.StartsWith("!")) && message.Length >= 2 && message.Length <= 3)
         {
-            int num = int.Parse(message[2].ToString());
-            Console.WriteLine($"[Shop] Player {player.PlayerName} использует !s{num}");
-            HandleQuickShopCommand(player, num);
-            return HookResult.Handled;
+            string numStr = message.StartsWith("!s") ? message.Substring(2) : message.Substring(1);
+            if (numStr.Length == 1 && char.IsDigit(numStr[0]))
+            {
+                int num = int.Parse(numStr);
+                Console.WriteLine($"[Shop] Player {player.PlayerName} использует !{num}");
+                HandleQuickShopCommand(player, num);
+                return HookResult.Handled;
+            }
         }
         else if (message.StartsWith("!preview ", StringComparison.OrdinalIgnoreCase))
         {
