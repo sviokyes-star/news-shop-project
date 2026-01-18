@@ -1655,14 +1655,24 @@ public class ShopPlugin : BasePlugin
     {
         try
         {
+            Console.WriteLine($"[{ModuleName}] Путь к файлу подарков: {GiftsFilePath}");
+            
             if (!File.Exists(GiftsFilePath))
+            {
+                Console.WriteLine($"[{ModuleName}] Файл подарков не найден");
                 return;
+            }
 
             string json = File.ReadAllText(GiftsFilePath);
+            Console.WriteLine($"[{ModuleName}] Содержимое файла подарков: {json}");
+            
             var gifts = JsonSerializer.Deserialize<List<GiftData>>(json);
 
             if (gifts == null)
+            {
+                Console.WriteLine($"[{ModuleName}] Десериализация вернула null");
                 return;
+            }
 
             _giftPositions.Clear();
             _giftPositions.AddRange(gifts);
@@ -1677,6 +1687,8 @@ public class ShopPlugin : BasePlugin
 
     private void SpawnAllGifts()
     {
+        Console.WriteLine($"[{ModuleName}] SpawnAllGifts вызван. В _giftPositions: {_giftPositions.Count} подарков");
+        
         foreach (var gift in _giftBoxes)
         {
             gift?.Remove();
@@ -1685,6 +1697,7 @@ public class ShopPlugin : BasePlugin
 
         foreach (var giftData in _giftPositions)
         {
+            Console.WriteLine($"[{ModuleName}] Спавн подарка: ({giftData.X:F1}, {giftData.Y:F1}, {giftData.Z:F1}) - {giftData.SilverAmount} серебра");
             var position = new Vector(giftData.X, giftData.Y, giftData.Z);
             SpawnGiftBoxFromData(position, giftData.SilverAmount);
         }
@@ -1698,6 +1711,8 @@ public class ShopPlugin : BasePlugin
         {
             string json = JsonSerializer.Serialize(_giftPositions, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(GiftsFilePath, json);
+            Console.WriteLine($"[{ModuleName}] Подарки сохранены: {_giftPositions.Count} штук в {GiftsFilePath}");
+            Console.WriteLine($"[{ModuleName}] JSON: {json}");
         }
         catch (Exception ex)
         {
