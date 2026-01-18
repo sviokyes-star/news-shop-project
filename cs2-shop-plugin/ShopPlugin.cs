@@ -1107,9 +1107,9 @@ public class ShopPlugin : BasePlugin
         int availableItems = totalItems - ownedItems;
 
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Серебро: {ChatColors.Silver}{data.Silver}{ChatColors.Default} | Золото: {ChatColors.Gold}{data.Gold}");
-        player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Купить товары [{availableItems}/{totalItems}]");
-        player.PrintToChat($" {ChatColors.Yellow}!s2{ChatColors.Default} - Продать товары [{ownedItems}]");
-        player.PrintToChat($" {ChatColors.Yellow}!s3{ChatColors.Default} - Мой инвентарь [{ownedItems}]");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Купить товары [{availableItems}/{totalItems}]");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Продать товары [{ownedItems}]");
+        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Мой инвентарь [{ownedItems}]");
         
         _playerMenuContext[steamId] = "shop_main";
     }
@@ -1142,9 +1142,9 @@ public class ShopPlugin : BasePlugin
         ulong steamId = player.SteamID;
         
         player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Категории товаров:");
-        player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Скины игроков");
-        player.PrintToChat($" {ChatColors.Yellow}!s2{ChatColors.Default} - Следы за игроком");
-        player.PrintToChat($" {ChatColors.Yellow}!s3{ChatColors.Default} - Назад в главное меню");
+        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Скины игроков");
+        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Следы за игроком");
+        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Назад в главное меню");
         
         _playerMenuContext[steamId] = "shop_categories";
     }
@@ -1187,10 +1187,10 @@ public class ShopPlugin : BasePlugin
                 ? $" {ChatColors.Green}[КУПЛЕНО]" 
                 : "";
             
-            player.PrintToChat($" {ChatColors.Yellow}!s{i + 1}{ChatColors.Default} - {item.Name} ({price}){owned}");
+            player.PrintToChat($" {ChatColors.Yellow}!{i + 1}{ChatColors.Default} - {item.Name} ({price}){owned}");
         }
         
-        player.PrintToChat($" {ChatColors.Yellow}!s9{ChatColors.Default} - Назад");
+        player.PrintToChat($" {ChatColors.Yellow}!9{ChatColors.Default} - Назад");
         
         _playerMenuContext[steamId] = $"shop_items_{category}";
     }
@@ -1326,7 +1326,7 @@ public class ShopPlugin : BasePlugin
         if (totalItems == 0)
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет товаров для продажи");
-            player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Назад в главное меню");
+            player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Назад в главное меню");
             _playerMenuContext[steamId] = "shop_empty_sell";
             return;
         }
@@ -1343,7 +1343,7 @@ public class ShopPlugin : BasePlugin
                 string currency = item.GoldPrice > 0 ? $"{ChatColors.Gold}🪙" : $"{ChatColors.Silver}⚪";
                 string active = skinId == data.ActiveSkin ? $" {ChatColors.Green}[АКТИВЕН]" : "";
                 
-                player.PrintToChat($" {ChatColors.Yellow}!s{index}{ChatColors.Default} - {item.Name} (продать за {sellPrice} {currency}){active}");
+                player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name} (продать за {sellPrice} {currency}){active}");
                 index++;
             }
         }
@@ -1357,12 +1357,12 @@ public class ShopPlugin : BasePlugin
                 string currency = item.GoldPrice > 0 ? $"{ChatColors.Gold}🪙" : $"{ChatColors.Silver}⚪";
                 string active = trailId == data.ActiveTrail ? $" {ChatColors.Green}[АКТИВЕН]" : "";
                 
-                player.PrintToChat($" {ChatColors.Yellow}!s{index}{ChatColors.Default} - {item.Name} (продать за {sellPrice} {currency}){active}");
+                player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name} (продать за {sellPrice} {currency}){active}");
                 index++;
             }
         }
 
-        player.PrintToChat($" {ChatColors.Yellow}!s9{ChatColors.Default} - Назад");
+        player.PrintToChat($" {ChatColors.Yellow}!9{ChatColors.Default} - Назад");
         _playerMenuContext[steamId] = "shop_sell";
     }
 
@@ -1375,7 +1375,7 @@ public class ShopPlugin : BasePlugin
         if (totalItems == 0)
         {
             player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас пока нет товаров");
-            player.PrintToChat($" {ChatColors.Yellow}!s1{ChatColors.Default} - Назад в главное меню");
+            player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Назад в главное меню");
             _playerMenuContext[steamId] = "shop_empty_inventory";
             return;
         }
@@ -1392,7 +1392,7 @@ public class ShopPlugin : BasePlugin
                 {
                     var item = _shopItems[skinId];
                     string active = skinId == data.ActiveSkin ? $" {ChatColors.Green}[АКТИВЕН]" : "";
-                    player.PrintToChat($" {ChatColors.Yellow}!s{index}{ChatColors.Default} - {item.Name}{active}");
+                    player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name}{active}");
                     index++;
                 }
             }
@@ -1407,13 +1407,13 @@ public class ShopPlugin : BasePlugin
                 {
                     var item = _shopItems[trailId];
                     string active = trailId == data.ActiveTrail ? $" {ChatColors.Green}[АКТИВЕН]" : "";
-                    player.PrintToChat($" {ChatColors.Yellow}!s{index}{ChatColors.Default} - {item.Name}{active}");
+                    player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name}{active}");
                     index++;
                 }
             }
         }
 
-        player.PrintToChat($" {ChatColors.Yellow}!s9{ChatColors.Default} - Назад");
+        player.PrintToChat($" {ChatColors.Yellow}!9{ChatColors.Default} - Назад");
         _playerMenuContext[steamId] = "shop_inventory";
     }
 
