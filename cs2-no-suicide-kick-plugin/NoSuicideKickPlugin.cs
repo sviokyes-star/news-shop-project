@@ -28,6 +28,12 @@ public class NoSuicideKickPlugin : BasePlugin
             Server.ExecuteCommand("mp_tkpunish 0");
             Console.WriteLine($"[{ModuleName}] mp_autokick и mp_tkpunish отключены");
         });
+
+        AddTimer(30.0f, () =>
+        {
+            Server.ExecuteCommand("mp_autokick 0");
+            Server.ExecuteCommand("mp_tkpunish 0");
+        }, TimerFlags.REPEAT);
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
