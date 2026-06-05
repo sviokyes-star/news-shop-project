@@ -93,7 +93,7 @@ const UserProfile = () => {
     try {
       const [statusRes, friendsRes] = await Promise.all([
         fetch(`${func2url.friends}?steam_id=${myId}&target_id=${targetId}&action=status`),
-        fetch(`${func2url.friends}?steam_id=${targetId}&action=friends`),
+        fetch(`${func2url.friends}?steam_id=${targetId}&action=friends&no_ping=1`),
       ]);
       const statusData = await statusRes.json();
       const friendsData = await friendsRes.json();

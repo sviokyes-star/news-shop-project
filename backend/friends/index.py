@@ -33,12 +33,13 @@ def handler(event: dict, context) -> dict:
         conn = get_conn()
         cur = conn.cursor()
 
-        # Обновляем онлайн-статус текущего пользователя
-        cur.execute(
-            f"UPDATE {SCHEMA}.users SET is_online = TRUE, last_online = NOW() WHERE steam_id = %s",
-            (steam_id,)
-        )
-        conn.commit()
+        # Обновляем онлайн-статус только если явно не запрещено
+        if not params.get('no_ping'):
+            cur.execute(
+                f"UPDATE {SCHEMA}.users SET is_online = TRUE, last_online = NOW() WHERE steam_id = %s",
+                (steam_id,)
+            )
+            conn.commit()
 
         if action == 'status' and target_id:
             # Статус дружбы между двумя пользователями
