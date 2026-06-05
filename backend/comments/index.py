@@ -49,7 +49,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                        to_char(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as created_at,
                        c.parent_comment_id,
                        COALESCE(u.is_admin, false) as is_admin,
-                       COALESCE(u.is_moderator, false) as is_moderator
+                       COALESCE(u.is_moderator, false) as is_moderator,
+                       COALESCE(u.is_online, false) as is_online
                 FROM t_p15345778_news_shop_project.comments c
                 LEFT JOIN t_p15345778_news_shop_project.users u ON c.steam_id = u.steam_id
                 WHERE c.news_id = %s
@@ -90,7 +91,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'likes_count': likes_count,
                     'is_liked': is_liked,
                     'is_admin': row[9],
-                    'is_moderator': row[10]
+                    'is_moderator': row[10],
+                    'is_online': row[11]
                 })
             
             return {

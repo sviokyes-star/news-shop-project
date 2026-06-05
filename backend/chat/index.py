@@ -64,7 +64,8 @@ def get_messages(event: Dict[str, Any]) -> Dict[str, Any]:
                to_char(cm.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as created_at,
                cm.reply_to_message_id,
                COALESCE(u.is_admin, false) as is_admin,
-               COALESCE(u.is_moderator, false) as is_moderator
+               COALESCE(u.is_moderator, false) as is_moderator,
+               COALESCE(u.is_online, false) as is_online
         FROM t_p15345778_news_shop_project.chat_messages cm
         LEFT JOIN t_p15345778_news_shop_project.users u ON cm.steam_id = u.steam_id
         WHERE cm.is_hidden = FALSE
@@ -101,7 +102,8 @@ def get_messages(event: Dict[str, Any]) -> Dict[str, Any]:
             'createdAt': row[5],
             'replyTo': reply_to,
             'isAdmin': row[7],
-            'isModerator': row[8]
+            'isModerator': row[8],
+            'isOnline': row[9]
         })
     
     messages.reverse()

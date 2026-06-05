@@ -31,6 +31,7 @@ interface Comment {
   is_liked: boolean;
   is_admin?: boolean;
   is_moderator?: boolean;
+  is_online?: boolean;
 }
 
 interface SteamUser {
@@ -273,7 +274,7 @@ export default function Comments({ newsId }: CommentsProps) {
       <Card className={`p-6 bg-card/50 backdrop-blur border-border hover:border-primary/30 transition-colors ${isReply ? 'ml-16 mt-3' : ''}`}>
         <div className="flex gap-4">
           {comment.avatar_url ? (
-            <PlayerLink steamId={comment.steam_id || ''} name={comment.author} avatarOnly avatarUrl={comment.avatar_url} avatarSize={12} className="flex-shrink-0 border-2 border-primary/20 rounded-full" />
+            <PlayerLink steamId={comment.steam_id || ''} name={comment.author} avatarOnly avatarUrl={comment.avatar_url} avatarSize={12} isOnline={comment.is_online} className="flex-shrink-0" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl flex-shrink-0">
               {comment.avatar}
@@ -283,7 +284,7 @@ export default function Comments({ newsId }: CommentsProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-wrap">
                 {comment.steam_id ? (
-                  <PlayerLink steamId={comment.steam_id} name={comment.author} className="text-lg" />
+                  <PlayerLink steamId={comment.steam_id} name={comment.author} isOnline={comment.is_online} className="text-lg" />
                 ) : (
                   <h4 className="font-semibold text-lg">{comment.author}</h4>
                 )}

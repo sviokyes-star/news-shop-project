@@ -23,6 +23,7 @@ interface ChatMessage {
   replyTo?: ReplyTo | null;
   isAdmin?: boolean;
   isModerator?: boolean;
+  isOnline?: boolean;
 }
 
 interface SteamUser {
@@ -199,7 +200,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className="flex gap-2 animate-in fade-in slide-in-from-bottom-2 group">
-              <PlayerLink steamId={msg.steamId} name={msg.personaName} avatarOnly avatarUrl={msg.avatarUrl} avatarSize={8} className="flex-shrink-0" />
+              <PlayerLink steamId={msg.steamId} name={msg.personaName} avatarOnly avatarUrl={msg.avatarUrl} avatarSize={8} isOnline={msg.isOnline} className="flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <PlayerLink steamId={msg.steamId} name={msg.personaName} className="text-sm" />
