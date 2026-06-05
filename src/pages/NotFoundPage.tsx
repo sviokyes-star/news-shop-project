@@ -30,9 +30,7 @@ const NotFoundPage = () => {
 
         <div className="space-y-3">
           <h1 className="text-3xl font-bold tracking-tight">Страница не найдена</h1>
-          <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Эта страница улетела в открытый космос. Мы не можем её найти.
-          </p>
+          <p className="text-muted-foreground text-lg max-w-md mx-auto">GAME OVER</p>
         </div>
 
         <div className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full">
