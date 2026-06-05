@@ -247,7 +247,7 @@ const UserProfile = () => {
               <div className="flex items-start justify-between flex-wrap gap-4">
                 <div>
                   <h1 className="text-4xl font-bold tracking-tight">{displayName}</h1>
-                  {user.nickname && <p className="text-muted-foreground mt-1">Steam: {user.personaName}</p>}
+
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
                     <span className="text-sm text-muted-foreground">
