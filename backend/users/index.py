@@ -209,7 +209,24 @@ def update_user(body_data: Dict[str, Any], cursor, conn) -> Dict[str, Any]:
         }
     
     conn.commit()
-    
+
+    if 'isBlocked' in body_data:
+        if body_data['isBlocked']:
+            cursor.execute(
+                "UPDATE t_p15345778_news_shop_project.chat_messages SET is_hidden = TRUE WHERE steam_id = %s",
+                (steam_id,)
+            )
+            cursor.execute(
+                "DELETE FROM t_p15345778_news_shop_project.comments WHERE steam_id = %s",
+                (steam_id,)
+            )
+        else:
+            cursor.execute(
+                "UPDATE t_p15345778_news_shop_project.chat_messages SET is_hidden = FALSE WHERE steam_id = %s",
+                (steam_id,)
+            )
+        conn.commit()
+
     return {
         'statusCode': 200,
         'headers': {
