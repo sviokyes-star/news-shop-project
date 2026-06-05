@@ -64,7 +64,7 @@ export default function ProfileFriends({ friends, friendRequests, onAccept, onDe
         </div>
 
         {friends.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="flex flex-wrap gap-3">
             {friends.map(f => (
               <div key={f.steamId} className="relative">
                 <PlayerLink
@@ -72,9 +72,9 @@ export default function ProfileFriends({ friends, friendRequests, onAccept, onDe
                   name={f.personaName}
                   showAvatar
                   avatarUrl={f.avatarUrl}
-                  avatarSize={12}
+                  avatarSize={10}
                   isOnline={f.isOnline}
-                  className="flex-col items-center gap-2 p-4 w-full rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-center"
+                  className="flex-col items-center gap-1 p-3 rounded-xl bg-card border border-border hover:border-primary/50 transition-all"
                 />
               </div>
             ))}
