@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import PlayerLink from '@/components/ui/player-link';
-import { formatRelativeTime } from '@/utils/dateFormat';
+import { formatRelativeTime, formatDateTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -299,9 +299,10 @@ export default function Comments({ newsId }: CommentsProps) {
                   </span>
                 )}
               </div>
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
+              <span className="text-sm text-muted-foreground flex items-center gap-1" title={formatDateTime(comment.date)}>
                 <Icon name="Clock" size={14} />
                 {formatRelativeTime(comment.date)}
+                <span className="text-xs opacity-60">· {formatDateTime(comment.date)}</span>
               </span>
             </div>
             <p className="text-muted-foreground leading-relaxed">{comment.text}</p>
