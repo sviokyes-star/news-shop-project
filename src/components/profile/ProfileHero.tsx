@@ -201,12 +201,10 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
             </a>
           </div>
 
-          <div className="p-4 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 flex-shrink-0 text-right">
-            <div className="flex items-center gap-2 mb-1 justify-end">
-              <p className="text-sm text-muted-foreground">Баланс</p>
-              <Icon name="Wallet" size={16} className="text-primary" />
-            </div>
-            <p className="text-3xl font-bold text-primary">{profileUser.balance}₽</p>
+          <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 flex-shrink-0 flex items-center gap-3">
+            <Icon name="Wallet" size={18} className="text-primary" />
+            <span className="text-sm text-muted-foreground">Баланс</span>
+            <span className="text-2xl font-bold text-primary">{profileUser.balance}₽</span>
           </div>
         </div>
       </div>
