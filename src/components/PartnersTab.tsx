@@ -58,9 +58,9 @@ const PartnersTab = () => {
                     className="p-6 bg-card/80 backdrop-blur border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
                   >
                     <div className="flex flex-col items-center text-center space-y-4">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-5xl overflow-hidden">
+                      <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-5xl overflow-hidden">
                         {partner.logo && partner.logo.startsWith('http') ? (
-                          <img src={partner.logo} alt={partner.name} className="w-full h-full object-contain p-2" />
+                          <img src={partner.logo} alt={partner.name} className="w-full h-full object-cover" />
                         ) : (
                           partner.logo || '🤝'
                         )}
