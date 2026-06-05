@@ -17,6 +17,8 @@ export interface User {
   isModerator: boolean;
   lastLogin: string | null;
   createdAt: string | null;
+  isOnline?: boolean;
+  lastOnline?: string | null;
 }
 
 interface UserListItemProps {
@@ -63,7 +65,7 @@ export default function UserListItem({
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           {user.avatarUrl ? (
-            <PlayerLink steamId={user.steamId} name={user.personaName} avatarOnly avatarUrl={user.avatarUrl} avatarSize={12} />
+            <PlayerLink steamId={user.steamId} name={user.personaName} avatarOnly avatarUrl={user.avatarUrl} avatarSize={12} isOnline={user.isOnline} />
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
               <Icon name="User" size={24} />

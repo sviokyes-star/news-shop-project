@@ -67,7 +67,9 @@ def get_users(cursor) -> Dict[str, Any]:
     cursor.execute("""
         SELECT u.id, u.steam_id, u.persona_name, u.avatar_url, u.profile_url, 
                u.balance, u.is_blocked, u.block_reason, u.is_moderator, u.last_login, u.created_at, u.updated_at,
-               COALESCE(u.is_admin, false) as is_admin
+               COALESCE(u.is_admin, false) as is_admin,
+               (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online,
+               u.last_online
         FROM t_p15345778_news_shop_project.users u
         ORDER BY u.last_login DESC NULLS LAST, u.created_at DESC
     """)
@@ -89,7 +91,9 @@ def get_users(cursor) -> Dict[str, Any]:
             'isModerator': user['is_moderator'] if user['is_moderator'] else False,
             'lastLogin': user['last_login'].isoformat() if user['last_login'] else None,
             'createdAt': user['created_at'].isoformat() if user['created_at'] else None,
-            'updatedAt': user['updated_at'].isoformat() if user['updated_at'] else None
+            'updatedAt': user['updated_at'].isoformat() if user['updated_at'] else None,
+            'isOnline': user['is_online'],
+            'lastOnline': user['last_online'].isoformat() if user['last_online'] else None
         })
     
     return {

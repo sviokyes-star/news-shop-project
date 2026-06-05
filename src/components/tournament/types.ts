@@ -6,6 +6,8 @@ export interface Participant {
   confirmed_at?: string | null;
   is_admin?: boolean;
   is_moderator?: boolean;
+  is_online?: boolean;
+  last_online?: string | null;
 }
 
 export interface TournamentDetail {

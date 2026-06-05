@@ -36,7 +36,7 @@ const ParticipantsList = ({ participants }: ParticipantsListProps) => {
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
                     {index + 1}
                   </div>
-                  <PlayerLink steamId={participant.steam_id} name={participant.persona_name} avatarOnly avatarUrl={participant.avatar_url} avatarSize={12} />
+                  <PlayerLink steamId={participant.steam_id} name={participant.persona_name} avatarOnly avatarUrl={participant.avatar_url} avatarSize={12} isOnline={participant.is_online} />
                   <PlayerLink steamId={participant.steam_id} name={participant.persona_name} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
