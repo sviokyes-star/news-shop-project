@@ -41,6 +41,6 @@ def handler(event: dict, context) -> dict:
 
     filename = f"partners/logo-{uuid.uuid4().hex}.png"
     s3.put_object(Bucket='files', Key=filename, Body=image_bytes, ContentType='image/png')
-    logo_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/files/{filename}"
+    logo_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{filename}"
 
     return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'success': True, 'logo_url': logo_url})}
