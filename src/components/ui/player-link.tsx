@@ -39,12 +39,7 @@ const PlayerLink = ({ steamId, name, avatarUrl, className = '', showAvatar = fal
         </span>
       )}
       {!avatarOnly && (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="font-semibold hover:underline">{name}</span>
-          {!showAvatarImg && isOnline !== undefined && (
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-          )}
-        </span>
+        <span className="font-semibold hover:underline">{name}</span>
       )}
     </button>
   );
