@@ -143,19 +143,19 @@ const Profile = () => {
   return (
     <main className="container mx-auto px-6 py-16">
       <div className="space-y-10">
-        <ProfileFriends
-          friends={friends}
-          friendRequests={friendRequests}
-          onAccept={handleAcceptFriend}
-          onDecline={handleDeclineFriend}
-        />
-
         <ProfileHero
           user={user}
           profileUser={profileData.user}
           statistics={profileData.statistics}
           onUserUpdate={setUser}
           onProfileReload={() => loadProfileData(user.steamId)}
+        />
+
+        <ProfileFriends
+          friends={friends}
+          friendRequests={friendRequests}
+          onAccept={handleAcceptFriend}
+          onDecline={handleDeclineFriend}
         />
 
         <ProfileTournaments tournaments={profileData.tournaments} />
