@@ -18,15 +18,8 @@ interface ProfileUser {
   lastOnline?: string;
 }
 
-interface ProfileStatistics {
-  tournaments_count: number;
-  purchases_count: number;
-  total_spent: number;
-}
-
 interface UserProfileHeroProps {
   user: ProfileUser;
-  statistics: ProfileStatistics;
   me: { steamId: string } | null;
   friendStatus: FriendStatus;
   isFriendLoading: boolean;
@@ -39,7 +32,6 @@ interface UserProfileHeroProps {
 
 export default function UserProfileHero({
   user,
-  statistics,
   me,
   friendStatus,
   isFriendLoading,
@@ -124,22 +116,7 @@ export default function UserProfileHero({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-6 pt-4">
-            <div className="p-4 rounded-xl bg-background/50 border border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="Trophy" size={20} className="text-primary" />
-                <p className="text-sm text-muted-foreground">Турниров</p>
-              </div>
-              <p className="text-3xl font-bold">{statistics.tournaments_count}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-background/50 border border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="ShoppingBag" size={20} className="text-primary" />
-                <p className="text-sm text-muted-foreground">Покупок</p>
-              </div>
-              <p className="text-3xl font-bold">{statistics.purchases_count}</p>
-            </div>
-          </div>
+
         </div>
       </div>
     </Card>

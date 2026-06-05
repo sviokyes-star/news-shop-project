@@ -207,14 +207,13 @@ const UserProfile = () => {
     </main>
   );
 
-  const { user, tournaments, statistics } = profileData;
+  const { user, tournaments } = profileData;
 
   return (
     <main className="container mx-auto px-6 py-16">
       <div className="space-y-10">
         <UserProfileHero
           user={user}
-          statistics={statistics}
           me={me}
           friendStatus={friendStatus}
           isFriendLoading={isFriendLoading}
