@@ -61,21 +61,23 @@ export default function ProfileFriends({ friends, friendRequests, onAccept, onDe
         <h2 className="text-2xl font-bold">Друзья <span className="text-muted-foreground text-lg font-normal">({friends.length})</span></h2>
 
         {friends.length > 0 ? (
-          <div className="flex flex-wrap gap-3">
-            {friends.map(f => (
-              <div key={f.steamId} className="relative">
-                <PlayerLink
-                  steamId={f.steamId}
-                  name={f.personaName}
-                  showAvatar
-                  avatarUrl={f.avatarUrl}
-                  avatarSize={10}
-                  isOnline={f.isOnline}
-                  className="flex-col items-center gap-1 p-3 rounded-xl bg-card border border-border hover:border-primary/50 transition-all"
-                />
-              </div>
-            ))}
-          </div>
+          <Card className="p-6 border border-border bg-card/50 backdrop-blur">
+            <div className="flex flex-wrap gap-3">
+              {friends.map(f => (
+                <div key={f.steamId} className="relative">
+                  <PlayerLink
+                    steamId={f.steamId}
+                    name={f.personaName}
+                    showAvatar
+                    avatarUrl={f.avatarUrl}
+                    avatarSize={10}
+                    isOnline={f.isOnline}
+                    className="flex-col items-center gap-1 p-3 rounded-xl bg-background/50 border border-border hover:border-primary/50 transition-all"
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
         ) : (
           <Card className="p-12 text-center border border-dashed border-border bg-card/30">
             <Icon name="Users" size={48} className="text-muted-foreground mx-auto mb-4" />
