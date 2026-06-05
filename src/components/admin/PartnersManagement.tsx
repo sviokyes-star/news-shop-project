@@ -337,8 +337,12 @@ export default function PartnersManagement({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
-                      {partner.logo}
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl overflow-hidden">
+                      {partner.logo && partner.logo.startsWith('http') ? (
+                        <img src={partner.logo} alt={partner.name} className="w-full h-full object-contain p-1" />
+                      ) : (
+                        partner.logo || '🤝'
+                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
