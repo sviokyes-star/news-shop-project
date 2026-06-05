@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import func2url from '../../../backend/func2url.json';
+import { toLocalDateTimeInput, toUTCISOString } from '@/utils/dateFormat';
 
 interface NewsItem {
   id: number;
@@ -60,7 +61,8 @@ export default function NewsManagement({ news, isLoading, onRefresh }: NewsManag
     category: '',
     image_url: '',
     content: '',
-    badge: ''
+    badge: '',
+    date: toLocalDateTimeInput(new Date().toISOString())
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,9 +81,10 @@ export default function NewsManagement({ news, isLoading, onRefresh }: NewsManag
     try {
       const url = func2url.news;
       const method = editingId ? 'PUT' : 'POST';
+      const bodyData = { ...formData, date: toUTCISOString(formData.date) };
       const body = editingId 
-        ? { ...formData, id: editingId }
-        : formData;
+        ? { ...bodyData, id: editingId }
+        : bodyData;
 
       console.log('📤 Sending request:', { url, method, body });
 
@@ -120,7 +123,8 @@ export default function NewsManagement({ news, isLoading, onRefresh }: NewsManag
       category: item.category,
       image_url: item.image_url || '',
       content: item.content,
-      badge: item.badge || ''
+      badge: item.badge || '',
+      date: toLocalDateTimeInput(item.date)
     });
   };
 
@@ -161,7 +165,8 @@ export default function NewsManagement({ news, isLoading, onRefresh }: NewsManag
       category: '',
       image_url: '',
       content: '',
-      badge: ''
+      badge: '',
+      date: toLocalDateTimeInput(new Date().toISOString())
     });
     setError('');
     setSuccess('');
@@ -257,6 +262,16 @@ export default function NewsManagement({ news, isLoading, onRefresh }: NewsManag
                 value={formData.badge}
                 onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
                 placeholder="НОВОЕ, ВАЖНО, и т.д."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Дата публикации</label>
+              <Input
+                type="datetime-local"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
               />
             </div>
 

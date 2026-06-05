@@ -97,9 +97,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                pub_date = body_data.get('date') or 'NOW()'
                 cur.execute("""
-                    INSERT INTO news (title, category, image_url, content, badge)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO news (title, category, image_url, content, badge, date)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     RETURNING id, title, category, image_url, content, badge,
                               to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as date,
                               to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as created_at,
@@ -109,7 +110,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     body_data['category'],
                     body_data.get('image_url'),
                     body_data['content'],
-                    body_data.get('badge')
+                    body_data.get('badge'),
+                    pub_date
                 ))
                 new_news = cur.fetchone()
                 conn.commit()
@@ -152,23 +154,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             news_id = body_data.get('id')
             
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    UPDATE news 
-                    SET title = %s, category = %s, image_url = %s, 
-                        content = %s, badge = %s, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                    RETURNING id, title, category, image_url, content, badge,
-                              to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as date,
-                              to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as created_at,
-                              to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as updated_at
-                """, (
+                date_set = ", date = %s" if body_data.get('date') else ""
+                params = [
                     body_data['title'],
                     body_data['category'],
                     body_data.get('image_url'),
                     body_data['content'],
                     body_data.get('badge'),
-                    news_id
-                ))
+                ]
+                if body_data.get('date'):
+                    params.append(body_data['date'])
+                params.append(news_id)
+                cur.execute(f"""
+                    UPDATE news 
+                    SET title = %s, category = %s, image_url = %s, 
+                        content = %s, badge = %s{date_set}, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                    RETURNING id, title, category, image_url, content, badge,
+                              to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as date,
+                              to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as created_at,
+                              to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as updated_at
+                """, params)
                 updated_news = cur.fetchone()
                 conn.commit()
                 
