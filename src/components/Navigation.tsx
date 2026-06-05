@@ -74,7 +74,7 @@ const Navigation = ({
             <img
               src="https://cdn.poehali.dev/projects/0cd5ea72-8c09-43b2-b92c-a0fdee84371e/files/favicon-1771578220171.png"
               alt="Okyes"
-              className="w-14 h-14 rounded-lg"
+              className="w-16 h-16 rounded-lg"
             />
             <h1 className="text-2xl font-bold tracking-tight neon-glow">Okyes</h1>
           </div>
