@@ -145,7 +145,7 @@ export default function Admin() {
     setUser(userData);
 
     try {
-      const response = await fetch(`${func2url['check-admin']}?steam_id=${userData.steamId}`);
+      const response = await fetch(`${func2url.users}?action=check-admin&steam_id=${userData.steamId}`);
       const data = await response.json();
       setIsAdmin(data.isAdmin);
     } catch (error) {
@@ -245,7 +245,7 @@ export default function Admin() {
 
   const updateServersStatus = async () => {
     try {
-      const response = await fetch(func2url['server-status'], {
+      const response = await fetch(`${func2url.servers}?action=status`, {
         method: 'POST'
       });
       const data = await response.json();

@@ -7,7 +7,9 @@ Returns: HTTP response with servers data or operation confirmation
 
 import json
 import os
-from typing import Dict, Any
+import socket
+import struct
+from typing import Dict, Any, Tuple, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -44,8 +46,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         if method == 'GET':
+            params = event.get('queryStringParameters') or {}
+            if params.get('action') == 'status':
+                server_id = params.get('server_id')
+                if server_id:
+                    return query_single_server(int(server_id), db_url)
+                return query_all_servers(db_url)
             return get_servers(cursor)
         elif method == 'POST':
+            params = event.get('queryStringParameters') or {}
+            if params.get('action') == 'status':
+                return query_all_servers(db_url)
             body_data = json.loads(event.get('body', '{}'))
             return create_server(body_data, cursor, conn)
         elif method == 'PUT':
@@ -285,3 +296,104 @@ def delete_server(params: Dict[str, Any], cursor, conn) -> Dict[str, Any]:
         'body': json.dumps({'success': True}),
         'isBase64Encoded': False
     }
+
+
+def query_source_server(ip: str, port: int, timeout: int = 3) -> Optional[Dict[str, Any]]:
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(timeout)
+        request = b'\xFF\xFF\xFF\xFFTSource Engine Query\x00'
+        sock.sendto(request, (ip, port))
+        data, _ = sock.recvfrom(4096)
+        sock.close()
+        if len(data) < 6:
+            return None
+        if data[4:5] == b'A':
+            challenge = data[5:9]
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.settimeout(timeout)
+            sock.sendto(b'\xFF\xFF\xFF\xFFTSource Engine Query\x00' + challenge, (ip, port))
+            data, _ = sock.recvfrom(4096)
+            sock.close()
+        offset = 5
+        offset += 1  # protocol
+        name_end = data.find(b'\x00', offset); offset = name_end + 1
+        map_end = data.find(b'\x00', offset)
+        map_name = data[offset:map_end].decode('utf-8', errors='ignore'); offset = map_end + 1
+        folder_end = data.find(b'\x00', offset); offset = folder_end + 1
+        game_end = data.find(b'\x00', offset)
+        game_name = data[offset:game_end].decode('utf-8', errors='ignore'); offset = game_end + 1
+        if offset + 2 > len(data):
+            return None
+        offset += 2  # app_id
+        if offset + 2 <= len(data):
+            players = data[offset]
+            max_players = data[offset + 1]
+            return {'status': 'online', 'players': players, 'max_players': max_players, 'map': map_name, 'game': game_name}
+        return None
+    except socket.timeout:
+        return {'status': 'offline', 'error': 'timeout'}
+    except Exception as e:
+        return {'status': 'offline', 'error': str(e)}
+
+
+def query_single_server(server_id: int, db_url: str) -> Dict[str, Any]:
+    conn = psycopg2.connect(db_url)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"""
+            SELECT id, name, ip_address, port, game_type, map, max_players, current_players
+            FROM t_p15345778_news_shop_project.servers
+            WHERE id = {int(server_id)} AND is_active = true
+        """)
+        server = cursor.fetchone()
+        if not server:
+            return {'statusCode': 404, 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Server not found'}), 'isBase64Encoded': False}
+        sid, name, ip_address, port, game_type, map_name, max_players, current_players = server
+        query_result = query_source_server(ip_address, port)
+        if query_result and query_result['status'] == 'online':
+            cursor.execute(f"""
+                UPDATE t_p15345778_news_shop_project.servers
+                SET status = 'online', current_players = {int(query_result['players'])},
+                    max_players = {int(query_result['max_players'])},
+                    map = '{query_result['map'].replace("'", "''")}', updated_at = CURRENT_TIMESTAMP
+                WHERE id = {int(sid)}
+            """)
+            conn.commit()
+            result = {'id': sid, 'name': name, 'ipAddress': ip_address, 'port': port, 'status': 'online', 'currentPlayers': query_result['players'], 'maxPlayers': query_result['max_players'], 'map': query_result['map']}
+        else:
+            cursor.execute(f"UPDATE t_p15345778_news_shop_project.servers SET status = 'offline', updated_at = CURRENT_TIMESTAMP WHERE id = {int(sid)}")
+            conn.commit()
+            result = {'id': sid, 'name': name, 'ipAddress': ip_address, 'port': port, 'status': 'offline', 'currentPlayers': 0, 'maxPlayers': max_players}
+        return {'statusCode': 200, 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'server': result}), 'isBase64Encoded': False}
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def query_all_servers(db_url: str) -> Dict[str, Any]:
+    conn = psycopg2.connect(db_url)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, ip_address, port FROM t_p15345778_news_shop_project.servers WHERE is_active = true")
+        servers = cursor.fetchall()
+        results = []
+        for server_id, ip_address, port in servers:
+            query_result = query_source_server(ip_address, port)
+            if query_result and query_result['status'] == 'online':
+                cursor.execute(f"""
+                    UPDATE t_p15345778_news_shop_project.servers
+                    SET status = 'online', current_players = {int(query_result['players'])},
+                        max_players = {int(query_result['max_players'])},
+                        map = '{query_result['map'].replace("'", "''")}', updated_at = CURRENT_TIMESTAMP
+                    WHERE id = {int(server_id)}
+                """)
+                results.append({'id': server_id, 'status': 'online', 'currentPlayers': query_result['players'], 'maxPlayers': query_result['max_players'], 'map': query_result['map']})
+            else:
+                cursor.execute(f"UPDATE t_p15345778_news_shop_project.servers SET status = 'offline', updated_at = CURRENT_TIMESTAMP WHERE id = {int(server_id)}")
+                results.append({'id': server_id, 'status': 'offline'})
+        conn.commit()
+        return {'statusCode': 200, 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'servers': results}), 'isBase64Encoded': False}
+    finally:
+        cursor.close()
+        conn.close()

@@ -11,6 +11,8 @@ from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+SCHEMA = 't_p15345778_news_shop_project'
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
     
@@ -44,6 +46,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         if method == 'GET':
+            params = event.get('queryStringParameters') or {}
+            if params.get('action') == 'check-admin':
+                steam_id = params.get('steam_id', '')
+                escaped = steam_id.replace("'", "''")
+                cursor.execute(f"SELECT COALESCE(is_admin, false) FROM {SCHEMA}.users WHERE steam_id = '{escaped}'")
+                result = cursor.fetchone()
+                is_admin = list(result.values())[0] if result else False
+                return {'statusCode': 200, 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'isAdmin': is_admin, 'steam_id': steam_id}), 'isBase64Encoded': False}
             return get_users(cursor)
         elif method == 'PUT':
             body_data = json.loads(event.get('body', '{}'))

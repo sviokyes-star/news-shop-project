@@ -53,10 +53,10 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
     }
 
     try {
-      const response = await fetch(func2url['update-nickname'], {
+      const response = await fetch(func2url['update-profile'], {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ steam_id: user.steamId, nickname: newNickname.trim() }),
+        body: JSON.stringify({ action: 'nickname', steam_id: user.steamId, nickname: newNickname.trim() }),
       });
       const data = await response.json();
       if (data.success) {
@@ -90,10 +90,10 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
-        const response = await fetch(func2url['upload-avatar'], {
+        const response = await fetch(func2url['update-profile'], {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ steam_id: user.steamId, image: base64String }),
+          body: JSON.stringify({ action: 'avatar', steam_id: user.steamId, image: base64String }),
         });
         const data = await response.json();
         if (data.success) {

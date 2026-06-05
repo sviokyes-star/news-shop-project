@@ -37,7 +37,7 @@ const ServersTab = () => {
 
   const updateServersStatus = async () => {
     try {
-      const response = await fetch(func2url['server-status'], {
+      const response = await fetch(`${func2url.servers}?action=status`, {
         method: 'POST'
       });
       const data = await response.json();

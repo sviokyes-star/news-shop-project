@@ -139,7 +139,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
   const checkAdmin = async () => {
     if (!user) return;
     try {
-      const response = await fetch(`${func2url['check-admin']}?steam_id=${user.steamId}`);
+      const response = await fetch(`${func2url.users}?action=check-admin&steam_id=${user.steamId}`);
       const data = await response.json();
       setIsAdmin(data.isAdmin || false);
     } catch (error) {
