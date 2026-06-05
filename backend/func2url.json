@@ -1,7 +1,5 @@
 {
-  "upload-avatar": "https://functions.poehali.dev/5378c45a-36e9-410e-8b5c-36579fe8e513",
-  "update-nickname": "https://functions.poehali.dev/015d672a-eb93-4731-881e-6e067a03776c",
-  "battlenet-auth": "https://functions.poehali.dev/a427ecff-b316-4c0a-a83d-989bf3c8ea21",
+  "friends": "https://functions.poehali.dev/2b8ec45c-3b8f-403f-ae10-2b3ebf996238",
   "chat": "https://functions.poehali.dev/097f3d10-e075-43ab-b34b-0ae5d3bae300",
   "menu-items": "https://functions.poehali.dev/307a7614-8618-412b-9ab6-b7517d36957c",
   "partners": "https://functions.poehali.dev/a120fc9c-b8a7-44ef-be6b-bcbb76fcd036",
@@ -9,13 +7,10 @@
   "server-status": "https://functions.poehali.dev/e33bf4ab-0d90-44da-a033-bd3f1ce0aeaa",
   "servers": "https://functions.poehali.dev/c6a164b3-08aa-4123-89ae-b28b98bfd054",
   "balance": "https://functions.poehali.dev/cb8c4517-7bb1-41a6-b3e7-217b62353ebb",
-  "payment": "https://functions.poehali.dev/0fd94a7a-2c16-479c-a091-7172f1488106",
   "shop-items": "https://functions.poehali.dev/3ea002bf-6a9a-4e0b-b320-170de254d3d5",
   "check-admin": "https://functions.poehali.dev/96af60f0-90ab-401c-be92-2be7102f5b81",
   "news": "https://functions.poehali.dev/a9a39f19-8dbd-4005-b623-bc07fb8b8ea7",
-  "comments": "https://functions.poehali.dev/eb1ef9ad-793b-40ca-81f4-73d87bf87ef5",
   "profile": "https://functions.poehali.dev/88f7bd27-aac7-4eab-b045-2d423b092ebb",
   "tournaments": "https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675",
-  "purchases": "https://functions.poehali.dev/501adf5e-5877-4b42-9606-8ccdf2bc9f2d",
   "steam-auth": "https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f"
 }

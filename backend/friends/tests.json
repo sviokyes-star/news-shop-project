@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "GET friends list",
+      "method": "GET",
+      "path": "/?steam_id=76561198000000001&action=friends",
+      "expectedStatus": 200,
+      "expectedBody": {"friends": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET pending requests",
+      "method": "GET",
+      "path": "/?steam_id=76561198000000001&action=pending",
+      "expectedStatus": 200,
+      "expectedBody": {"requests": [], "count": 0},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET friendship status",
+      "method": "GET",
+      "path": "/?steam_id=76561198000000001&target_id=76561198000000002&action=status",
+      "expectedStatus": 200,
+      "expectedBody": {"status": "none"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

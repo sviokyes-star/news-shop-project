@@ -4,9 +4,17 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import PlayerLink from '@/components/ui/player-link';
 import { formatDateTime, formatShortDate } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
 import { toast } from '@/hooks/use-toast';
+
+interface FriendRequest {
+  steamId: string;
+  personaName: string;
+  avatarUrl: string;
+  createdAt: string;
+}
 
 interface SteamUser {
   steamId: string;
@@ -55,6 +63,7 @@ const Profile = () => {
   const [newNickname, setNewNickname] = useState('');
   const [nicknameError, setNicknameError] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('steamUser');
@@ -66,7 +75,39 @@ const Profile = () => {
     const userData = JSON.parse(savedUser);
     setUser(userData);
     loadProfileData(userData.steamId);
+    loadFriendRequests(userData.steamId);
   }, [navigate]);
+
+  const loadFriendRequests = async (steamId: string) => {
+    try {
+      const res = await fetch(`${func2url.friends}?steam_id=${steamId}&action=pending`);
+      const data = await res.json();
+      setFriendRequests(data.requests || []);
+    } catch (e) {
+      console.error('Failed to load friend requests', e);
+    }
+  };
+
+  const handleAcceptFriend = async (requesterSteamId: string) => {
+    if (!user) return;
+    await fetch(func2url.friends, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requester_steam_id: requesterSteamId, addressee_steam_id: user.steamId, action: 'accept' }),
+    });
+    setFriendRequests(prev => prev.filter(r => r.steamId !== requesterSteamId));
+    toast({ title: 'Друг добавлен!' });
+  };
+
+  const handleDeclineFriend = async (requesterSteamId: string) => {
+    if (!user) return;
+    await fetch(func2url.friends, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requester_steam_id: requesterSteamId, addressee_steam_id: user.steamId, action: 'decline' }),
+    });
+    setFriendRequests(prev => prev.filter(r => r.steamId !== requesterSteamId));
+  };
 
   const loadProfileData = async (steamId: string) => {
     const cacheKey = `profile_${steamId}`;
@@ -201,6 +242,33 @@ const Profile = () => {
   return (
       <main className="container mx-auto px-6 py-16">
         <div className="space-y-10">
+          {friendRequests.length > 0 && (
+            <Card className="p-6 border border-primary/30 bg-primary/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Icon name="UserPlus" size={20} className="text-primary" />
+                <h2 className="text-lg font-bold">Заявки в друзья</h2>
+                <span className="ml-auto px-2 py-0.5 bg-primary text-primary-foreground text-xs font-bold rounded-full">{friendRequests.length}</span>
+              </div>
+              <div className="space-y-3">
+                {friendRequests.map(req => (
+                  <div key={req.steamId} className="flex items-center gap-3">
+                    <PlayerLink steamId={req.steamId} name={req.personaName} avatarOnly avatarUrl={req.avatarUrl} avatarSize={10} />
+                    <PlayerLink steamId={req.steamId} name={req.personaName} className="flex-1" />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleAcceptFriend(req.steamId)} className="gap-1">
+                        <Icon name="Check" size={14} />
+                        Принять
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDeclineFriend(req.steamId)} className="gap-1">
+                        <Icon name="X" size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           <Card className="p-10 border border-border bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur border-primary/20">
             <div className="flex items-start gap-8">
               <div className="relative group">
