@@ -16,7 +16,7 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import NewsDetail from "./pages/NewsDetail";
 import Admin from "./pages/Admin";
-import NotFound from "./pages/NotFound";
+import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +40,7 @@ const App = () => (
             <Route path="/profile/:steamId" element={<UserProfile />} />
           </Route>
           <Route path="/admin" element={<Admin />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
