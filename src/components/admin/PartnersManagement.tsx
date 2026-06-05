@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import func2url from '../../../backend/func2url.json';
+import { toast } from '@/hooks/use-toast';
 
 interface Partner {
   id: number;
@@ -52,9 +53,50 @@ export default function PartnersManagement({
   });
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Ошибка', description: 'Максимум 5MB', variant: 'destructive' });
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Ошибка', description: 'Только изображения', variant: 'destructive' });
+      return;
+    }
+    setIsUploadingLogo(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setLogoPreview(base64);
+      try {
+        const res = await fetch(func2url['upload-partner-logo'], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64 }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setFormData(prev => ({ ...prev, logo: data.logo_url }));
+          toast({ title: 'Логотип загружен' });
+        } else {
+          toast({ title: 'Ошибка загрузки', variant: 'destructive' });
+        }
+      } catch {
+        toast({ title: 'Ошибка загрузки', variant: 'destructive' });
+      }
+      setIsUploadingLogo(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleEdit = (partner: Partner) => {
     setEditingId(partner.id);
+    setLogoPreview('');
     setFormData({
       name: partner.name,
       description: partner.description,
@@ -166,24 +208,16 @@ export default function PartnersManagement({
 
   const handleCancel = () => {
     setEditingId(null);
-    setFormData({
-      name: '',
-      description: '',
-      logo: '',
-      website: ''
-    });
+    setLogoPreview('');
+    setFormData({ name: '', description: '', logo: '', website: '' });
     setError('');
     setSuccess('');
   };
 
   const handleNew = () => {
     setEditingId(0);
-    setFormData({
-      name: '',
-      description: '',
-      logo: '🤝',
-      website: ''
-    });
+    setLogoPreview('');
+    setFormData({ name: '', description: '', logo: '🤝', website: '' });
   };
 
   return (
@@ -225,12 +259,29 @@ export default function PartnersManagement({
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Логотип (эмодзи)</label>
-                <Input
-                  value={formData.logo}
-                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                  placeholder="🎮"
-                />
+                <label className="text-sm font-medium">Логотип</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl border border-border bg-card flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {logoPreview || (formData.logo && formData.logo.startsWith('http')) ? (
+                      <img src={logoPreview || formData.logo} alt="logo" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-3xl">{formData.logo || '🤝'}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                    <Button type="button" variant="outline" size="sm" className="w-full gap-2" onClick={() => fileInputRef.current?.click()} disabled={isUploadingLogo}>
+                      {isUploadingLogo ? <Icon name="Loader2" size={14} className="animate-spin" /> : <Icon name="Upload" size={14} />}
+                      {isUploadingLogo ? 'Загружаю...' : 'Загрузить изображение'}
+                    </Button>
+                    <Input
+                      value={formData.logo.startsWith('http') ? '' : formData.logo}
+                      onChange={(e) => { setLogoPreview(''); setFormData({ ...formData, logo: e.target.value }); }}
+                      placeholder="или введите эмодзи: 🎮"
+                      disabled={isUploadingLogo}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Веб-сайт</label>
