@@ -79,12 +79,22 @@ const UserProfile = () => {
   }, [steamId, me]);
 
   const loadProfile = async (id: string) => {
-    setIsLoading(true);
+    const cacheKey = `userprofile_${id}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      setProfileData(JSON.parse(cached));
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     try {
       const res = await fetch(`https://functions.poehali.dev/88f7bd27-aac7-4eab-b045-2d423b092ebb?steam_id=${id}`);
       const data = await res.json();
       if (!data.user || !data.user.steamId) { setNotFound(true); }
-      else { setProfileData(data); }
+      else {
+        setProfileData(data);
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      }
     } catch { setNotFound(true); }
     finally { setIsLoading(false); }
   };
