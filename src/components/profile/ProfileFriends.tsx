@@ -57,11 +57,8 @@ export default function ProfileFriends({ friends, friendRequests, onAccept, onDe
         </Card>
       )}
 
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold mb-2">Друзья</h2>
-          <p className="text-muted-foreground">Ваши друзья на сайте</p>
-        </div>
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Друзья <span className="text-muted-foreground text-lg font-normal">({friends.length})</span></h2>
 
         {friends.length > 0 ? (
           <div className="flex flex-wrap gap-3">
