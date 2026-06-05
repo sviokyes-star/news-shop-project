@@ -197,11 +197,6 @@ const UserProfile = () => {
   return (
     <main className="container mx-auto px-6 py-16">
       <div className="space-y-10">
-        <Button onClick={() => navigate(-1)} variant="ghost" className="gap-2 -ml-2">
-          <Icon name="ArrowLeft" size={16} />
-          Назад
-        </Button>
-
         <UserProfileHero
           user={user}
           statistics={statistics}
