@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Icon from '@/components/ui/icon';
 import func2url from '../../backend/func2url.json';
+import NotificationBell from '@/components/NotificationBell';
 
 interface SteamUser {
   steamId: string;
@@ -117,6 +118,8 @@ const Navigation = ({
             </div>
 
             {user ? (
+              <div className="flex items-center gap-1">
+                <NotificationBell steamId={user.steamId} />
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
@@ -137,6 +140,7 @@ const Navigation = ({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             ) : (
               <div className="flex gap-3">
                 <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>

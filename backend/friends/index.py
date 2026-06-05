@@ -106,6 +106,21 @@ def handler(event: dict, context) -> dict:
             VALUES (%s, %s, 'pending')
             ON CONFLICT (requester_steam_id, addressee_steam_id) DO NOTHING
         """, (requester, addressee))
+
+        # Получить имя отправителя для уведомления
+        cur.execute(f"SELECT COALESCE(nickname, persona_name) FROM {SCHEMA}.users WHERE steam_id = %s", (requester,))
+        row = cur.fetchone()
+        requester_name = row[0] if row else 'Пользователь'
+
+        # Создать уведомление получателю
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.notifications (steam_id, type, title, body, link) VALUES (%s, %s, %s, %s, %s)",
+            (addressee, 'friend_request',
+             'Новая заявка в друзья',
+             f'{requester_name} хочет добавить вас в друзья',
+             f'/profile/{requester}')
+        )
+
         conn.commit()
         cur.close()
         conn.close()

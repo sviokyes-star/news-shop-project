@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field, ValidationError
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+SCHEMA = 't_p15345778_news_shop_project'
+
 
 class TournamentRegistration(BaseModel):
     tournament_id: int = Field(..., gt=0)
@@ -54,6 +56,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             params = event.get('queryStringParameters', {}) or {}
             steam_id = params.get('steam_id')
             tournament_id = params.get('tournament_id')
+
+            # Генерируем напоминания о скором старте (тихо, без ошибок)
+            try:
+                generate_tournament_reminders(cursor, conn)
+            except Exception:
+                pass
             
             # Получить детали турнира с участниками
             if tournament_id:
@@ -340,6 +348,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             ))
             
             result = cursor.fetchone()
+
+            # Создать уведомление о регистрации
+            tournament_name = tournament_info.get('name', 'турнир') if hasattr(tournament_info, 'get') else 'турнир'
+            cursor.execute(
+                f"SELECT name FROM tournaments WHERE id = %s",
+                (registration.tournament_id,)
+            )
+            t_row = cursor.fetchone()
+            t_name = t_row['name'] if t_row else 'турнир'
+            cursor.execute(
+                f"INSERT INTO {SCHEMA}.notifications (steam_id, type, title, body, link) VALUES (%s, %s, %s, %s, %s)",
+                (registration.steam_id, 'tournament_registered',
+                 f'Вы зарегистрированы на турнир',
+                 f'Вы успешно зарегистрировались на «{t_name}»',
+                 f'/tournament/{registration.tournament_id}')
+            )
+
             conn.commit()
             
             return {
@@ -636,3 +661,39 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     finally:
         if conn:
             conn.close()
+
+
+def generate_tournament_reminders(cursor, conn):
+    """Генерирует уведомления за 24ч и за 1ч до начала турнира для всех участников."""
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+
+    for hours, ntype, label in [(24, 'tournament_24h', 'через 24 часа'), (1, 'tournament_1h', 'через 1 час')]:
+        window_start = now + timedelta(hours=hours) - timedelta(minutes=5)
+        window_end   = now + timedelta(hours=hours) + timedelta(minutes=5)
+
+        cursor.execute("""
+            SELECT t.id, t.name, tr.steam_id
+            FROM tournaments t
+            JOIN tournament_registrations tr ON tr.tournament_id = t.id
+            WHERE t.start_date >= %s AND t.start_date <= %s
+        """, (window_start, window_end))
+        rows = cursor.fetchall()
+
+        for row in rows:
+            tid, tname, steam_id = row['id'], row['name'], row['steam_id']
+            # Не создаём дубли
+            cursor.execute(
+                f"SELECT id FROM {SCHEMA}.notifications WHERE steam_id = %s AND type = %s AND link = %s",
+                (steam_id, ntype, f'/tournament/{tid}')
+            )
+            if cursor.fetchone():
+                continue
+            cursor.execute(
+                f"INSERT INTO {SCHEMA}.notifications (steam_id, type, title, body, link) VALUES (%s, %s, %s, %s, %s)",
+                (steam_id, ntype,
+                 f'Турнир начнётся {label}',
+                 f'«{tname}» стартует {label}. Не пропусти!',
+                 f'/tournament/{tid}')
+            )
+    conn.commit()
