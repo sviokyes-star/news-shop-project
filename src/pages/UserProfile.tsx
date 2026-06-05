@@ -100,6 +100,9 @@ const UserProfile = () => {
   };
 
   const loadFriendData = async (targetId: string, myId: string) => {
+    const cacheKey = `friends_${targetId}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) setFriends(JSON.parse(cached));
     try {
       const [statusRes, friendsRes] = await Promise.all([
         fetch(`${func2url.friends}?steam_id=${myId}&target_id=${targetId}&action=status`),
@@ -107,6 +110,9 @@ const UserProfile = () => {
       ]);
       const statusData = await statusRes.json();
       const friendsData = await friendsRes.json();
+      const list = friendsData.friends || [];
+      setFriends(list);
+      localStorage.setItem(cacheKey, JSON.stringify(list));
 
       if (statusData.status === 'pending' && statusData.requester === myId) {
         setFriendStatus('pending');
@@ -116,7 +122,6 @@ const UserProfile = () => {
       } else {
         setFriendStatus(statusData.status || 'none');
       }
-      setFriends(friendsData.friends || []);
     } catch (e) {
       console.error('Failed to load friend data', e);
     }

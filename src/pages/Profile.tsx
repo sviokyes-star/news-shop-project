@@ -80,10 +80,15 @@ const Profile = () => {
   }, [navigate]);
 
   const loadFriends = async (steamId: string) => {
+    const cacheKey = `friends_${steamId}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) setFriends(JSON.parse(cached));
     try {
       const res = await fetch(`${func2url.friends}?steam_id=${steamId}&action=friends`);
       const data = await res.json();
-      setFriends(data.friends || []);
+      const list = data.friends || [];
+      setFriends(list);
+      localStorage.setItem(cacheKey, JSON.stringify(list));
     } catch (e) {
       console.error('Failed to load friends', e);
     }
