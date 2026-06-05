@@ -230,10 +230,7 @@ def update_user(body_data: Dict[str, Any], cursor, conn) -> Dict[str, Any]:
                 (steam_id,)
             )
         else:
-            cursor.execute(
-                "UPDATE t_p15345778_news_shop_project.chat_messages SET is_hidden = FALSE WHERE steam_id = %s",
-                (steam_id,)
-            )
+            pass
         conn.commit()
 
     return {
