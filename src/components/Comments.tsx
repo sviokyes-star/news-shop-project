@@ -273,7 +273,7 @@ export default function Comments({ newsId }: CommentsProps) {
       <Card className={`p-6 bg-card/50 backdrop-blur border-border hover:border-primary/30 transition-colors ${isReply ? 'ml-16 mt-3' : ''}`}>
         <div className="flex gap-4">
           {comment.avatar_url ? (
-            <PlayerLink steamId={comment.steam_id || ''} name={comment.author} showAvatar avatarUrl={comment.avatar_url} avatarSize={12} className="flex-shrink-0 border-2 border-primary/20 rounded-full" />
+            <PlayerLink steamId={comment.steam_id || ''} name={comment.author} avatarOnly avatarUrl={comment.avatar_url} avatarSize={12} className="flex-shrink-0 border-2 border-primary/20 rounded-full" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl flex-shrink-0">
               {comment.avatar}

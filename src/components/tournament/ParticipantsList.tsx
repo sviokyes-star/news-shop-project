@@ -36,10 +36,10 @@ const ParticipantsList = ({ participants }: ParticipantsListProps) => {
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
                     {index + 1}
                   </div>
-                  <PlayerLink steamId={participant.steam_id} name={participant.persona_name} showAvatar avatarUrl={participant.avatar_url} avatarSize={12} />
+                  <PlayerLink steamId={participant.steam_id} name={participant.persona_name} avatarOnly avatarUrl={participant.avatar_url} avatarSize={12} />
+                  <PlayerLink steamId={participant.steam_id} name={participant.persona_name} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <PlayerLink steamId={participant.steam_id} name={participant.persona_name} />
                       {participant.is_admin && (
                         <span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-500 border border-red-500/20">
                           Администратор
