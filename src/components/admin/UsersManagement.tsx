@@ -30,6 +30,7 @@ export default function UsersManagement({
   const [balanceAmount, setBalanceAmount] = useState<number | null>(null);
   const [blockReason, setBlockReason] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'moderator' | 'blocked'>('all');
 
   const {
     handleUpdateBalance,
@@ -63,10 +64,15 @@ export default function UsersManagement({
     setBlockReason(null);
   };
 
-  const filteredUsers = users.filter(user => 
-    user.personaName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.steamId.includes(searchQuery)
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.personaName.toLowerCase().includes(searchQuery.toLowerCase()) || user.steamId.includes(searchQuery);
+    const matchesRole =
+      roleFilter === 'all' ? true :
+      roleFilter === 'admin' ? user.isAdmin :
+      roleFilter === 'moderator' ? user.isModerator :
+      roleFilter === 'blocked' ? user.isBlocked : true;
+    return matchesSearch && matchesRole;
+  });
 
   const totalBalance = users.reduce((sum, user) => sum + user.balance, 0);
   const blockedCount = users.filter(user => user.isBlocked).length;
@@ -82,17 +88,28 @@ export default function UsersManagement({
       />
 
       <Card className="p-4 bg-card/80 backdrop-blur border-primary/20">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Icon name="Users" size={20} />
             Управление пользователями
           </h2>
-          <div className="w-56">
+          <div className="flex items-center gap-2 flex-wrap">
+            {(['all', 'admin', 'moderator', 'blocked'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setRoleFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  roleFilter === f ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {f === 'all' ? 'Все' : f === 'admin' ? 'Администраторы' : f === 'moderator' ? 'Модераторы' : 'Заблокированные'}
+              </button>
+            ))}
             <Input
               placeholder="Поиск..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 text-sm"
+              className="w-44 h-9 text-sm"
             />
           </div>
         </div>
