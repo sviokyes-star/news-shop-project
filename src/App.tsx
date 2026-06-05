@@ -13,6 +13,7 @@ import Tournaments from "./pages/Tournaments";
 import Partners from "./pages/Partners";
 import TournamentDetail from "./pages/TournamentDetail";
 import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import NewsDetail from "./pages/NewsDetail";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/tournament/:id" element={<TournamentDetail />} />
             <Route path="/news/:id" element={<NewsDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:steamId" element={<UserProfile />} />
           </Route>
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
