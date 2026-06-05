@@ -16,6 +16,14 @@ interface FriendRequest {
   createdAt: string;
 }
 
+interface Friend {
+  steamId: string;
+  personaName: string;
+  avatarUrl: string;
+  isOnline: boolean;
+  lastOnline: string;
+}
+
 interface SteamUser {
   steamId: string;
   personaName: string;
@@ -64,6 +72,7 @@ const Profile = () => {
   const [nicknameError, setNicknameError] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('steamUser');
@@ -76,7 +85,18 @@ const Profile = () => {
     setUser(userData);
     loadProfileData(userData.steamId);
     loadFriendRequests(userData.steamId);
+    loadFriends(userData.steamId);
   }, [navigate]);
+
+  const loadFriends = async (steamId: string) => {
+    try {
+      const res = await fetch(`${func2url.friends}?steam_id=${steamId}&action=friends`);
+      const data = await res.json();
+      setFriends(data.friends || []);
+    } catch (e) {
+      console.error('Failed to load friends', e);
+    }
+  };
 
   const loadFriendRequests = async (steamId: string) => {
     try {
@@ -472,6 +492,37 @@ const Profile = () => {
                 <Button onClick={() => navigate('/?tab=tournaments')}>
                   Перейти к турнирам
                 </Button>
+              </Card>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">Друзья</h2>
+              <p className="text-muted-foreground">Ваши друзья на сайте</p>
+            </div>
+
+            {friends.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {friends.map(f => (
+                  <div key={f.steamId} className="relative">
+                    <PlayerLink
+                      steamId={f.steamId}
+                      name={f.personaName}
+                      showAvatar
+                      avatarUrl={f.avatarUrl}
+                      avatarSize={12}
+                      isOnline={f.isOnline}
+                      className="flex-col items-center gap-2 p-4 w-full rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-center"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-12 text-center border border-dashed border-border bg-card/30">
+                <Icon name="Users" size={48} className="text-muted-foreground mx-auto mb-4" />
+                <p className="text-xl text-muted-foreground mb-2">У вас пока нет друзей</p>
+                <p className="text-muted-foreground">Найдите игроков и отправьте им заявку в друзья</p>
               </Card>
             )}
           </div>
