@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import PlayerLink from '@/components/ui/player-link';
-import { formatShortDate } from '@/utils/dateFormat';
+import { formatShortDate, formatRelativeTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
 
 interface Tournament {
@@ -30,6 +30,8 @@ interface ProfileData {
     balance: number;
     isBlocked: boolean;
     blockReason?: string;
+    isOnline?: boolean;
+    lastOnline?: string;
   };
   tournaments: Tournament[];
   statistics: {
@@ -239,22 +241,23 @@ const UserProfile = () => {
           <div className="flex items-start gap-8">
             <div className="relative">
               <img src={user.avatarUrl} alt={displayName} className="w-32 h-32 rounded-2xl border-4 border-primary shadow-2xl shadow-primary/20" />
-              {friendStatus === 'accepted' && (
-                <div className={`absolute -bottom-2 -right-2 w-5 h-5 rounded-full border-2 border-background ${friends.find(f => f.steamId === steamId)?.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-              )}
+              <div className={`absolute -bottom-2 -right-2 w-5 h-5 rounded-full border-2 border-background ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
             </div>
             <div className="flex-1 space-y-4">
               <div className="flex items-start justify-between flex-wrap gap-4">
                 <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-4xl font-bold tracking-tight">{displayName}</h1>
-                    {friendStatus === 'accepted' && (
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${friends.find(f => f.steamId === steamId)?.isOnline ? 'bg-green-500/20 text-green-500' : 'bg-muted text-muted-foreground'}`}>
-                        {friends.find(f => f.steamId === steamId)?.isOnline ? 'Онлайн' : 'Офлайн'}
-                      </span>
-                    )}
-                  </div>
+                  <h1 className="text-4xl font-bold tracking-tight">{displayName}</h1>
                   {user.nickname && <p className="text-muted-foreground mt-1">Steam: {user.personaName}</p>}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                    <span className="text-sm text-muted-foreground">
+                      {user.isOnline
+                        ? 'Онлайн'
+                        : user.lastOnline
+                          ? `Был(а) онлайн ${formatRelativeTime(user.lastOnline)}`
+                          : 'Офлайн'}
+                    </span>
+                  </div>
                   <a href={user.profileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-2 mt-2">
                     <Icon name="ExternalLink" size={16} />
                     Открыть профиль Steam
