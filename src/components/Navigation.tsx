@@ -71,9 +71,11 @@ const Navigation = ({
       <div className="container mx-auto px-6 py-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center neon-border">
-              <Icon name="Gamepad2" size={24} className="text-primary-foreground" />
-            </div>
+            <img
+              src="https://cdn.poehali.dev/projects/0cd5ea72-8c09-43b2-b92c-a0fdee84371e/files/favicon-1771578220171.png"
+              alt="Okyes"
+              className="w-10 h-10 rounded-lg neon-border"
+            />
             <h1 className="text-2xl font-bold tracking-tight neon-glow">Okyes</h1>
           </div>
 
