@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import PlayerLink from '@/components/ui/player-link';
-import { formatShortDate, formatRelativeTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
+import UserProfileHero from '@/components/user-profile/UserProfileHero';
+import UserProfileFriends from '@/components/user-profile/UserProfileFriends';
+import UserProfileTournaments from '@/components/user-profile/UserProfileTournaments';
 
 interface Tournament {
   id: number;
@@ -174,40 +174,6 @@ const UserProfile = () => {
     setIsFriendLoading(false);
   };
 
-  const FriendButton = () => {
-    if (!me) return null;
-    if (friendStatus === 'accepted') return (
-      <Button variant="outline" onClick={handleRemoveFriend} disabled={isFriendLoading} className="gap-2">
-        <Icon name="UserMinus" size={16} />
-        Удалить из друзей
-      </Button>
-    );
-    if (friendStatus === 'pending') return (
-      <Button variant="outline" onClick={handleCancelRequest} disabled={isFriendLoading} className="gap-2 text-muted-foreground hover:text-destructive hover:border-destructive">
-        <Icon name="X" size={16} />
-        Отменить заявку
-      </Button>
-    );
-    if (friendStatus === 'incoming') return (
-      <div className="flex gap-2">
-        <Button onClick={handleAccept} disabled={isFriendLoading} className="gap-2">
-          <Icon name="UserCheck" size={16} />
-          Принять заявку
-        </Button>
-        <Button variant="outline" onClick={handleDecline} disabled={isFriendLoading} className="gap-2">
-          <Icon name="X" size={16} />
-          Отклонить
-        </Button>
-      </div>
-    );
-    return (
-      <Button onClick={handleAddFriend} disabled={isFriendLoading} className="gap-2">
-        <Icon name="UserPlus" size={16} />
-        Добавить в друзья
-      </Button>
-    );
-  };
-
   if (isLoading) return (
     <main className="container mx-auto px-6 py-16 flex justify-center">
       <Icon name="Loader2" size={40} className="animate-spin text-primary" />
@@ -227,7 +193,6 @@ const UserProfile = () => {
   );
 
   const { user, tournaments, statistics } = profileData;
-  const displayName = user.nickname || user.personaName;
 
   return (
     <main className="container mx-auto px-6 py-16">
@@ -237,124 +202,22 @@ const UserProfile = () => {
           Назад
         </Button>
 
-        <Card className="p-10 border border-border bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur border-primary/20">
-          <div className="flex items-start gap-8">
-            <div className="relative">
-              <img src={user.avatarUrl} alt={displayName} className="w-32 h-32 rounded-2xl border-4 border-primary shadow-2xl shadow-primary/20" />
-              <div className={`absolute -bottom-2 -right-2 w-5 h-5 rounded-full border-2 border-background ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-            </div>
-            <div className="flex-1 space-y-4">
-              <div className="flex items-start justify-between flex-wrap gap-4">
-                <div>
-                  <h1 className="text-4xl font-bold tracking-tight">{displayName}</h1>
+        <UserProfileHero
+          user={user}
+          statistics={statistics}
+          me={me}
+          friendStatus={friendStatus}
+          isFriendLoading={isFriendLoading}
+          onAddFriend={handleAddFriend}
+          onCancelRequest={handleCancelRequest}
+          onAccept={handleAccept}
+          onDecline={handleDecline}
+          onRemoveFriend={handleRemoveFriend}
+        />
 
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                    <span className="text-sm text-muted-foreground">
-                      {user.isOnline
-                        ? 'Онлайн'
-                        : user.lastOnline
-                          ? `Был(а) онлайн ${formatRelativeTime(user.lastOnline)}`
-                          : 'Офлайн'}
-                    </span>
-                  </div>
-                  <a href={user.profileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-2 mt-2">
-                    <Icon name="ExternalLink" size={16} />
-                    Открыть профиль Steam
-                  </a>
-                </div>
-                <FriendButton />
-              </div>
+        <UserProfileFriends friends={friends} />
 
-              {user.isBlocked && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/30">
-                  <Icon name="Ban" size={18} className="text-destructive" />
-                  <div>
-                    <p className="text-sm font-semibold text-destructive">Пользователь заблокирован</p>
-                    {user.blockReason && <p className="text-xs text-muted-foreground">{user.blockReason}</p>}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-6 pt-4">
-                <div className="p-4 rounded-xl bg-background/50 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon name="Trophy" size={20} className="text-primary" />
-                    <p className="text-sm text-muted-foreground">Турниров</p>
-                  </div>
-                  <p className="text-3xl font-bold">{statistics.tournaments_count}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-background/50 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon name="ShoppingBag" size={20} className="text-primary" />
-                    <p className="text-sm text-muted-foreground">Покупок</p>
-                  </div>
-                  <p className="text-3xl font-bold">{statistics.purchases_count}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {friends.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Друзья <span className="text-muted-foreground text-lg font-normal">({friends.length})</span></h2>
-            <div className="flex flex-wrap gap-3">
-              {friends.map(f => (
-                <div key={f.steamId} className="relative">
-                  <PlayerLink steamId={f.steamId} name={f.personaName} showAvatar avatarUrl={f.avatarUrl} avatarSize={10} className="flex-col items-center gap-1 p-3 rounded-xl bg-card border border-border hover:border-primary/50 transition-all" />
-                  <div className={`absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-background ${f.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">Турниры</h2>
-            <p className="text-muted-foreground">История участия в турнирах</p>
-          </div>
-          {tournaments.length > 0 ? (
-            <div className="space-y-4">
-              {tournaments.map((tournament) => (
-                <Card key={tournament.id} className="p-6 border border-border bg-card/50 backdrop-blur hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer" onClick={() => navigate(`/tournament/${tournament.id}`)}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {tournament.status === 'active' && <div className="px-3 py-1 bg-primary rounded-full"><span className="text-xs font-bold text-primary-foreground">АКТИВНЫЙ</span></div>}
-                        {tournament.status === 'open' && <div className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full"><span className="text-xs font-bold text-green-500">ОТКРЫТА РЕГИСТРАЦИЯ</span></div>}
-                        {tournament.tournament_type === 'vip' && <div className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full"><span className="text-xs font-bold text-yellow-500">VIP</span></div>}
-                        <div className="px-3 py-1 bg-primary/20 rounded-full"><span className="text-xs font-bold text-primary">#{tournament.registration_position} место регистрации</span></div>
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold mb-1">{tournament.name}</h3>
-                        <p className="text-muted-foreground text-sm">{tournament.description}</p>
-                      </div>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Icon name="DollarSign" size={16} className="text-primary" />
-                          <span className="text-muted-foreground">Призовой фонд:</span>
-                          <span className="font-bold text-primary">{tournament.prize_pool.toLocaleString('ru-RU')}₽</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Icon name="Calendar" size={16} className="text-muted-foreground" />
-                          <span className="text-muted-foreground">{formatShortDate(tournament.start_date)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Icon name="ChevronRight" size={20} className="text-muted-foreground ml-4 mt-1" />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="p-12 border border-border bg-card/50 text-center">
-              <Icon name="Trophy" size={48} className="text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Пользователь ещё не участвовал в турнирах</p>
-            </Card>
-          )}
-        </div>
+        <UserProfileTournaments tournaments={tournaments} />
       </div>
     </main>
   );
