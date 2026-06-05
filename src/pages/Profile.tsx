@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import PlayerLink from '@/components/ui/player-link';
-import { formatDateTime, formatShortDate } from '@/utils/dateFormat';
+import { formatDateTime, formatShortDate, formatRelativeTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
 import { toast } from '@/hooks/use-toast';
 
@@ -51,6 +51,8 @@ interface ProfileData {
     isBlocked: boolean;
     blockReason?: string;
     nickname?: string;
+    isOnline?: boolean;
+    lastOnline?: string;
   };
   tournaments: Tournament[];
   statistics: {
@@ -364,6 +366,16 @@ const Profile = () => {
                       </Button>
                     </div>
                   )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`w-2.5 h-2.5 rounded-full ${profileData?.user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                    <span className="text-sm text-muted-foreground">
+                      {profileData?.user.isOnline
+                        ? 'Онлайн'
+                        : profileData?.user.lastOnline
+                          ? `Был(а) онлайн ${formatRelativeTime(profileData.user.lastOnline)}`
+                          : 'Офлайн'}
+                    </span>
+                  </div>
                   <a 
                     href={user.profileUrl} 
                     target="_blank" 
