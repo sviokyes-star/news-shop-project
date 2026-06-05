@@ -410,6 +410,37 @@ const Profile = () => {
 
           <div className="space-y-6">
             <div>
+              <h2 className="text-3xl font-bold mb-2">Друзья</h2>
+              <p className="text-muted-foreground">Ваши друзья на сайте</p>
+            </div>
+
+            {friends.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {friends.map(f => (
+                  <div key={f.steamId} className="relative">
+                    <PlayerLink
+                      steamId={f.steamId}
+                      name={f.personaName}
+                      showAvatar
+                      avatarUrl={f.avatarUrl}
+                      avatarSize={12}
+                      isOnline={f.isOnline}
+                      className="flex-col items-center gap-2 p-4 w-full rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-center"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-12 text-center border border-dashed border-border bg-card/30">
+                <Icon name="Users" size={48} className="text-muted-foreground mx-auto mb-4" />
+                <p className="text-xl text-muted-foreground mb-2">У вас пока нет друзей</p>
+                <p className="text-muted-foreground">Найдите игроков и отправьте им заявку в друзья</p>
+              </Card>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div>
               <h2 className="text-3xl font-bold mb-2">Мои турниры</h2>
               <p className="text-muted-foreground">История участия в турнирах</p>
             </div>
@@ -508,36 +539,6 @@ const Profile = () => {
             )}
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Друзья</h2>
-              <p className="text-muted-foreground">Ваши друзья на сайте</p>
-            </div>
-
-            {friends.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {friends.map(f => (
-                  <div key={f.steamId} className="relative">
-                    <PlayerLink
-                      steamId={f.steamId}
-                      name={f.personaName}
-                      showAvatar
-                      avatarUrl={f.avatarUrl}
-                      avatarSize={12}
-                      isOnline={f.isOnline}
-                      className="flex-col items-center gap-2 p-4 w-full rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-center"
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Card className="p-12 text-center border border-dashed border-border bg-card/30">
-                <Icon name="Users" size={48} className="text-muted-foreground mx-auto mb-4" />
-                <p className="text-xl text-muted-foreground mb-2">У вас пока нет друзей</p>
-                <p className="text-muted-foreground">Найдите игроков и отправьте им заявку в друзья</p>
-              </Card>
-            )}
-          </div>
         </div>
       </main>
   );
