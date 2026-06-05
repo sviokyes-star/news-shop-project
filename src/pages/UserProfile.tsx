@@ -49,6 +49,14 @@ const UserProfile = () => {
       navigate('/');
       return;
     }
+    const savedUser = localStorage.getItem('steamUser');
+    if (savedUser) {
+      const me = JSON.parse(savedUser);
+      if (me.steamId === steamId) {
+        navigate('/profile', { replace: true });
+        return;
+      }
+    }
     loadProfile(steamId);
   }, [steamId]);
 
