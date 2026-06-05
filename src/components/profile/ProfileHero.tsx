@@ -146,8 +146,8 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
           />
         </div>
 
-        <div className="flex-1 space-y-4">
-          <div>
+        <div className="flex-1 flex items-start justify-between gap-4">
+          <div className="flex-1">
             {isEditingNickname ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -201,14 +201,12 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
             </a>
           </div>
 
-          <div className="pt-4">
-            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 inline-block min-w-[140px]">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="Wallet" size={20} className="text-primary" />
-                <p className="text-sm text-muted-foreground">Баланс</p>
-              </div>
-              <p className="text-3xl font-bold text-primary">{profileUser.balance}₽</p>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 flex-shrink-0 text-right">
+            <div className="flex items-center gap-2 mb-1 justify-end">
+              <p className="text-sm text-muted-foreground">Баланс</p>
+              <Icon name="Wallet" size={16} className="text-primary" />
             </div>
+            <p className="text-3xl font-bold text-primary">{profileUser.balance}₽</p>
           </div>
         </div>
       </div>
