@@ -6,7 +6,6 @@ import ServersManagement from '@/components/admin/ServersManagement';
 import UsersManagement from '@/components/admin/UsersManagement';
 import TournamentsManagement from '@/components/admin/TournamentsManagement';
 import PartnersManagement from '@/components/admin/PartnersManagement';
-import MenuManagement from '@/components/admin/MenuManagement';
 import ChatManagement from '@/components/admin/ChatManagement';
 import SiteSettings from '@/components/admin/SiteSettings';
 import AdminHeader from '@/components/admin/AdminHeader';
@@ -93,7 +92,7 @@ interface Partner {
   orderPosition: number;
 }
 
-type TabType = 'news' | 'shop' | 'servers' | 'users' | 'tournaments' | 'partners' | 'menu' | 'chat' | 'settings';
+type TabType = 'news' | 'shop' | 'servers' | 'users' | 'tournaments' | 'partners' | 'chat' | 'settings';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<TabType>('news');
@@ -325,10 +324,6 @@ export default function Admin() {
             isLoading={isLoadingPartners}
             onRefresh={loadPartners}
           />
-        )}
-
-        {activeTab === 'menu' && (
-          <MenuManagement />
         )}
 
         {activeTab === 'chat' && user && (

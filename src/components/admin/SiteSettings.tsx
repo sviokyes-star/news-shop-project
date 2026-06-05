@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
 import func2url from '../../../backend/func2url.json';
+import MenuManagement from './MenuManagement';
 
 interface SiteSettingsProps {
   currentLogoUrl: string;
@@ -109,6 +110,8 @@ export default function SiteSettings({ currentLogoUrl, onLogoUpdated }: SiteSett
         </div>
         <p className="text-xs text-muted-foreground">PNG, JPG, SVG до 5MB. Рекомендуется квадратное изображение.</p>
       </Card>
+
+      <MenuManagement />
     </div>
   );
 }
