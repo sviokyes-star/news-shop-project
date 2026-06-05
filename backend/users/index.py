@@ -217,6 +217,15 @@ def update_user(body_data: Dict[str, Any], cursor, conn) -> Dict[str, Any]:
                 (steam_id,)
             )
             cursor.execute(
+                """
+                DELETE FROM t_p15345778_news_shop_project.comment_likes
+                WHERE comment_id IN (
+                    SELECT id FROM t_p15345778_news_shop_project.comments WHERE steam_id = %s
+                )
+                """,
+                (steam_id,)
+            )
+            cursor.execute(
                 "DELETE FROM t_p15345778_news_shop_project.comments WHERE steam_id = %s",
                 (steam_id,)
             )
