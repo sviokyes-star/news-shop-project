@@ -8,6 +8,7 @@ import TournamentsManagement from '@/components/admin/TournamentsManagement';
 import PartnersManagement from '@/components/admin/PartnersManagement';
 import MenuManagement from '@/components/admin/MenuManagement';
 import ChatManagement from '@/components/admin/ChatManagement';
+import SiteSettings from '@/components/admin/SiteSettings';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminTabs from '@/components/admin/AdminTabs';
 import AdminAccessDenied from '@/components/admin/AdminAccessDenied';
@@ -92,7 +93,7 @@ interface Partner {
   orderPosition: number;
 }
 
-type TabType = 'news' | 'shop' | 'servers' | 'users' | 'tournaments' | 'partners' | 'menu' | 'chat';
+type TabType = 'news' | 'shop' | 'servers' | 'users' | 'tournaments' | 'partners' | 'menu' | 'chat' | 'settings';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<TabType>('news');
@@ -111,6 +112,7 @@ export default function Admin() {
   const [user, setUser] = useState<SteamUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+  const [logoUrl, setLogoUrl] = useState('https://cdn.poehali.dev/projects/0cd5ea72-8c09-43b2-b92c-a0fdee84371e/files/favicon-1771578220171.png');
 
   useEffect(() => {
     checkAccess();
@@ -331,6 +333,16 @@ export default function Admin() {
 
         {activeTab === 'chat' && user && (
           <ChatManagement user={user} />
+        )}
+
+        {activeTab === 'settings' && (
+          <SiteSettings
+            currentLogoUrl={logoUrl}
+            onLogoUpdated={(url) => {
+              setLogoUrl(url);
+              localStorage.setItem('site_logo_url', url);
+            }}
+          />
         )}
       </main>
     </div>

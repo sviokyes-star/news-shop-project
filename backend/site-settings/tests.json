@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "GET site settings",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"logo_url": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

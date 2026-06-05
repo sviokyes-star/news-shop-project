@@ -1,6 +1,6 @@
 import Icon from '@/components/ui/icon';
 
-type TabType = 'news' | 'shop' | 'servers' | 'users' | 'tournaments' | 'partners' | 'menu' | 'chat';
+type TabType = 'news' | 'shop' | 'servers' | 'users' | 'tournaments' | 'partners' | 'menu' | 'chat' | 'settings';
 
 interface AdminTabsProps {
   activeTab: TabType;
@@ -17,6 +17,7 @@ export default function AdminTabs({ activeTab, setActiveTab }: AdminTabsProps) {
     { id: 'partners', label: 'Партнёры', icon: 'Handshake' },
     { id: 'menu', label: 'Меню', icon: 'Menu' },
     { id: 'chat', label: 'Чат', icon: 'MessageCircle' },
+    { id: 'settings', label: 'Настройки', icon: 'Settings' },
   ];
 
   return (
