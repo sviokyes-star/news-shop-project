@@ -1,0 +1,1 @@
+ALTER TABLE t_p15345778_news_shop_project.partners ALTER COLUMN logo TYPE TEXT;
