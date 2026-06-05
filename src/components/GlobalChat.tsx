@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import PlayerLink from '@/components/ui/player-link';
 import { formatChatDateTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
 
@@ -198,16 +199,10 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className="flex gap-2 animate-in fade-in slide-in-from-bottom-2 group">
-              <img
-                src={msg.avatarUrl || 'https://via.placeholder.com/32'}
-                alt={msg.personaName}
-                className="w-8 h-8 rounded-full flex-shrink-0"
-              />
+              <PlayerLink steamId={msg.steamId} name={msg.personaName} showAvatar avatarUrl={msg.avatarUrl} avatarSize={8} className="flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="font-semibold text-sm truncate">
-                    {msg.personaName}
-                  </span>
+                  <PlayerLink steamId={msg.steamId} name={msg.personaName} className="text-sm" />
                   {msg.isAdmin && (
                     <span className="px-1.5 py-0.5 bg-destructive/20 text-destructive text-[10px] font-semibold rounded">
                       Администратор

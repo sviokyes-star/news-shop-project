@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import PlayerLink from '@/components/ui/player-link';
 
 interface BracketMatch {
   id: number;
@@ -86,23 +87,17 @@ const TournamentBracket = ({ bracket }: TournamentBracketProps) => {
                                 : 'bg-secondary/50'
                             }`}
                           >
-                            {match.player1_avatar ? (
-                              <img 
-                                src={match.player1_avatar} 
-                                alt={match.player1_name || 'Player 1'}
-                                className="w-8 h-8 rounded-full"
-                              />
+                            {match.player1_steam_id && match.player1_name ? (
+                              <PlayerLink steamId={match.player1_steam_id} name={match.player1_name} showAvatar avatarUrl={match.player1_avatar} avatarSize={8} className="flex-1" />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                <Icon name="User" size={16} />
-                              </div>
+                              <>
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                  <Icon name="User" size={16} />
+                                </div>
+                                <span className="flex-1 font-medium text-sm text-muted-foreground">TBD</span>
+                              </>
                             )}
-                            <span className="flex-1 font-medium text-sm">
-                              {match.player1_name || 'TBD'}
-                            </span>
-                            <span className="text-lg font-bold">
-                              {match.player1_score}
-                            </span>
+                            <span className="text-lg font-bold">{match.player1_score}</span>
                           </div>
 
                           {/* Player 2 */}
@@ -113,23 +108,17 @@ const TournamentBracket = ({ bracket }: TournamentBracketProps) => {
                                 : 'bg-secondary/50'
                             }`}
                           >
-                            {match.player2_avatar ? (
-                              <img 
-                                src={match.player2_avatar} 
-                                alt={match.player2_name || 'Player 2'}
-                                className="w-8 h-8 rounded-full"
-                              />
+                            {match.player2_steam_id && match.player2_name ? (
+                              <PlayerLink steamId={match.player2_steam_id} name={match.player2_name} showAvatar avatarUrl={match.player2_avatar} avatarSize={8} className="flex-1" />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                <Icon name="User" size={16} />
-                              </div>
+                              <>
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                  <Icon name="User" size={16} />
+                                </div>
+                                <span className="flex-1 font-medium text-sm text-muted-foreground">TBD</span>
+                              </>
                             )}
-                            <span className="flex-1 font-medium text-sm">
-                              {match.player2_name || 'TBD'}
-                            </span>
-                            <span className="text-lg font-bold">
-                              {match.player2_score}
-                            </span>
+                            <span className="text-lg font-bold">{match.player2_score}</span>
                           </div>
                         </div>
                       </div>

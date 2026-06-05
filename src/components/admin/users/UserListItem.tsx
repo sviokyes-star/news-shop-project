@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
+import PlayerLink from '@/components/ui/player-link';
 
 export interface User {
   id: number;
@@ -62,11 +63,7 @@ export default function UserListItem({
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           {user.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={user.personaName}
-              className="w-12 h-12 rounded-full"
-            />
+            <PlayerLink steamId={user.steamId} name={user.personaName} showAvatar avatarUrl={user.avatarUrl} avatarSize={12} />
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
               <Icon name="User" size={24} />
@@ -75,7 +72,7 @@ export default function UserListItem({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold truncate">{user.personaName}</h3>
+              <PlayerLink steamId={user.steamId} name={user.personaName} className="truncate" />
               {user.isAdmin && (
                 <span className="text-xs px-2 py-0.5 bg-destructive/20 text-destructive rounded font-semibold">
                   Администратор

@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
+import PlayerLink from '@/components/ui/player-link';
 import { formatRelativeTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
 import { toast } from '@/hooks/use-toast';
@@ -272,11 +273,7 @@ export default function Comments({ newsId }: CommentsProps) {
       <Card className={`p-6 bg-card/50 backdrop-blur border-border hover:border-primary/30 transition-colors ${isReply ? 'ml-16 mt-3' : ''}`}>
         <div className="flex gap-4">
           {comment.avatar_url ? (
-            <img 
-              src={comment.avatar_url} 
-              alt={comment.author} 
-              className="w-12 h-12 rounded-full border-2 border-primary/20 flex-shrink-0"
-            />
+            <PlayerLink steamId={comment.steam_id || ''} name={comment.author} showAvatar avatarUrl={comment.avatar_url} avatarSize={12} className="flex-shrink-0 border-2 border-primary/20 rounded-full" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl flex-shrink-0">
               {comment.avatar}
@@ -285,7 +282,11 @@ export default function Comments({ newsId }: CommentsProps) {
           <div className="flex-1 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="font-semibold text-lg">{comment.author}</h4>
+                {comment.steam_id ? (
+                  <PlayerLink steamId={comment.steam_id} name={comment.author} className="text-lg" />
+                ) : (
+                  <h4 className="font-semibold text-lg">{comment.author}</h4>
+                )}
                 {comment.is_admin && (
                   <span className="px-2 py-0.5 bg-destructive/20 text-destructive text-xs font-semibold rounded">
                     Администратор
@@ -294,12 +295,6 @@ export default function Comments({ newsId }: CommentsProps) {
                 {comment.is_moderator && (
                   <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs font-semibold rounded">
                     Модератор
-                  </span>
-                )}
-                {comment.steam_id && (
-                  <span className="px-2 py-0.5 bg-[#171a21] text-xs rounded flex items-center gap-1">
-                    <Icon name="Gamepad2" size={12} />
-                    Steam
                   </span>
                 )}
               </div>
