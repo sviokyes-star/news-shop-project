@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import NeonLines from '../components/NeonLines';
+import func2url from '../../backend/func2url.json';
 
 interface SteamUser {
   steamId: string;
@@ -16,12 +17,21 @@ const MainLayout = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [user, setUser] = useState<SteamUser | null>(null);
+  const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const pingOnline = (steamId: string) => {
+    fetch(`${func2url.friends}?steam_id=${steamId}&action=ping`).catch(() => {});
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('steamUser');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const userData = JSON.parse(savedUser);
+      setUser(userData);
+      pingOnline(userData.steamId);
+      pingRef.current = setInterval(() => pingOnline(userData.steamId), 4 * 60 * 1000);
     }
+    return () => { if (pingRef.current) clearInterval(pingRef.current); };
 
     const params = new URLSearchParams(window.location.search);
     const claimedId = params.get('openid.claimed_id');
@@ -40,6 +50,9 @@ const MainLayout = () => {
             setUser(data);
             localStorage.setItem('steamUser', JSON.stringify(data));
             window.history.replaceState({}, '', window.location.pathname);
+            pingOnline(data.steamId);
+            if (pingRef.current) clearInterval(pingRef.current);
+            pingRef.current = setInterval(() => pingOnline(data.steamId), 4 * 60 * 1000);
           }
         })
         .catch(err => console.error('Steam auth error:', err));
