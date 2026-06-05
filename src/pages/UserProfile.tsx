@@ -122,6 +122,18 @@ const UserProfile = () => {
     setIsFriendLoading(false);
   };
 
+  const handleCancelRequest = async () => {
+    if (!me || !steamId) return;
+    setIsFriendLoading(true);
+    await fetch(func2url.friends, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steam_id: me.steamId, friend_id: steamId }),
+    });
+    setFriendStatus('none');
+    setIsFriendLoading(false);
+  };
+
   const handleAccept = async () => {
     if (!me || !friendRequester) return;
     setIsFriendLoading(true);
@@ -169,9 +181,9 @@ const UserProfile = () => {
       </Button>
     );
     if (friendStatus === 'pending') return (
-      <Button variant="outline" disabled className="gap-2 opacity-70">
-        <Icon name="Clock" size={16} />
-        Заявка отправлена
+      <Button variant="outline" onClick={handleCancelRequest} disabled={isFriendLoading} className="gap-2 text-muted-foreground hover:text-destructive hover:border-destructive">
+        <Icon name="X" size={16} />
+        Отменить заявку
       </Button>
     );
     if (friendStatus === 'incoming') return (
