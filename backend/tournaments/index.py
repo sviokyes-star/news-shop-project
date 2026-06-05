@@ -97,8 +97,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         to_char(tr.confirmed_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as confirmed_at,
                         COALESCE(u.is_admin, false) as is_admin,
                         COALESCE(u.is_moderator, false) as is_moderator,
-                        (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online,
-                        u.last_online
+                        (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online
                     FROM tournament_registrations tr
                     LEFT JOIN t_p15345778_news_shop_project.users u ON tr.steam_id = u.steam_id
                     WHERE tr.tournament_id = %s
