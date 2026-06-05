@@ -65,7 +65,7 @@ def get_messages(event: Dict[str, Any]) -> Dict[str, Any]:
                cm.reply_to_message_id,
                COALESCE(u.is_admin, false) as is_admin,
                COALESCE(u.is_moderator, false) as is_moderator,
-               COALESCE(u.is_online, false) as is_online
+               (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online
         FROM t_p15345778_news_shop_project.chat_messages cm
         LEFT JOIN t_p15345778_news_shop_project.users u ON cm.steam_id = u.steam_id
         WHERE cm.is_hidden = FALSE

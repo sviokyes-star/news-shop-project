@@ -75,11 +75,13 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"""
             SELECT
                 CASE WHEN f.requester_steam_id = %s THEN f.addressee_steam_id ELSE f.requester_steam_id END AS friend_id,
-                u.persona_name, u.avatar_url, u.is_online, u.last_online
+                u.persona_name, u.avatar_url,
+                (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online,
+                u.last_online
             FROM {SCHEMA}.friendships f
             JOIN {SCHEMA}.users u ON u.steam_id = CASE WHEN f.requester_steam_id = %s THEN f.addressee_steam_id ELSE f.requester_steam_id END
             WHERE (f.requester_steam_id = %s OR f.addressee_steam_id = %s) AND f.status = 'accepted'
-            ORDER BY u.is_online DESC, u.last_online DESC
+            ORDER BY is_online DESC, u.last_online DESC
         """, (steam_id, steam_id, steam_id, steam_id))
         rows = cur.fetchall()
         friends = [{'steamId': r[0], 'personaName': r[1], 'avatarUrl': r[2], 'isOnline': r[3], 'lastOnline': str(r[4])} for r in rows]

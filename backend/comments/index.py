@@ -50,7 +50,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                        c.parent_comment_id,
                        COALESCE(u.is_admin, false) as is_admin,
                        COALESCE(u.is_moderator, false) as is_moderator,
-                       COALESCE(u.is_online, false) as is_online
+                       (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online
                 FROM t_p15345778_news_shop_project.comments c
                 LEFT JOIN t_p15345778_news_shop_project.users u ON c.steam_id = u.steam_id
                 WHERE c.news_id = %s

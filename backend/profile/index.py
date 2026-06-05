@@ -73,7 +73,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    balance, is_blocked, block_reason,
                    to_char(last_login, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as last_login,
                    to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as created_at,
-                   is_online,
+                   (last_online IS NOT NULL AND last_online > NOW() - INTERVAL '5 minutes') AS is_online,
                    to_char(last_online, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as last_online
             FROM t_p15345778_news_shop_project.users
             WHERE steam_id = '{escaped_steam_id}'
