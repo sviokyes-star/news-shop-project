@@ -7,6 +7,62 @@ import boto3
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
 
+def apply_elo_ratings(cursor, conn, tournament_id: int, game: str):
+    """Начисляет рейтинг Эло участникам рейтингового турнира по итогам сетки матчей."""
+    K = 32
+    SCHEMA = 't_p15345778_news_shop_project'
+
+    cursor.execute(f"SELECT steam_id FROM {SCHEMA}.tournament_registrations WHERE tournament_id = {tournament_id}")
+    participants = [r['steam_id'] for r in cursor.fetchall()]
+    if not participants:
+        return
+
+    esc_game = game.replace("'", "''")
+    ratings = {}
+    for sid in participants:
+        esc = sid.replace("'", "''")
+        cursor.execute(f"SELECT points FROM {SCHEMA}.player_rankings WHERE steam_id = '{esc}' AND game = '{esc_game}'")
+        row = cursor.fetchone()
+        ratings[sid] = row['points'] if row else 0
+
+    cursor.execute(f"""
+        SELECT player1_steam_id, player2_steam_id, winner_steam_id
+        FROM {SCHEMA}.match_lobbies
+        WHERE tournament_id = {tournament_id}
+          AND status = 'completed'
+          AND winner_steam_id IS NOT NULL
+          AND player1_steam_id IS NOT NULL
+          AND player2_steam_id IS NOT NULL
+    """)
+    matches = cursor.fetchall()
+
+    for match in matches:
+        p1, p2, winner = match['player1_steam_id'], match['player2_steam_id'], match['winner_steam_id']
+        if p1 not in ratings or p2 not in ratings:
+            continue
+        r1, r2 = ratings[p1], ratings[p2]
+        e1 = 1 / (1 + 10 ** ((r2 - r1) / 400))
+        e2 = 1 - e1
+        s1 = 1.0 if winner == p1 else 0.0
+        s2 = 1.0 - s1
+        ratings[p1] = round(r1 + K * (s1 - e1))
+        ratings[p2] = round(r2 + K * (s2 - e2))
+
+    for sid, new_rating in ratings.items():
+        esc_sid = sid.replace("'", "''")
+        cursor.execute(f"""
+            INSERT INTO {SCHEMA}.player_rankings (steam_id, game, points)
+            VALUES ('{esc_sid}', '{esc_game}', {new_rating})
+            ON CONFLICT (steam_id, game) DO UPDATE SET points = {new_rating}
+        """)
+        cursor.execute(f"""
+            INSERT INTO {SCHEMA}.notifications (steam_id, type, title, body, link)
+            VALUES ('{esc_sid}', 'rating_update', 'Рейтинг обновлён',
+                    'Ваш новый рейтинг: {new_rating} pts', '/profile')
+        """)
+    conn.commit()
+
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Лобби матча: чат, сообщить результат, разрешить спор
@@ -50,6 +106,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 WHERE id = {int(tournament_id)} AND status != 'completed'
             """)
             conn.commit()
+            # Начисляем Эло если турнир рейтинговый
+            cur.execute(f"SELECT is_rated, game FROM {SCHEMA}.tournaments WHERE id = {int(tournament_id)}")
+            t = cur.fetchone()
+            if t and t['is_rated']:
+                try:
+                    apply_elo_ratings(cur, conn, int(tournament_id), t['game'])
+                except Exception as e:
+                    print(f"Elo error: {e}")
             return
 
         field = 'player1_steam_id' if slot == 0 else 'player2_steam_id'
