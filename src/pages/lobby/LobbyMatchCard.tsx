@@ -12,6 +12,7 @@ interface LobbyMatchCardProps {
   player2: Player | null;
   user: SteamUser | null;
   isParticipant: boolean;
+  isTournamentAdmin: boolean;
   showReportPanel: boolean;
   setShowReportPanel: (v: boolean) => void;
   screenshotFile: File | null;
@@ -29,7 +30,7 @@ interface LobbyMatchCardProps {
 }
 
 export default function LobbyMatchCard({
-  lobby, player1, player2, user, isParticipant,
+  lobby, player1, player2, user, isParticipant, isTournamentAdmin,
   showReportPanel, setShowReportPanel,
   screenshotFile, screenshotPreview,
   isReporting, isUploadingScreenshot,
@@ -178,8 +179,8 @@ export default function LobbyMatchCard({
           );
         })()}
 
-        {/* Кнопка решения спора — только для администратора */}
-        {lobby.is_dispute && user?.isAdmin && (() => {
+        {/* Кнопка решения спора — только для администратора турнира */}
+        {lobby.is_dispute && isTournamentAdmin && user && (() => {
           return !showReportPanel ? (
             <Button variant="destructive" className="w-full gap-2" onClick={() => setShowReportPanel(true)}>
               <Icon name="Gavel" size={16} />

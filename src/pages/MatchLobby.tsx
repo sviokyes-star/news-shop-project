@@ -201,6 +201,7 @@ export default function MatchLobby() {
     lobby.player1_steam_id === user.steamId ||
     lobby.player2_steam_id === user.steamId
   ));
+  const isTournamentAdmin = !!(user && tournamentAdmins.some(a => a.steam_id === user.steamId));
 
   return (
     <main className="container mx-auto px-6 py-10 max-w-3xl">
@@ -226,6 +227,7 @@ export default function MatchLobby() {
         player2={player2}
         user={user}
         isParticipant={isParticipant}
+        isTournamentAdmin={isTournamentAdmin}
         showReportPanel={showReportPanel}
         setShowReportPanel={setShowReportPanel}
         screenshotFile={screenshotFile}

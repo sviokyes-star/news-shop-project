@@ -303,12 +303,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # ── Администратор решает спор ────────────────────────────────────────
         if action == 'resolve_dispute':
-            # Проверить права администратора
+            # Проверить: глобальный админ ИЛИ администратор турнира
             cur.execute(f"SELECT is_admin FROM {SCHEMA}.users WHERE steam_id = '{escaped}'")
             admin_row = cur.fetchone()
-            if not admin_row or not admin_row['is_admin']:
+            is_global_admin = admin_row and admin_row['is_admin']
+
+            cur.execute(f"""
+                SELECT id FROM {SCHEMA}.tournament_admins
+                WHERE tournament_id = {int(tournament_id)} AND steam_id = '{escaped}'
+            """)
+            is_tournament_admin = cur.fetchone() is not None
+
+            if not is_global_admin and not is_tournament_admin:
                 conn.close()
-                return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Только администратор может разрешить спор'})}
+                return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Только администратор турнира может разрешить спор'})}
 
             winner_id = body.get('winner_steam_id', '')
             p1_id = lobby['player1_steam_id']
