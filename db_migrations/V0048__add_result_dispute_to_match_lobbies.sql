@@ -1,0 +1,5 @@
+ALTER TABLE t_p15345778_news_shop_project.match_lobbies
+  ADD COLUMN IF NOT EXISTS player1_reported_winner VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS player2_reported_winner VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS is_dispute BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS admin_steam_id VARCHAR(255);

@@ -12,6 +12,7 @@ interface SteamUser {
   steamId: string;
   personaName: string;
   avatarUrl: string;
+  isAdmin?: boolean;
 }
 
 interface Player {
@@ -35,6 +36,10 @@ interface Lobby {
   player2_steam_id: string | null;
   winner_steam_id: string | null;
   status: string;
+  player1_reported_winner: string | null;
+  player2_reported_winner: string | null;
+  is_dispute: boolean;
+  admin_steam_id: string | null;
 }
 
 interface LobbyData {
@@ -47,6 +52,7 @@ interface LobbyData {
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   waiting:   { label: 'Ожидание',  color: 'text-yellow-500' },
   active:    { label: 'Идёт',      color: 'text-green-500' },
+  dispute:   { label: 'Спор',      color: 'text-orange-500' },
   completed: { label: 'Завершён',  color: 'text-muted-foreground' },
 };
 
@@ -265,44 +271,120 @@ export default function MatchLobby() {
           </div>
         </div>
 
-        {/* Кнопка результата — только участники матча, статус не завершён */}
-        {isParticipant && lobby.status !== 'completed' && (
-          <div className="mt-4 pt-4 border-t border-border">
-            {!showReportPanel ? (
+        <div className="mt-4 pt-4 border-t border-border space-y-3">
+
+          {/* Статус голосов */}
+          {(lobby.player1_reported_winner || lobby.player2_reported_winner) && lobby.status !== 'completed' && (
+            <div className="flex gap-2 text-xs text-muted-foreground">
+              <div className={`flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border ${lobby.player1_reported_winner ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border bg-muted/20'}`}>
+                <Icon name={lobby.player1_reported_winner ? 'CheckCircle2' : 'Clock'} size={13} className={lobby.player1_reported_winner ? 'text-primary' : 'text-muted-foreground'} />
+                <span className="truncate">{player1?.persona_name ?? 'Игрок 1'}</span>
+                {lobby.player1_reported_winner && <span className="ml-auto text-xs opacity-70">✓</span>}
+              </div>
+              <div className={`flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border ${lobby.player2_reported_winner ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border bg-muted/20'}`}>
+                <Icon name={lobby.player2_reported_winner ? 'CheckCircle2' : 'Clock'} size={13} className={lobby.player2_reported_winner ? 'text-primary' : 'text-muted-foreground'} />
+                <span className="truncate">{player2?.persona_name ?? 'Игрок 2'}</span>
+                {lobby.player2_reported_winner && <span className="ml-auto text-xs opacity-70">✓</span>}
+              </div>
+            </div>
+          )}
+
+          {/* Баннер спора */}
+          {lobby.is_dispute && (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
+              <Icon name="AlertTriangle" size={18} className="text-orange-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-orange-500">Открыт спор</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Игроки указали разных победителей. Ожидается решение администратора.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Кнопка результата — участник, не завершён, не спор или ещё не голосовал */}
+          {isParticipant && lobby.status !== 'completed' && !lobby.is_dispute && (() => {
+            const myVote = user?.steamId === lobby.player1_steam_id
+              ? lobby.player1_reported_winner
+              : lobby.player2_reported_winner;
+            if (myVote) return (
+              <p className="text-center text-sm text-muted-foreground py-1">
+                Вы указали победителем: <span className="font-semibold text-foreground">{[player1, player2].find(p => p?.steam_id === myVote)?.persona_name ?? myVote}</span>
+              </p>
+            );
+            return !showReportPanel ? (
               <Button variant="outline" className="w-full gap-2" onClick={() => setShowReportPanel(true)}>
                 <Icon name="Flag" size={16} />
                 Сообщить результат
               </Button>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-center mb-3">Кто победил?</p>
+                <p className="text-sm font-medium text-center">Кто победил?</p>
                 <div className="flex gap-3">
                   {[player1, player2].map(p => p && (
-                    <Button
-                      key={p.steam_id}
-                      className="flex-1 gap-2"
+                    <Button key={p.steam_id} className="flex-1 gap-2" disabled={isReporting} onClick={() => reportResult(p.steam_id)}>
+                      {p.avatar_url && <img src={p.avatar_url} className="w-5 h-5 rounded-full" />}
+                      {p.persona_name}
+                    </Button>
+                  ))}
+                </div>
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowReportPanel(false)}>Отмена</Button>
+              </div>
+            );
+          })()}
+
+          {/* Кнопка решения спора — только для администратора */}
+          {lobby.is_dispute && user && (() => {
+            const isAdmin = user.isAdmin;
+            if (!isAdmin) return null;
+            return !showReportPanel ? (
+              <Button variant="destructive" className="w-full gap-2" onClick={() => setShowReportPanel(true)}>
+                <Icon name="Gavel" size={16} />
+                Разрешить спор
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-center text-orange-500">Выберите победителя (решение администратора)</p>
+                <div className="flex gap-3">
+                  {[player1, player2].map(p => p && (
+                    <Button key={p.steam_id} variant="outline" className="flex-1 gap-2 border-orange-500/40 hover:bg-orange-500/10"
                       disabled={isReporting}
-                      onClick={() => reportResult(p.steam_id)}
+                      onClick={async () => {
+                        setIsReporting(true);
+                        try {
+                          const res = await fetch(func2url['match-lobby'], {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
+                            body: JSON.stringify({
+                              action: 'resolve_dispute',
+                              tournament_id: Number(tournamentId),
+                              round_index: Number(roundIndex),
+                              match_index: Number(matchIndex),
+                              steam_id: user.steamId,
+                              winner_steam_id: p.steam_id,
+                            }),
+                          });
+                          if (res.ok) { toast({ title: 'Спор разрешён' }); setShowReportPanel(false); await loadLobby(); }
+                          else { const d = await res.json(); toast({ title: 'Ошибка', description: d.error, variant: 'destructive' }); }
+                        } finally { setIsReporting(false); }
+                      }}
                     >
                       {p.avatar_url && <img src={p.avatar_url} className="w-5 h-5 rounded-full" />}
                       {p.persona_name}
                     </Button>
                   ))}
                 </div>
-                <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowReportPanel(false)}>
-                  Отмена
-                </Button>
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowReportPanel(false)}>Отмена</Button>
               </div>
-            )}
-          </div>
-        )}
+            );
+          })()}
 
-        {lobby.status === 'completed' && lobby.winner_steam_id && (
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-center gap-2 text-sm font-semibold text-yellow-500">
-            <Icon name="Trophy" size={16} />
-            Победитель: {[player1, player2].find(p => p?.steam_id === lobby.winner_steam_id)?.persona_name ?? lobby.winner_steam_id}
-          </div>
-        )}
+          {/* Победитель */}
+          {lobby.status === 'completed' && lobby.winner_steam_id && (
+            <div className="flex items-center justify-center gap-2 text-sm font-semibold text-yellow-500 py-1">
+              <Icon name="Trophy" size={16} />
+              Победитель: {[player1, player2].find(p => p?.steam_id === lobby.winner_steam_id)?.persona_name ?? lobby.winner_steam_id}
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* Чат */}
