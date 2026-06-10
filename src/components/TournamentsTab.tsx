@@ -30,6 +30,7 @@ interface SteamUser {
 
 interface TournamentsTabProps {
   tournaments: Tournament[];
+  isLoading?: boolean;
   user: SteamUser | null;
   isRegistering: number | null;
   onRegister: (tournamentId: number) => void;
@@ -47,7 +48,7 @@ interface TopPlayer {
   avatar_url?: string;
 }
 
-const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregister, onConfirm }: TournamentsTabProps) => {
+const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, onRegister, onUnregister, onConfirm }: TournamentsTabProps) => {
   const navigate = useNavigate();
   const [selectedGame, setSelectedGame] = useState<string>('Все');
   const [leaderboardGame, setLeaderboardGame] = useState<string>('Hearthstone');
@@ -206,7 +207,13 @@ const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregi
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {filteredTournaments.length > 0 ? (
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-40 rounded-xl bg-muted/30 animate-pulse border border-border" />
+              ))}
+            </div>
+          ) : filteredTournaments.length > 0 ? (
             filteredTournaments.map((tournament, index) => (
             <Card 
               key={tournament.id}

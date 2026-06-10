@@ -42,6 +42,7 @@ const Tournaments = () => {
     return saved ? JSON.parse(saved) : null;
   });
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [isLoadingTournaments, setIsLoadingTournaments] = useState(true);
   const [isRegistering, setIsRegistering] = useState<number | null>(null);
   const [unregisterTournamentId, setUnregisterTournamentId] = useState<number | null>(null);
 
@@ -74,6 +75,7 @@ const Tournaments = () => {
   }, [user]);
 
   const loadTournaments = async () => {
+    setIsLoadingTournaments(true);
     try {
       const url = user 
         ? `https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675?steam_id=${user.steamId}`
@@ -84,6 +86,8 @@ const Tournaments = () => {
       setTournaments(data.tournaments || []);
     } catch (error) {
       console.error('Failed to load tournaments:', error);
+    } finally {
+      setIsLoadingTournaments(false);
     }
   };
 
@@ -243,6 +247,7 @@ const Tournaments = () => {
         <main className="container mx-auto px-6 py-16">
           <TournamentsTab
             tournaments={tournaments}
+            isLoading={isLoadingTournaments}
             user={user}
             isRegistering={isRegistering}
             onRegister={handleTournamentRegister}
