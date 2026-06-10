@@ -111,7 +111,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             t = cur.fetchone()
             if t and t['is_rated']:
                 try:
-                    apply_elo_ratings(cur, conn, int(tournament_id), t['game'])
+                    apply_elo_ratings(cur, conn, int(tournament_id), t['game'].lower())
                 except Exception as e:
                     print(f"Elo error: {e}")
             return

@@ -580,7 +580,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Начислить рейтинг Эло если турнир завершён и рейтинговый
             if body_data.get('status') == 'completed' and tournament['is_rated']:
                 try:
-                    apply_elo_ratings(cursor, conn, int(tournament_id), tournament['game'])
+                    apply_elo_ratings(cursor, conn, int(tournament_id), tournament['game'].lower())
                 except Exception as e:
                     print(f"Elo calculation error: {e}")
 
