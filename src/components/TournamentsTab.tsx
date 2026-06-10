@@ -17,6 +17,7 @@ interface Tournament {
   participants_count: number;
   is_registered?: boolean;
   confirmed_at?: string | null;
+  is_rated?: boolean;
 }
 
 interface SteamUser {
@@ -230,6 +231,12 @@ const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregi
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getTypeColor(tournament.tournament_type)}`}>
                         {tournament.tournament_type}
                       </span>
+                      {tournament.is_rated && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                          <Icon name="Star" size={11} />
+                          Рейтинговый
+                        </span>
+                      )}
                     </div>
                     <p className="text-muted-foreground text-sm leading-relaxed">{tournament.description}</p>
                   </div>

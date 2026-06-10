@@ -28,6 +28,7 @@ export interface TournamentDetail {
   prizes_description?: string;
   bracket_type?: string;
   match_lobbies?: MatchLobbySlot[];
+  is_rated?: boolean;
 }
 
 export interface MatchLobbySlot {

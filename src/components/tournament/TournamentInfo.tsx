@@ -59,6 +59,12 @@ const TournamentInfo = ({ tournament }: TournamentInfoProps) => {
         <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeColor(tournament.tournament_type)}`}>
           {tournament.tournament_type}
         </span>
+        {tournament.is_rated && (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+            <Icon name="Star" size={13} />
+            Рейтинговый
+          </span>
+        )}
       </div>
 
       <div>
