@@ -31,9 +31,9 @@ export default function TournamentAdminPicker({ value, onChange, adminSteamId }:
     })
       .then(r => r.json())
       .then(d => {
-        const users: UserOption[] = (d.users || []).map((u: { steam_id: string; persona_name: string; avatar_url: string | null }) => ({
-          steamId: u.steam_id,
-          personaName: u.persona_name,
+        const users: UserOption[] = (d.users || []).map((u: { steam_id: string; persona_name: string | null; avatar_url: string | null }) => ({
+          steamId: u.steam_id ?? '',
+          personaName: u.persona_name ?? u.steam_id ?? '',
           avatarUrl: u.avatar_url,
         }));
         setAllUsers(users);
@@ -53,7 +53,7 @@ export default function TournamentAdminPicker({ value, onChange, adminSteamId }:
 
   const filtered = allUsers.filter(u =>
     !safeValue.includes(u.steamId) &&
-    (u.personaName.toLowerCase().includes(query.toLowerCase()) || u.steamId.includes(query))
+    ((u.personaName ?? '').toLowerCase().includes(query.toLowerCase()) || (u.steamId ?? '').includes(query))
   );
 
   const selected = allUsers.filter(u => safeValue.includes(u.steamId));
