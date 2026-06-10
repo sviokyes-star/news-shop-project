@@ -180,8 +180,18 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
     }
   };
 
-  const startEdit = (tournament: Tournament) => {
+  const startEdit = async (tournament: Tournament) => {
     setEditingId(tournament.id);
+
+    let adminIds: string[] = [];
+    try {
+      const res = await fetch(`${func2url.tournaments}?tournament_id=${tournament.id}`);
+      const detail = await res.json();
+      adminIds = (detail.tournament_admins || []).map((a: { steam_id: string }) => a.steam_id);
+    } catch {
+      adminIds = [];
+    }
+
     setFormData({
       name: tournament.name,
       description: tournament.description,
@@ -194,7 +204,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       bracket_type: tournament.bracket_type || 'random',
       rules: tournament.rules || '',
       prizes_description: tournament.prizes_description || '',
-      admin_steam_ids: (tournament.tournament_admins || []).map((a: { steam_id: string }) => a.steam_id),
+      admin_steam_ids: adminIds,
     });
   };
 

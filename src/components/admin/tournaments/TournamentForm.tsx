@@ -180,7 +180,7 @@ export default function TournamentForm({
         </div>
 
         <TournamentAdminPicker
-          value={formData.admin_steam_ids}
+          value={formData.admin_steam_ids ?? []}
           onChange={(ids) => setFormData({ admin_steam_ids: ids })}
           adminSteamId={adminSteamId}
         />

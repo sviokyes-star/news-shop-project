@@ -46,21 +46,23 @@ export default function TournamentAdminPicker({ value, onChange, adminSteamId }:
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const safeValue = Array.isArray(value) ? value : [];
+
   const filtered = allUsers.filter(u =>
-    !value.includes(u.steamId) &&
+    !safeValue.includes(u.steamId) &&
     (u.personaName.toLowerCase().includes(query.toLowerCase()) || u.steamId.includes(query))
   );
 
-  const selected = allUsers.filter(u => value.includes(u.steamId));
+  const selected = allUsers.filter(u => safeValue.includes(u.steamId));
 
   const add = (u: UserOption) => {
-    onChange([...value, u.steamId]);
+    onChange([...safeValue, u.steamId]);
     setQuery('');
     setIsOpen(false);
   };
 
   const remove = (steamId: string) => {
-    onChange(value.filter(id => id !== steamId));
+    onChange(safeValue.filter(id => id !== steamId));
   };
 
   return (
