@@ -75,7 +75,12 @@ const UserProfile = () => {
   }, [steamId, navigate]);
 
   useEffect(() => {
-    if (steamId && me) loadFriendData(steamId, me.steamId);
+    if (!steamId) return;
+    if (me) {
+      loadFriendData(steamId, me.steamId);
+    } else {
+      loadFriendsOnly(steamId);
+    }
   }, [steamId, me]);
 
   const loadProfile = async (id: string) => {
@@ -97,6 +102,21 @@ const UserProfile = () => {
       }
     } catch { setNotFound(true); }
     finally { setIsLoading(false); }
+  };
+
+  const loadFriendsOnly = async (targetId: string) => {
+    const cacheKey = `friends_${targetId}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) setFriends(JSON.parse(cached));
+    try {
+      const res = await fetch(`${func2url.friends}?steam_id=${targetId}&action=friends&no_ping=1`);
+      const data = await res.json();
+      const list = data.friends || [];
+      setFriends(list);
+      localStorage.setItem(cacheKey, JSON.stringify(list));
+    } catch (e) {
+      console.error('Failed to load friends', e);
+    }
   };
 
   const loadFriendData = async (targetId: string, myId: string) => {
