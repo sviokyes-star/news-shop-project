@@ -10,6 +10,7 @@ interface Product {
   amount: string;
   price: number;
   is_active?: boolean;
+  category?: string;
 }
 
 interface SteamUser {
@@ -147,37 +148,48 @@ const Shop = () => {
             </Card>
           )}
           
-          <div className="space-y-6">
-              {products.map((product) => (
-              <Card key={product.id} className="group p-6 backdrop-blur-sm bg-card/50 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10">
-                <div className="flex items-center justify-between gap-6">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                      <Icon name="Coins" size={28} className="text-primary" />
-                    </div>
-                    
-                    <div className="space-y-1 flex-1">
-                      <h3 className="text-xl font-bold">{product.name}</h3>
-                      <p className="text-sm text-primary font-semibold">{product.amount}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold">{product.price}</span>
-                        <span className="text-lg text-muted-foreground">₽</span>
-                      </div>
-                    </div>
-                    
-                    <Button className="h-11 px-6 shadow-lg shadow-primary/20 group-hover:shadow-xl group-hover:shadow-primary/30">
-                      <Icon name="ShoppingCart" size={18} className="mr-2" />
-                      Купить
-                    </Button>
+          <div className="space-y-8">
+            {(() => {
+              const groups: { category: string; items: Product[] }[] = [];
+              products.forEach(product => {
+                const cat = product.category?.trim() || '';
+                const existing = groups.find(g => g.category === cat);
+                if (existing) existing.items.push(product);
+                else groups.push({ category: cat, items: [product] });
+              });
+              return groups.map(({ category, items }) => (
+                <div key={category}>
+                  {category && (
+                    <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                      <span className="w-1 h-5 rounded-full bg-primary inline-block" />
+                      {category}
+                    </h2>
+                  )}
+                  <div className="grid gap-2">
+                    {items.map(product => (
+                      <Card key={product.id} className="group px-4 py-3 backdrop-blur-sm bg-card/50 border-border hover:border-primary/50 transition-all duration-200">
+                        <div className="flex items-center gap-4">
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <Icon name="Coins" size={18} className="text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm leading-tight truncate">{product.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{product.amount}</p>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className="text-xl font-bold">{product.price}<span className="text-sm text-muted-foreground ml-0.5">₽</span></span>
+                            <Button size="sm" className="h-8 px-3 text-xs">
+                              <Icon name="ShoppingCart" size={14} className="mr-1" />
+                              Купить
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-              </Card>
-              ))}
+              ));
+            })()}
           </div>
         </div>
       </main>
