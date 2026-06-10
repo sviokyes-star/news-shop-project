@@ -14,55 +14,28 @@ export default function UserStats({
   moderatorsCount, 
   blockedCount 
 }: UserStatsProps) {
+  const stats = [
+    { icon: 'Users', color: 'text-primary', bg: 'bg-primary/15', label: 'Пользователей', value: totalUsers },
+    { icon: 'Wallet', color: 'text-green-500', bg: 'bg-green-500/15', label: 'Общий баланс', value: `${totalBalance} ₽` },
+    { icon: 'Shield', color: 'text-blue-500', bg: 'bg-blue-500/15', label: 'Модераторов', value: moderatorsCount },
+    { icon: 'Ban', color: 'text-red-500', bg: 'bg-red-500/15', label: 'Заблокировано', value: blockedCount },
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card className="p-6 bg-card/80 backdrop-blur border-primary/20">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-            <Icon name="Users" size={24} className="text-primary" />
+    <Card className="p-3 bg-card/80 backdrop-blur border-primary/20">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {stats.map(s => (
+          <div key={s.label} className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center flex-shrink-0`}>
+              <Icon name={s.icon as never} size={16} className={s.color} />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground leading-none mb-0.5">{s.label}</p>
+              <p className="text-lg font-bold leading-none">{s.value}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Всего пользователей</p>
-            <p className="text-2xl font-bold">{totalUsers}</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-6 bg-card/80 backdrop-blur border-primary/20">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-            <Icon name="Wallet" size={24} className="text-green-500" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Общий баланс</p>
-            <p className="text-2xl font-bold">{totalBalance} ₽</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-6 bg-card/80 backdrop-blur border-primary/20">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-            <Icon name="Shield" size={24} className="text-blue-500" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Модераторов</p>
-            <p className="text-2xl font-bold">{moderatorsCount}</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-6 bg-card/80 backdrop-blur border-primary/20">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
-            <Icon name="Ban" size={24} className="text-red-500" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Заблокировано</p>
-            <p className="text-2xl font-bold">{blockedCount}</p>
-          </div>
-        </div>
-      </Card>
-    </div>
+        ))}
+      </div>
+    </Card>
   );
 }

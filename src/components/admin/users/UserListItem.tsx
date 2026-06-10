@@ -54,76 +54,52 @@ export default function UserListItem({
   setBalanceAmount,
   setBlockReason
 }: UserListItemProps) {
+  const isEditing = editingUserId === user.steamId;
+
   return (
     <div
-      className={`p-4 rounded-lg border bg-background/50 transition-colors ${
-        user.isBlocked 
-          ? 'border-red-500/30 bg-red-500/5' 
-          : 'border-border hover:border-primary/30'
+      className={`px-3 py-2 rounded-lg border transition-colors ${
+        user.isBlocked
+          ? 'border-red-500/30 bg-red-500/5'
+          : 'border-border hover:border-primary/30 bg-background/50'
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          {user.avatarUrl ? (
-            <PlayerLink steamId={user.steamId} name={user.personaName} avatarOnly avatarUrl={user.avatarUrl} avatarSize={12} isOnline={user.isOnline} />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <Icon name="User" size={24} />
-            </div>
-          )}
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <PlayerLink steamId={user.steamId} name={user.personaName} className="truncate" />
-              {user.isAdmin && (
-                <span className="text-xs px-2 py-0.5 bg-destructive/20 text-destructive rounded font-semibold">
-                  Администратор
-                </span>
-              )}
-              {user.isModerator && (
-                <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded font-semibold">
-                  Модератор
-                </span>
-              )}
-              {user.isBlocked && (
-                <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-500 rounded">
-                  Заблокирован
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Icon name="Hash" size={14} />
-                <span className="font-mono text-xs">{user.steamId}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <Icon name="Wallet" size={14} />
-                  <span className="font-semibold text-green-500">{user.balance} ₽</span>
-                </div>
-                {user.lastLogin && (
-                  <div className="flex items-center gap-1">
-                    <Icon name="Clock" size={14} />
-                    <span className="text-xs">
-                      {new Date(user.lastLogin).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {user.isBlocked && user.blockReason && (
-                <div className="flex items-start gap-1 mt-2 p-2 bg-red-500/10 rounded">
-                  <Icon name="AlertCircle" size={14} className="text-red-500 mt-0.5" />
-                  <span className="text-xs text-red-500">{user.blockReason}</span>
-                </div>
-              )}
-            </div>
+      <div className="flex items-center gap-3">
+        {user.avatarUrl ? (
+          <PlayerLink steamId={user.steamId} name={user.personaName} avatarOnly avatarUrl={user.avatarUrl} avatarSize={8} isOnline={user.isOnline} />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <Icon name="User" size={16} />
           </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <PlayerLink steamId={user.steamId} name={user.personaName} className="font-medium text-sm truncate" />
+            {user.isAdmin && (
+              <span className="text-xs px-1.5 py-0.5 bg-destructive/20 text-destructive rounded font-semibold leading-none">Админ</span>
+            )}
+            {user.isModerator && (
+              <span className="text-xs px-1.5 py-0.5 bg-primary/20 text-primary rounded font-semibold leading-none">Модер</span>
+            )}
+            {user.isBlocked && (
+              <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-500 rounded leading-none">Блок</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+            <span className="font-mono">{user.steamId}</span>
+            <span className="text-green-500 font-semibold">{user.balance} ₽</span>
+            {user.lastLogin && (
+              <span>{new Date(user.lastLogin).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+            )}
+          </div>
+          {user.isBlocked && user.blockReason && (
+            <p className="text-xs text-red-500 mt-0.5 truncate">{user.blockReason}</p>
+          )}
         </div>
 
-        <div className="flex flex-col gap-2 min-w-[140px]">
-          {editingUserId === user.steamId ? (
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {isEditing ? (
             <>
               {balanceAmount !== null && (
                 <>
@@ -131,106 +107,53 @@ export default function UserListItem({
                     type="number"
                     value={balanceAmount}
                     onChange={(e) => setBalanceAmount(Number(e.target.value))}
-                    placeholder="Новый баланс"
-                    className="h-8 text-sm"
+                    placeholder="Баланс"
+                    className="h-7 w-24 text-sm"
                   />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => onUpdateBalance(user, balanceAmount)}
-                      className="flex-1"
-                    >
-                      <Icon name="Check" size={14} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onCancelEdit}
-                      className="flex-1"
-                    >
-                      <Icon name="X" size={14} />
-                    </Button>
-                  </div>
+                  <Button size="sm" className="h-7 w-7 p-0" onClick={() => onUpdateBalance(user, balanceAmount)}>
+                    <Icon name="Check" size={13} />
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={onCancelEdit}>
+                    <Icon name="X" size={13} />
+                  </Button>
                 </>
               )}
               {blockReason !== null && balanceAmount === null && (
-                <>
+                <div className="flex items-center gap-1.5">
                   <Textarea
                     value={blockReason}
                     onChange={(e) => setBlockReason(e.target.value)}
-                    placeholder="Причина блокировки..."
-                    rows={2}
-                    className="text-sm"
+                    placeholder="Причина..."
+                    rows={1}
+                    className="text-sm h-7 min-h-0 py-1 w-36 resize-none"
                   />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => onBlockUser(user, blockReason)}
-                      className="flex-1"
-                    >
-                      <Icon name="Ban" size={14} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onCancelEdit}
-                      className="flex-1"
-                    >
-                      <Icon name="X" size={14} />
-                    </Button>
-                  </div>
-                </>
+                  <Button size="sm" variant="destructive" className="h-7 w-7 p-0" onClick={() => onBlockUser(user, blockReason)}>
+                    <Icon name="Ban" size={13} />
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={onCancelEdit}>
+                    <Icon name="X" size={13} />
+                  </Button>
+                </div>
               )}
             </>
           ) : (
             <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onStartEditBalance(user)}
-                className="gap-2"
-              >
-                <Icon name="Wallet" size={14} />
-                Баланс
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0" title="Изменить баланс" onClick={() => onStartEditBalance(user)}>
+                <Icon name="Wallet" size={13} />
               </Button>
-              <Button
-                size="sm"
-                variant={user.isAdmin ? "secondary" : "outline"}
-                onClick={() => onToggleAdmin(user)}
-                className="gap-2"
-              >
-                <Icon name={user.isAdmin ? "UserMinus" : "UserPlus"} size={14} />
-                {user.isAdmin ? "Снять админа" : "Админ"}
+              <Button size="sm" variant={user.isAdmin ? "secondary" : "outline"} className="h-7 w-7 p-0" title={user.isAdmin ? "Снять админа" : "Назначить админом"} onClick={() => onToggleAdmin(user)}>
+                <Icon name={user.isAdmin ? "UserMinus" : "UserCog"} size={13} />
               </Button>
-              <Button
-                size="sm"
-                variant={user.isModerator ? "secondary" : "outline"}
-                onClick={() => onToggleModerator(user)}
-                className="gap-2"
-              >
-                <Icon name={user.isModerator ? "ShieldOff" : "Shield"} size={14} />
-                {user.isModerator ? "Снять модера" : "Модер"}
+              <Button size="sm" variant={user.isModerator ? "secondary" : "outline"} className="h-7 w-7 p-0" title={user.isModerator ? "Снять модератора" : "Назначить модератором"} onClick={() => onToggleModerator(user)}>
+                <Icon name={user.isModerator ? "ShieldOff" : "Shield"} size={13} />
               </Button>
               {user.isBlocked ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onUnblockUser(user)}
-                  className="gap-2"
-                >
-                  <Icon name="CheckCircle" size={14} />
-                  Разблокировать
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0" title="Разблокировать" onClick={() => onUnblockUser(user)}>
+                  <Icon name="CheckCircle" size={13} />
                 </Button>
               ) : (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onStartBlock(user)}
-                  className="gap-2"
-                >
-                  <Icon name="Ban" size={14} />
-                  Заблокировать
+                <Button size="sm" variant="destructive" className="h-7 w-7 p-0" title="Заблокировать" onClick={() => onStartBlock(user)}>
+                  <Icon name="Ban" size={13} />
                 </Button>
               )}
             </>
