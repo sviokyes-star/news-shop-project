@@ -131,12 +131,7 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
   
 
   
-  const getPositionBadge = (position: number) => {
-    if (position === 1) return '🥇';
-    if (position === 2) return '🥈';
-    if (position === 3) return '🥉';
-    return position;
-  };
+  const getPositionBadge = (position: number) => position;
 
   const getStatusColor = (status: string) => {
     switch (status) {
