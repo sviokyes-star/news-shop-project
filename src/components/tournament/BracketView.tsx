@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-import { Participant } from './types';
+import { Participant, MatchLobbySlot } from './types';
 
 interface BracketViewProps {
   participants: Participant[];
@@ -9,6 +9,7 @@ interface BracketViewProps {
   status: string;
   bracketType: string;
   tournamentId: number;
+  matchLobbies?: MatchLobbySlot[];
   onMatchClick: (tournamentId: number, roundIndex: number, matchIndex: number, players: (Participant | null)[]) => void;
 }
 
@@ -36,7 +37,7 @@ const COL_W = 200;
 // Горизонтальный отступ между колонками
 const COL_GAP = 48;
 
-const BracketView = ({ participants, maxParticipants, status, bracketType, tournamentId, onMatchClick }: BracketViewProps) => {
+const BracketView = ({ participants, maxParticipants, status, bracketType, tournamentId, matchLobbies = [], onMatchClick }: BracketViewProps) => {
   const hasStarted = STARTED_STATUSES.includes(status);
 
   const pool = participants.filter(p => p.confirmed_at).length >= 2
@@ -83,6 +84,21 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
   while (rs > 1) {
     rs = Math.ceil(rs / 2);
     rounds.push(Array.from({ length: rs }, () => [null, null]));
+  }
+
+  // Подменяем игроков в раундах 1+ из реальных данных лобби
+  if (matchLobbies.length > 0) {
+    // Индекс участников для быстрого поиска
+    const participantMap = new Map(participants.map(p => [p.steam_id, p]));
+    matchLobbies.forEach(ml => {
+      if (ml.round_index >= rounds.length) return;
+      if (ml.match_index >= rounds[ml.round_index].length) return;
+      const pair: (Participant | null)[] = [
+        ml.player1_steam_id ? (participantMap.get(ml.player1_steam_id) ?? { steam_id: ml.player1_steam_id, persona_name: ml.player1_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' }) : null,
+        ml.player2_steam_id ? (participantMap.get(ml.player2_steam_id) ?? { steam_id: ml.player2_steam_id, persona_name: ml.player2_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' }) : null,
+      ];
+      rounds[ml.round_index][ml.match_index] = pair;
+    });
   }
 
   // Вычисляем Y-позицию каждого матча
@@ -133,6 +149,8 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
             {round.map((pair, pIdx) => {
               const top = matchY(rIdx, pIdx);
               const hasPlayers = pair.some(p => p !== null);
+              const lobbyData = matchLobbies.find(ml => ml.round_index === rIdx && ml.match_index === pIdx);
+              const winnerId = lobbyData?.winner_steam_id ?? null;
               return (
                 <div
                   key={pIdx}
@@ -141,7 +159,10 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
                   onClick={hasPlayers ? () => onMatchClick(tournamentId, rIdx, pIdx, pair) : undefined}
                   title={hasPlayers ? 'Открыть лобби матча' : undefined}
                 >
-                  {pair.map((player, sIdx) => (
+                  {pair.map((player, sIdx) => {
+                    const isWinner = winnerId && player?.steam_id === winnerId;
+                    const isLoser = winnerId && player && player.steam_id !== winnerId;
+                    return (
                     <div
                       key={sIdx}
                       style={{ height: SLOT_H }}
@@ -150,11 +171,15 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
                       } ${
                         hasPlayers ? 'group-hover:border-primary/60' : ''
                       } ${
-                        player
-                          ? player.confirmed_at
-                            ? 'bg-primary/10 border-primary/30 text-foreground'
-                            : 'bg-card border-border text-foreground'
-                          : 'bg-muted/20 border-dashed border-border/50 text-muted-foreground'
+                        isWinner
+                          ? 'bg-yellow-500/15 border-yellow-500/50 text-foreground'
+                          : isLoser
+                            ? 'bg-muted/20 border-border text-muted-foreground opacity-50'
+                            : player
+                              ? player.confirmed_at
+                                ? 'bg-primary/10 border-primary/30 text-foreground'
+                                : 'bg-card border-border text-foreground'
+                              : 'bg-muted/20 border-dashed border-border/50 text-muted-foreground'
                       }`}
                     >
                       {player ? (
@@ -163,8 +188,9 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
                             ? <img src={player.avatar_url} className="w-5 h-5 rounded-full flex-shrink-0" />
                             : <div className="w-5 h-5 rounded-full bg-primary/20 flex-shrink-0" />
                           }
-                          <span className="truncate font-medium" style={{ maxWidth: 100 }}>{player.persona_name}</span>
-                          {bracketType === 'rating' && (
+                          <span className="truncate font-medium" style={{ maxWidth: 90 }}>{player.persona_name}</span>
+                          {isWinner && <Icon name="Trophy" size={11} className="text-yellow-500 flex-shrink-0 ml-auto" />}
+                          {!isWinner && bracketType === 'rating' && (
                             <span className="ml-auto text-xs text-muted-foreground flex-shrink-0">{player.rating ?? 0}</span>
                           )}
                         </>
@@ -172,7 +198,8 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
                         <span className="text-xs italic opacity-50">TBD</span>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   {hasPlayers && (
                     <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Icon name="ExternalLink" size={12} className="text-primary" />

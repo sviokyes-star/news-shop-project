@@ -28,6 +28,58 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     HEADERS = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
     SCHEMA = 't_p15345778_news_shop_project'
 
+    def advance_winner(cur, conn, tournament_id, round_index, match_index, winner_steam_id):
+        """Продвигает победителя в следующий раунд сетки."""
+        next_round = round_index + 1
+        next_match = match_index // 2
+        slot = match_index % 2  # 0 → player1, 1 → player2
+        winner_esc = winner_steam_id.replace("'", "''")
+
+        # Узнаём сколько матчей в текущем раунде — если следующий раунд выходит за финал, ничего не делаем
+        cur.execute(f"""
+            SELECT COUNT(*) as cnt FROM {SCHEMA}.match_lobbies
+            WHERE tournament_id = {int(tournament_id)} AND round_index = {round_index}
+        """)
+        row = cur.fetchone()
+        total_in_round = row['cnt'] if row else 0
+        if total_in_round <= 1:
+            return  # финал уже сыгран
+
+        field = 'player1_steam_id' if slot == 0 else 'player2_steam_id'
+
+        # Найти или создать лобби следующего раунда
+        cur.execute(f"""
+            SELECT id FROM {SCHEMA}.match_lobbies
+            WHERE tournament_id = {int(tournament_id)}
+              AND round_index = {next_round}
+              AND match_index = {next_match}
+        """)
+        next_lobby = cur.fetchone()
+        if next_lobby:
+            cur.execute(f"""
+                UPDATE {SCHEMA}.match_lobbies
+                SET {field} = '{winner_esc}', updated_at = NOW()
+                WHERE id = {next_lobby['id']}
+            """)
+        else:
+            if slot == 0:
+                cur.execute(f"""
+                    INSERT INTO {SCHEMA}.match_lobbies
+                        (tournament_id, round_index, match_index, status, player1_steam_id)
+                    VALUES ({int(tournament_id)}, {next_round}, {next_match}, 'waiting', '{winner_esc}')
+                    ON CONFLICT (tournament_id, round_index, match_index) DO UPDATE
+                    SET player1_steam_id = '{winner_esc}', updated_at = NOW()
+                """)
+            else:
+                cur.execute(f"""
+                    INSERT INTO {SCHEMA}.match_lobbies
+                        (tournament_id, round_index, match_index, status, player2_steam_id)
+                    VALUES ({int(tournament_id)}, {next_round}, {next_match}, 'waiting', '{winner_esc}')
+                    ON CONFLICT (tournament_id, round_index, match_index) DO UPDATE
+                    SET player2_steam_id = '{winner_esc}', updated_at = NOW()
+                """)
+        conn.commit()
+
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor(cursor_factory=RealDictCursor)
     params = event.get('queryStringParameters') or {}
@@ -143,7 +195,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         cur.execute(f"""
             SELECT id, player1_steam_id, player2_steam_id, status,
-                   player1_reported_winner, player2_reported_winner, is_dispute
+                   player1_reported_winner, player2_reported_winner, is_dispute,
+                   round_index, match_index
             FROM {SCHEMA}.match_lobbies
             WHERE tournament_id = {int(tournament_id)}
               AND round_index   = {int(round_index)}
@@ -270,6 +323,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         VALUES ({lobby_id}, 'system', 'Система', '{sys_msg_esc}')
                     """)
                     conn.commit()
+                    # Продвигаем победителя в следующий раунд
+                    advance_winner(cur, conn, tournament_id, lobby['round_index'], lobby['match_index'], v1)
                     conn.close()
                     return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'result': 'winner_set', 'winner': v1})}
                 else:
@@ -338,6 +393,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 VALUES ({lobby_id}, 'system', 'Система', '{sys_msg}')
             """)
             conn.commit()
+            # Продвигаем победителя в следующий раунд
+            advance_winner(cur, conn, tournament_id, lobby['round_index'], lobby['match_index'], winner_id)
             conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'result': 'resolved', 'winner': winner_id})}
 

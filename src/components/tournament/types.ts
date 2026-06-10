@@ -27,6 +27,16 @@ export interface TournamentDetail {
   rules?: string;
   prizes_description?: string;
   bracket_type?: string;
+  match_lobbies?: MatchLobbySlot[];
+}
+
+export interface MatchLobbySlot {
+  round_index: number;
+  match_index: number;
+  player1_steam_id: string | null;
+  player2_steam_id: string | null;
+  winner_steam_id: string | null;
+  status: string;
 }
 
 export interface SteamUser {

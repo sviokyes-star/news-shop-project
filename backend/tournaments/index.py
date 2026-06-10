@@ -142,9 +142,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 ''', (tournament_id,))
                 tournament_admins = [dict(a) for a in cursor.fetchall()]
 
+                # Получить лобби матчей (для отображения сетки)
+                cursor.execute('''
+                    SELECT round_index, match_index,
+                           player1_steam_id, player2_steam_id,
+                           winner_steam_id, status
+                    FROM t_p15345778_news_shop_project.match_lobbies
+                    WHERE tournament_id = %s
+                    ORDER BY round_index, match_index
+                ''', (tournament_id,))
+                match_lobbies = [dict(m) for m in cursor.fetchall()]
+
                 result = dict(tournament)
                 result['participants'] = [dict(p) for p in participants]
                 result['tournament_admins'] = tournament_admins
+                result['match_lobbies'] = match_lobbies
                 
                 return {
                     'statusCode': 200,

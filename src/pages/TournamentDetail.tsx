@@ -444,6 +444,7 @@ const TournamentDetail = () => {
                   status={tournament.status}
                   bracketType={tournament.bracket_type || 'random'}
                   tournamentId={tournament.id}
+                  matchLobbies={tournament.match_lobbies || []}
                   onMatchClick={(tId, rIdx, mIdx, players) => {
                     const p1 = players[0]?.steam_id ?? '';
                     const p2 = players[1]?.steam_id ?? '';
