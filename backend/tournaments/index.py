@@ -62,12 +62,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if leaderboard_game:
                 esc_game = leaderboard_game.lower().replace("'", "''")
                 cursor.execute(f"""
-                    SELECT steam_id, persona_name, points, wins, losses,
-                           ROW_NUMBER() OVER (ORDER BY points DESC) as position
-                    FROM {SCHEMA}.player_rankings
-                    WHERE game = '{esc_game}'
-                      AND steam_id NOT LIKE '76561198000000%'
-                    ORDER BY points DESC
+                    SELECT pr.steam_id, pr.persona_name, pr.points, pr.wins, pr.losses,
+                           COALESCE(u.avatar_url, '') as avatar_url,
+                           ROW_NUMBER() OVER (ORDER BY pr.points DESC) as position
+                    FROM {SCHEMA}.player_rankings pr
+                    LEFT JOIN {SCHEMA}.users u ON u.steam_id = pr.steam_id
+                    WHERE pr.game = '{esc_game}'
+                      AND pr.steam_id NOT LIKE '76561198000000%'
+                    ORDER BY pr.points DESC
                     LIMIT 10
                 """)
                 rows = cursor.fetchall()

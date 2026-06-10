@@ -44,6 +44,7 @@ interface TopPlayer {
   points: number;
   wins: number;
   losses: number;
+  avatar_url?: string;
 }
 
 const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregister, onConfirm }: TournamentsTabProps) => {
@@ -420,11 +421,19 @@ const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregi
                 ) : topPlayers.map((player) => (
                   <div
                     key={player.steam_id}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-sm cursor-pointer"
+                    onClick={() => navigate(`/profile/${player.steam_id}`)}
                   >
-                    <div className="w-6 text-center font-bold text-muted-foreground">
+                    <div className="w-6 text-center font-bold text-muted-foreground flex-shrink-0">
                       {getPositionBadge(Number(player.position))}
                     </div>
+                    {player.avatar_url ? (
+                      <img src={player.avatar_url} className="w-7 h-7 rounded-full border border-border flex-shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center">
+                        <Icon name="User" size={14} className="text-primary" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{player.persona_name}</p>
                     </div>
