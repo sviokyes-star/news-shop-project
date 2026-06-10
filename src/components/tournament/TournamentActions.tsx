@@ -30,6 +30,8 @@ const TournamentActions = ({
   onConfirm
 }: TournamentActionsProps) => {
   const userParticipant = tournament.participants.find(p => p.steam_id === user?.steamId);
+  const tournamentStarted = ['active', 'ongoing', 'completed'].includes(tournament.status)
+    || new Date(tournament.start_date).getTime() <= Date.now();
 
   return (
     <Card className="p-6">
@@ -145,7 +147,7 @@ const TournamentActions = ({
               </div>
             )}
 
-            {['active', 'ongoing', 'completed'].includes(tournament.status) ? (
+            {tournamentStarted ? (
               <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/40 border border-border text-sm text-muted-foreground">
                 <Icon name="Lock" size={16} />
                 Отмена регистрации недоступна после начала турнира
