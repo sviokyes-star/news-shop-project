@@ -77,6 +77,7 @@ export default function TournamentCard({ tournament, onEdit, onDelete }: Tournam
 
         <div className="flex gap-2 flex-shrink-0">
           <Button
+            type="button"
             onClick={onEdit}
             variant="outline"
             size="sm"
@@ -86,6 +87,7 @@ export default function TournamentCard({ tournament, onEdit, onDelete }: Tournam
             Изменить
           </Button>
           <Button
+            type="button"
             onClick={onDelete}
             variant="outline"
             size="sm"
