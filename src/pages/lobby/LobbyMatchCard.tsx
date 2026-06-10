@@ -121,8 +121,16 @@ export default function LobbyMatchCard({
           </div>
         )}
 
-        {/* Кнопка результата — участник, не завершён, не спор */}
-        {isParticipant && lobby.status !== 'completed' && !lobby.is_dispute && (() => {
+        {/* Ожидание соперника */}
+        {isParticipant && (!lobby.player1_steam_id || !lobby.player2_steam_id) && lobby.status !== 'completed' && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/30 border border-border text-sm text-muted-foreground">
+            <Icon name="Clock" size={15} />
+            Ожидаем соперника...
+          </div>
+        )}
+
+        {/* Кнопка результата — участник, не завершён, не спор, оба игрока определены */}
+        {isParticipant && lobby.status !== 'completed' && !lobby.is_dispute && lobby.player1_steam_id && lobby.player2_steam_id && (() => {
           const myVote = user?.steamId === lobby.player1_steam_id
             ? lobby.player1_reported_winner
             : lobby.player2_reported_winner;
