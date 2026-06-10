@@ -12,6 +12,7 @@ interface ShopItem {
   price: number;
   is_active: boolean;
   order_position: number;
+  category: string;
 }
 
 interface SteamUser {
@@ -43,7 +44,8 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
     name: '',
     amount: '',
     price: 0,
-    is_active: true
+    is_active: true,
+    category: ''
   });
 
   const handleShopSubmit = async (e: React.FormEvent) => {
@@ -102,7 +104,8 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
       name: item.name,
       amount: item.amount,
       price: item.price,
-      is_active: item.is_active
+      is_active: item.is_active,
+      category: item.category || ''
     });
   };
 
@@ -159,7 +162,8 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
       name: '',
       amount: '',
       price: 0,
-      is_active: true
+      is_active: true,
+      category: ''
     });
     setError('');
     setSuccess('');
@@ -265,6 +269,15 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
             </div>
 
             <div>
+              <label className="block text-sm font-medium mb-2">Категория товара</label>
+              <Input
+                value={shopFormData.category}
+                onChange={(e) => setShopFormData({ ...shopFormData, category: e.target.value })}
+                placeholder="VIP, Скины, Бонусы..."
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-medium mb-2">Количество/Описание</label>
               <Input
                 value={shopFormData.amount}
@@ -345,6 +358,11 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold truncate">{item.name}</h3>
+                          {item.category && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-primary/15 text-primary">
+                              {item.category}
+                            </span>
+                          )}
                           <span className={`text-xs px-2 py-0.5 rounded ${
                             item.is_active 
                               ? 'bg-green-500/20 text-green-500' 

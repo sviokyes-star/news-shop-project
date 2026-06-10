@@ -1,0 +1,1 @@
+ALTER TABLE t_p15345778_news_shop_project.shop_items ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT '' NOT NULL;

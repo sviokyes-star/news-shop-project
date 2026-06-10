@@ -33,9 +33,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             include_inactive = params.get('include_inactive') == 'true'
             
             if include_inactive:
-                query = "SELECT id, name, amount, price, is_active, order_position FROM t_p15345778_news_shop_project.shop_items ORDER BY order_position, id"
+                query = "SELECT id, name, amount, price, is_active, order_position, category FROM t_p15345778_news_shop_project.shop_items ORDER BY order_position, id"
             else:
-                query = "SELECT id, name, amount, price, is_active, order_position FROM t_p15345778_news_shop_project.shop_items WHERE is_active = true ORDER BY order_position, id"
+                query = "SELECT id, name, amount, price, is_active, order_position, category FROM t_p15345778_news_shop_project.shop_items WHERE is_active = true ORDER BY order_position, id"
             
             cur.execute(query)
             rows = cur.fetchall()
@@ -48,7 +48,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'amount': row[2],
                     'price': row[3],
                     'is_active': row[4],
-                    'order_position': row[5]
+                    'order_position': row[5],
+                    'category': row[6] if len(row) > 6 else ''
                 })
             
             return {
@@ -92,6 +93,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             name = body_data.get('name', '').strip()
             amount = body_data.get('amount', '').strip()
             price = body_data.get('price')
+            category = body_data.get('category', '').strip()
             
             if not name or not amount or price is None:
                 return {
@@ -105,6 +107,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             escaped_name = name.replace("'", "''")
             escaped_amount = amount.replace("'", "''")
+            escaped_category = category.replace("'", "''")
             
             # Get max order_position and add 10
             cur.execute("SELECT COALESCE(MAX(order_position), 0) FROM t_p15345778_news_shop_project.shop_items")
@@ -112,9 +115,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             new_position = max_position + 10
             
             cur.execute(f"""
-                INSERT INTO t_p15345778_news_shop_project.shop_items (name, amount, price, order_position)
-                VALUES ('{escaped_name}', '{escaped_amount}', {int(price)}, {new_position})
-                RETURNING id, name, amount, price, is_active, order_position
+                INSERT INTO t_p15345778_news_shop_project.shop_items (name, amount, price, order_position, category)
+                VALUES ('{escaped_name}', '{escaped_amount}', {int(price)}, {new_position}, '{escaped_category}')
+                RETURNING id, name, amount, price, is_active, order_position, category
             """)
             
             row = cur.fetchone()
@@ -133,7 +136,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'amount': row[2],
                         'price': row[3],
                         'is_active': row[4],
-                        'order_position': row[5]
+                        'order_position': row[5],
+                        'category': row[6]
                     }
                 })
             }
@@ -179,6 +183,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 order_position = body_data['order_position']
                 update_fields.append(f"order_position = {int(order_position)}")
             
+            if 'category' in body_data:
+                category = body_data['category'].strip()
+                escaped_category = category.replace("'", "''")
+                update_fields.append(f"category = '{escaped_category}'")
+            
             if not update_fields:
                 return {
                     'statusCode': 400,
@@ -194,7 +203,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 UPDATE t_p15345778_news_shop_project.shop_items 
                 SET {', '.join(update_fields)}
                 WHERE id = {int(item_id)}
-                RETURNING id, name, amount, price, is_active, order_position
+                RETURNING id, name, amount, price, is_active, order_position, category
             """
             
             cur.execute(update_query)
