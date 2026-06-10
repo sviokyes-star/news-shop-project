@@ -63,6 +63,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             except Exception:
                 pass
             
+            # Автоматически переводим турниры в статус active после старта
+            try:
+                cursor.execute("""
+                    UPDATE tournaments
+                    SET status = 'active'
+                    WHERE status IN ('open', 'upcoming')
+                      AND start_date IS NOT NULL
+                      AND start_date <= NOW()
+                """)
+                conn.commit()
+            except Exception:
+                pass
+            
             # Получить детали турнира с участниками
             if tournament_id:
                 cursor.execute('''
