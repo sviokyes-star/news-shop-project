@@ -66,6 +66,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                            ROW_NUMBER() OVER (ORDER BY points DESC) as position
                     FROM {SCHEMA}.player_rankings
                     WHERE game = '{esc_game}'
+                      AND steam_id NOT LIKE '76561198000000%'
                     ORDER BY points DESC
                     LIMIT 10
                 """)
