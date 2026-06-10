@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { TournamentFormData } from './types';
+import TournamentAdminPicker from './TournamentAdminPicker';
 
 interface TournamentFormProps {
   formData: TournamentFormData;
@@ -13,6 +14,7 @@ interface TournamentFormProps {
   onCancel: () => void;
   isEditing?: boolean;
   tournamentId?: number;
+  adminSteamId: string;
 }
 
 export default function TournamentForm({
@@ -21,7 +23,8 @@ export default function TournamentForm({
   onSubmit,
   onCancel,
   isEditing = false,
-  tournamentId
+  tournamentId,
+  adminSteamId,
 }: TournamentFormProps) {
   const setFormData = (updates: Partial<TournamentFormData>) => {
     onFormChange({ ...formData, ...updates });
@@ -175,6 +178,12 @@ export default function TournamentForm({
             onChange={(e) => setFormData({ start_date: e.target.value })}
           />
         </div>
+
+        <TournamentAdminPicker
+          value={formData.admin_steam_ids}
+          onChange={(ids) => setFormData({ admin_steam_ids: ids })}
+          adminSteamId={adminSteamId}
+        />
 
         <div className={`flex gap-3 ${isEditing ? '' : 'pt-2 relative z-50'}`}>
           {isEditing ? (

@@ -30,7 +30,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
     game: 'CS2',
     bracket_type: 'random',
     rules: '',
-    prizes_description: ''
+    prizes_description: '',
+    admin_steam_ids: [],
   });
   
   console.log('📝 Current formData:', formData);
@@ -66,7 +67,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
         game: formData.game,
         bracket_type: formData.bracket_type,
         rules: formData.rules,
-        prizes_description: formData.prizes_description
+        prizes_description: formData.prizes_description,
+        admin_steam_ids: formData.admin_steam_ids,
       };
       
       console.log('📤 Request body:', requestBody);
@@ -98,7 +100,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           game: 'CS2',
           bracket_type: 'random',
           rules: '',
-          prizes_description: ''
+          prizes_description: '',
+          admin_steam_ids: [],
         });
         await onReload();
       } else {
@@ -132,7 +135,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           game: formData.game,
           bracket_type: formData.bracket_type,
           rules: formData.rules,
-          prizes_description: formData.prizes_description
+          prizes_description: formData.prizes_description,
+          admin_steam_ids: formData.admin_steam_ids,
         })
       });
 
@@ -189,7 +193,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       game: tournament.game || 'CS2',
       bracket_type: tournament.bracket_type || 'random',
       rules: tournament.rules || '',
-      prizes_description: tournament.prizes_description || ''
+      prizes_description: tournament.prizes_description || '',
+      admin_steam_ids: (tournament.tournament_admins || []).map((a: { steam_id: string }) => a.steam_id),
     });
   };
 
@@ -206,7 +211,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       game: 'CS2',
       bracket_type: 'random',
       rules: '',
-      prizes_description: ''
+      prizes_description: '',
+      admin_steam_ids: [],
     });
   };
 
@@ -229,6 +235,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           onFormChange={setFormData}
           onSubmit={handleCreate}
           onCancel={() => setIsCreating(false)}
+          adminSteamId={user.steamId}
         />
       )}
 
@@ -243,6 +250,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
                 onCancel={cancelEdit}
                 isEditing={true}
                 tournamentId={tournament.id}
+                adminSteamId={user.steamId}
               />
             ) : (
               <TournamentCard

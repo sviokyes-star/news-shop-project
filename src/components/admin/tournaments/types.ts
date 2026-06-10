@@ -12,6 +12,7 @@ export interface Tournament {
   participants_count: number;
   rules?: string;
   prizes_description?: string;
+  tournament_admins?: { steam_id: string; persona_name: string; avatar_url: string | null }[];
 }
 
 export interface SteamUser {
@@ -32,4 +33,5 @@ export interface TournamentFormData {
   bracket_type: string;
   rules: string;
   prizes_description: string;
+  admin_steam_ids: string[];
 }

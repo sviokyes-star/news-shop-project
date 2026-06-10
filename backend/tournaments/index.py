@@ -133,8 +133,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 participants = cursor.fetchall()
                 
+                # Получить администраторов турнира
+                cursor.execute('''
+                    SELECT steam_id, persona_name, avatar_url
+                    FROM t_p15345778_news_shop_project.tournament_admins
+                    WHERE tournament_id = %s
+                    ORDER BY created_at ASC
+                ''', (tournament_id,))
+                tournament_admins = [dict(a) for a in cursor.fetchall()]
+
                 result = dict(tournament)
                 result['participants'] = [dict(p) for p in participants]
+                result['tournament_admins'] = tournament_admins
                 
                 return {
                     'statusCode': 200,
@@ -275,6 +285,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 """)
                 
                 tournament = cursor.fetchone()
+                tournament_id_new = tournament['id']
+
+                # Сохранить администраторов турнира
+                admin_steam_ids = body_data.get('admin_steam_ids', [])
+                for admin_sid in admin_steam_ids:
+                    esc_sid = admin_sid.replace("'", "''")
+                    cursor.execute(f"""
+                        SELECT COALESCE(nickname, steam_id) as persona_name, avatar_url
+                        FROM t_p15345778_news_shop_project.users WHERE steam_id = '{esc_sid}'
+                    """)
+                    urow = cursor.fetchone()
+                    pname = urow['persona_name'].replace("'", "''") if urow else esc_sid
+                    aurl = (urow['avatar_url'] or '').replace("'", "''") if urow else ''
+                    cursor.execute(f"""
+                        INSERT INTO t_p15345778_news_shop_project.tournament_admins
+                            (tournament_id, steam_id, persona_name, avatar_url)
+                        VALUES ({tournament_id_new}, '{esc_sid}', '{pname}', '{aurl}')
+                        ON CONFLICT (tournament_id, steam_id) DO NOTHING
+                    """)
                 conn.commit()
                 
                 return {
@@ -529,6 +558,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Tournament not found'})
                 }
             
+            # Обновить список администраторов турнира если передан
+            if 'admin_steam_ids' in body_data:
+                cursor.execute(f"DELETE FROM t_p15345778_news_shop_project.tournament_admins WHERE tournament_id = {int(tournament_id)}")
+                for admin_sid in body_data['admin_steam_ids']:
+                    esc_sid = admin_sid.replace("'", "''")
+                    cursor.execute(f"""
+                        SELECT COALESCE(nickname, steam_id) as persona_name, avatar_url
+                        FROM t_p15345778_news_shop_project.users WHERE steam_id = '{esc_sid}'
+                    """)
+                    urow = cursor.fetchone()
+                    pname = urow['persona_name'].replace("'", "''") if urow else esc_sid
+                    aurl = (urow['avatar_url'] or '').replace("'", "''") if urow else ''
+                    cursor.execute(f"""
+                        INSERT INTO t_p15345778_news_shop_project.tournament_admins
+                            (tournament_id, steam_id, persona_name, avatar_url)
+                        VALUES ({int(tournament_id)}, '{esc_sid}', '{pname}', '{aurl}')
+                        ON CONFLICT (tournament_id, steam_id) DO NOTHING
+                    """)
+
             conn.commit()
             
             return {
