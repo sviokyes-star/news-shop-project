@@ -1,0 +1,4 @@
+UPDATE t_p15345778_news_shop_project.tournament_registrations SET final_place = 1 WHERE tournament_id = 9 AND steam_id = '76561198974174275';
+UPDATE t_p15345778_news_shop_project.tournament_registrations SET final_place = 2 WHERE tournament_id = 9 AND steam_id = '76561190000000001';
+UPDATE t_p15345778_news_shop_project.tournament_registrations SET final_place = 3 WHERE tournament_id = 9 AND steam_id IN ('76561190000000003', '76561190000000006');
+UPDATE t_p15345778_news_shop_project.tournament_registrations SET final_place = 5 WHERE tournament_id = 9 AND steam_id IN ('76561190000000005', '76561190000000007', '76561190000000002', '76561190000000004');
