@@ -40,6 +40,12 @@ export interface LobbyData {
   player2: Player | null;
 }
 
+export interface TournamentAdmin {
+  steam_id: string;
+  persona_name: string;
+  avatar_url: string | null;
+}
+
 export const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   waiting:   { label: 'Ожидание',  color: 'text-yellow-500' },
   active:    { label: 'Идёт',      color: 'text-green-500' },

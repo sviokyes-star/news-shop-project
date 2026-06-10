@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import func2url from '../../backend/func2url.json';
 import LobbyMatchCard from './lobby/LobbyMatchCard';
 import LobbyChat from './lobby/LobbyChat';
-import { SteamUser, LobbyData, STATUS_LABELS } from './lobby/types';
+import { SteamUser, LobbyData, STATUS_LABELS, TournamentAdmin } from './lobby/types';
 
 export default function MatchLobby() {
   const { tournamentId, roundIndex, matchIndex } = useParams<{
@@ -27,12 +27,21 @@ export default function MatchLobby() {
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
+  const [tournamentAdmins, setTournamentAdmins] = useState<TournamentAdmin[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('steamUser');
     if (saved) setUser(JSON.parse(saved));
   }, []);
+
+  useEffect(() => {
+    if (!tournamentId) return;
+    fetch(`${func2url.tournaments}?tournament_id=${tournamentId}`)
+      .then(r => r.json())
+      .then(d => setTournamentAdmins(d.tournament_admins || []))
+      .catch(() => {});
+  }, [tournamentId]);
 
   const loadLobby = async () => {
     if (!tournamentId || roundIndex === undefined || matchIndex === undefined) return;
@@ -240,6 +249,7 @@ export default function MatchLobby() {
         isSending={isSending}
         onMessageChange={setMessage}
         onSend={sendMessage}
+        tournamentAdmins={tournamentAdmins}
       />
     </main>
   );

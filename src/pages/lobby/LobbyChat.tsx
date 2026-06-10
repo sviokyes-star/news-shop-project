@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
-import { Message, SteamUser } from './types';
+import { Message, SteamUser, TournamentAdmin } from './types';
 
 interface LobbyChatProps {
   messages: Message[];
@@ -12,11 +12,13 @@ interface LobbyChatProps {
   isSending: boolean;
   onMessageChange: (v: string) => void;
   onSend: () => void;
+  tournamentAdmins?: TournamentAdmin[];
 }
 
 export default function LobbyChat({
-  messages, user, message, isSending, onMessageChange, onSend,
+  messages, user, message, isSending, onMessageChange, onSend, tournamentAdmins = [],
 }: LobbyChatProps) {
+  const adminIds = new Set(tournamentAdmins.map(a => a.steam_id));
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +50,15 @@ export default function LobbyChat({
                 : <div className="w-7 h-7 rounded-full bg-primary/20 flex-shrink-0 mt-0.5" />
               }
               <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
-                <span className="text-xs text-muted-foreground px-1">{msg.persona_name}</span>
+                <div className={`flex items-center gap-1 px-1 ${isMine ? 'flex-row-reverse' : ''}`}>
+                  <span className="text-xs text-muted-foreground">{msg.persona_name}</span>
+                  {adminIds.has(msg.steam_id) && (
+                    <span className="flex items-center gap-0.5 text-xs font-semibold text-orange-400 bg-orange-400/10 border border-orange-400/30 px-1.5 py-0.5 rounded">
+                      <Icon name="Shield" size={10} />
+                      Судья
+                    </span>
+                  )}
+                </div>
                 {msg.image_url ? (
                   <div className={`rounded-xl overflow-hidden border ${isMine ? 'border-primary/40' : 'border-border'}`}>
                     <a href={msg.image_url} target="_blank" rel="noopener noreferrer">
