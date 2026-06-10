@@ -11,7 +11,7 @@
       "method": "GET",
       "path": "/?tournament_id=9",
       "expectedStatus": 200,
-      "expectedBody": {"is_rated": false},
+      "expectedBody": {"is_rated": true},
       "bodyMatcher": "partial"
     }
   ]

@@ -790,7 +790,7 @@ def apply_elo_ratings(cursor, conn, tournament_id: int, game: str):
     if not participants:
         return
 
-    # Загружаем текущий рейтинг (или 1000 по умолчанию)
+    # Загружаем текущий рейтинг (или 0 по умолчанию)
     ratings = {}
     for sid in participants:
         esc = sid.replace("'", "''")
@@ -798,7 +798,7 @@ def apply_elo_ratings(cursor, conn, tournament_id: int, game: str):
             SELECT points FROM {SCHEMA}.player_rankings WHERE steam_id = '{esc}' AND game = '{game.replace("'","''")}' 
         """)
         row = cursor.fetchone()
-        ratings[sid] = row['points'] if row else 1000
+        ratings[sid] = row['points'] if row else 0
 
     # Получаем все завершённые матчи турнира с победителем
     cursor.execute(f"""
