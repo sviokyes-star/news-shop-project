@@ -151,13 +151,15 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
               const hasPlayers = pair.some(p => p !== null);
               const lobbyData = matchLobbies.find(ml => ml.round_index === rIdx && ml.match_index === pIdx);
               const winnerId = lobbyData?.winner_steam_id ?? null;
+              const bothPlayers = pair[0] !== null && pair[1] !== null;
+              const isClickable = hasPlayers && bothPlayers;
               return (
                 <div
                   key={pIdx}
                   style={{ position: 'absolute', top, width: COL_W }}
-                  className={hasPlayers ? 'cursor-pointer group' : ''}
-                  onClick={hasPlayers ? () => onMatchClick(tournamentId, rIdx, pIdx, pair) : undefined}
-                  title={hasPlayers ? 'Открыть лобби матча' : undefined}
+                  className={isClickable ? 'cursor-pointer group' : ''}
+                  onClick={isClickable ? () => onMatchClick(tournamentId, rIdx, pIdx, pair) : undefined}
+                  title={isClickable ? 'Открыть лобби матча' : hasPlayers ? 'Ожидаем соперника' : undefined}
                 >
                   {pair.map((player, sIdx) => {
                     const isWinner = winnerId && player?.steam_id === winnerId;
@@ -200,7 +202,7 @@ const BracketView = ({ participants, maxParticipants, status, bracketType, tourn
                     </div>
                     );
                   })}
-                  {hasPlayers && (
+                  {isClickable && (
                     <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Icon name="ExternalLink" size={12} className="text-primary" />
                     </div>

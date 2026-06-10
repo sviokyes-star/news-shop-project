@@ -360,17 +360,24 @@ const TournamentDetail = () => {
                       </div>
                     </div>
 
-                    <Button
-                      className="w-full gap-2"
-                      onClick={() => {
-                        const p1 = userMatch.players[0]?.steam_id ?? '';
-                        const p2 = userMatch.players[1]?.steam_id ?? '';
-                        navigate(`/tournament/${tournament.id}/match/${userMatch.roundIndex}/${userMatch.matchIndex}?p1=${p1}&p2=${p2}`);
-                      }}
-                    >
-                      <Icon name="DoorOpen" size={18} />
-                      Войти в лобби матча
-                    </Button>
+                    {userMatch.players[0] && userMatch.players[1] ? (
+                      <Button
+                        className="w-full gap-2"
+                        onClick={() => {
+                          const p1 = userMatch.players[0]?.steam_id ?? '';
+                          const p2 = userMatch.players[1]?.steam_id ?? '';
+                          navigate(`/tournament/${tournament.id}/match/${userMatch.roundIndex}/${userMatch.matchIndex}?p1=${p1}&p2=${p2}`);
+                        }}
+                      >
+                        <Icon name="DoorOpen" size={18} />
+                        Войти в лобби матча
+                      </Button>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-muted/30 border border-border text-sm text-muted-foreground">
+                        <Icon name="Clock" size={15} />
+                        Ожидаем соперника из другого матча...
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-sm">Сетка ещё формируется или вы не в первом раунде</p>
