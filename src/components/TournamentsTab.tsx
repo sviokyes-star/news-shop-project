@@ -292,10 +292,7 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
                           'bg-muted/20 text-muted-foreground border-border'
                         }`} variant="secondary">
                           <Icon name="Trophy" size={16} />
-                          {tournament.final_place === 1 ? '🥇 1 место' :
-                           tournament.final_place === 2 ? '🥈 2 место' :
-                           tournament.final_place === 3 ? '🥉 3 место' :
-                           `${tournament.final_place} место`}
+                          {tournament.final_place} место
                         </Button>
                       ) : tournament.status === 'completed' ? (
                         <Button disabled className="gap-2 text-xs h-9 bg-muted/20 text-muted-foreground border-border flex-1" variant="secondary">
