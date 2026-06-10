@@ -43,7 +43,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         row = cur.fetchone()
         total_in_round = row['cnt'] if row else 0
         if total_in_round <= 1:
-            return  # финал уже сыгран
+            # Финал сыгран — завершаем турнир
+            cur.execute(f"""
+                UPDATE {SCHEMA}.tournaments
+                SET status = 'completed'
+                WHERE id = {int(tournament_id)} AND status != 'completed'
+            """)
+            conn.commit()
+            return
 
         field = 'player1_steam_id' if slot == 0 else 'player2_steam_id'
 
