@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import func2url from '../../backend/func2url.json';
 
 interface Tournament {
   id: number;
@@ -37,10 +38,10 @@ interface TournamentsTabProps {
 }
 
 interface TopPlayer {
-  id: number;
   position: number;
-  nickname: string;
-  rating: number;
+  steam_id: string;
+  persona_name: string;
+  points: number;
   wins: number;
   losses: number;
 }
@@ -49,7 +50,15 @@ const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregi
   const navigate = useNavigate();
   const [selectedGame, setSelectedGame] = useState<string>('Все');
   const [leaderboardGame, setLeaderboardGame] = useState<string>('Hearthstone');
+  const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([]);
   const [, setTick] = useState(0);
+
+  useEffect(() => {
+    fetch(`${func2url.tournaments}?leaderboard_game=${encodeURIComponent(leaderboardGame)}`)
+      .then(r => r.json())
+      .then(data => setTopPlayers(data.leaderboard || []))
+      .catch(() => setTopPlayers([]));
+  }, [leaderboardGame]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -118,18 +127,7 @@ const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregi
     return { days, hours, minutes, seconds };
   };
   
-  const topPlayers: TopPlayer[] = [
-    { id: 1, position: 1, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 2, position: 2, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 3, position: 3, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 4, position: 4, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 5, position: 5, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 6, position: 6, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 7, position: 7, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 8, position: 8, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 9, position: 9, nickname: 'nickname', rating: 0, wins: 0, losses: 0 },
-    { id: 10, position: 10, nickname: 'nickname', rating: 0, wins: 0, losses: 0 }
-  ];
+
   
   const getPositionBadge = (position: number) => {
     if (position === 1) return '🥇';
@@ -417,19 +415,21 @@ const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregi
               </div>
 
               <div className="space-y-1">
-                {topPlayers.map((player) => (
-                  <div 
-                    key={player.id}
+                {topPlayers.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-4">Нет данных</p>
+                ) : topPlayers.map((player) => (
+                  <div
+                    key={player.steam_id}
                     className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
                   >
                     <div className="w-6 text-center font-bold text-muted-foreground">
-                      {getPositionBadge(player.position)}
+                      {getPositionBadge(Number(player.position))}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{player.nickname}</p>
+                      <p className="font-medium truncate">{player.persona_name}</p>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-bold text-foreground">{player.rating}</span>
+                      <span className="font-bold text-foreground">{player.points}</span>
                       <span>|</span>
                       <span className="text-green-500">{player.wins}W</span>
                       <span>/</span>

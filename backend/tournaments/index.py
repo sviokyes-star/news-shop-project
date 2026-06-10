@@ -56,6 +56,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             params = event.get('queryStringParameters', {}) or {}
             steam_id = params.get('steam_id')
             tournament_id = params.get('tournament_id')
+            leaderboard_game = params.get('leaderboard_game')
+
+            # Лидерборд по игре
+            if leaderboard_game:
+                esc_game = leaderboard_game.lower().replace("'", "''")
+                cursor.execute(f"""
+                    SELECT steam_id, persona_name, points, wins, losses,
+                           ROW_NUMBER() OVER (ORDER BY points DESC) as position
+                    FROM {SCHEMA}.player_rankings
+                    WHERE game = '{esc_game}'
+                    ORDER BY points DESC
+                    LIMIT 10
+                """)
+                rows = cursor.fetchall()
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'leaderboard': [dict(r) for r in rows]})
+                }
 
             # Генерируем напоминания о скором старте (тихо, без ошибок)
             try:
@@ -127,7 +147,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     FROM tournament_registrations tr
                     LEFT JOIN t_p15345778_news_shop_project.users u ON tr.steam_id = u.steam_id
                     LEFT JOIN t_p15345778_news_shop_project.player_rankings pr 
-                        ON tr.steam_id = pr.steam_id AND pr.game = (SELECT game FROM t_p15345778_news_shop_project.tournaments WHERE id = %s)
+                        ON tr.steam_id = pr.steam_id AND pr.game = LOWER((SELECT game FROM t_p15345778_news_shop_project.tournaments WHERE id = %s))
                     WHERE tr.tournament_id = %s
                     ORDER BY tr.registered_at ASC
                 ''', (tournament_id, tournament_id,))
