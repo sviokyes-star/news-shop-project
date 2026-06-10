@@ -307,7 +307,7 @@ const TournamentsTab = ({ tournaments, user, isRegistering, onRegister, onUnregi
                           Вы зарегистрированы
                         </Button>
                       )}
-                      {onUnregister && (
+                      {onUnregister && !isRegistrationClosed(tournament.start_date) && (
                         <Button 
                           onClick={(e) => {
                             e.stopPropagation();
