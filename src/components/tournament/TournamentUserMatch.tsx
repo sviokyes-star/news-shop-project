@@ -8,6 +8,7 @@ interface UserMatchResult {
   roundIndex: number;
   matchIndex: number;
   players: (Participant | null)[];
+  winnerSteamId?: string | null;
 }
 
 interface TournamentUserMatchProps {
@@ -92,7 +93,19 @@ export default function TournamentUserMatch({ tournament, userMatch }: Tournamen
             </div>
           </div>
 
-          {userMatch.players[0] && userMatch.players[1] ? (
+          {userMatch.winnerSteamId ? (
+            <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm font-semibold ${
+              userMatch.players.some(p => p?.steam_id === userMatch.winnerSteamId && p?.steam_id === tournament.participants.find(x => x.steam_id === p?.steam_id)?.steam_id)
+                ? 'bg-green-500/10 border-green-500/30 text-green-500'
+                : 'bg-muted/30 border-border text-muted-foreground'
+            }`}>
+              <Icon name="Trophy" size={15} />
+              {(() => {
+                const winner = userMatch.players.find(p => p?.steam_id === userMatch.winnerSteamId);
+                return `Победитель: ${winner?.persona_name ?? userMatch.winnerSteamId}`;
+              })()}
+            </div>
+          ) : userMatch.players[0] && userMatch.players[1] ? (
             <Button
               className="w-full gap-2"
               onClick={() => {

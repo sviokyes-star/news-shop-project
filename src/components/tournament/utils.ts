@@ -60,25 +60,31 @@ export const findUserMatch = (
   bracketType: string,
   steamId: string,
   matchLobbies: { round_index: number; match_index: number; player1_steam_id: string | null; player2_steam_id: string | null; winner_steam_id: string | null; status: string }[] = []
-): { roundIndex: number; matchIndex: number; players: (Participant | null)[] } | null => {
+): { roundIndex: number; matchIndex: number; players: (Participant | null)[]; winnerSteamId?: string | null } | null => {
   const participantMap = new Map(participants.map(p => [p.steam_id, p]));
 
   // Ищем в реальных лобби — берём матч где игрок участвует и нет победителя (ещё не завершён)
-  const activeLobby = matchLobbies
-    .filter(ml =>
-      (ml.player1_steam_id === steamId || ml.player2_steam_id === steamId) &&
-      ml.status !== 'completed'
-    )
-    .sort((a, b) => b.round_index - a.round_index)[0]; // самый поздний раунд
+  const userLobbies = matchLobbies.filter(ml =>
+    ml.player1_steam_id === steamId || ml.player2_steam_id === steamId
+  );
 
-  if (activeLobby) {
-    const p1 = activeLobby.player1_steam_id
-      ? (participantMap.get(activeLobby.player1_steam_id) ?? { steam_id: activeLobby.player1_steam_id, persona_name: activeLobby.player1_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' } as Participant)
+  const activeLobby = userLobbies
+    .filter(ml => ml.status !== 'completed')
+    .sort((a, b) => b.round_index - a.round_index)[0];
+
+  // Если нет активных — берём последний завершённый (не уходим в фолбэк первого раунда)
+  const lobbyToShow = activeLobby ?? userLobbies
+    .filter(ml => ml.status === 'completed')
+    .sort((a, b) => b.round_index - a.round_index)[0];
+
+  if (lobbyToShow) {
+    const p1 = lobbyToShow.player1_steam_id
+      ? (participantMap.get(lobbyToShow.player1_steam_id) ?? { steam_id: lobbyToShow.player1_steam_id, persona_name: lobbyToShow.player1_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' } as Participant)
       : null;
-    const p2 = activeLobby.player2_steam_id
-      ? (participantMap.get(activeLobby.player2_steam_id) ?? { steam_id: activeLobby.player2_steam_id, persona_name: activeLobby.player2_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' } as Participant)
+    const p2 = lobbyToShow.player2_steam_id
+      ? (participantMap.get(lobbyToShow.player2_steam_id) ?? { steam_id: lobbyToShow.player2_steam_id, persona_name: lobbyToShow.player2_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' } as Participant)
       : null;
-    return { roundIndex: activeLobby.round_index, matchIndex: activeLobby.match_index, players: [p1, p2] };
+    return { roundIndex: lobbyToShow.round_index, matchIndex: lobbyToShow.match_index, players: [p1, p2], winnerSteamId: lobbyToShow.winner_steam_id };
   }
 
   // Фолбэк — вычисляем из первого раунда (если лобби ещё не созданы)
