@@ -23,7 +23,7 @@ def apply_elo_ratings(cursor, conn, tournament_id: int, game: str):
         esc = sid.replace("'", "''")
         cursor.execute(f"SELECT points FROM {SCHEMA}.player_rankings WHERE steam_id = '{esc}' AND game = '{esc_game}'")
         row = cursor.fetchone()
-        ratings[sid] = row['points'] if row else 0
+        ratings[sid] = row['points'] if row else 1000
 
     cursor.execute(f"""
         SELECT player1_steam_id, player2_steam_id, winner_steam_id
