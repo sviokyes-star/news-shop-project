@@ -311,8 +311,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     conn.commit()
 
                     # Системное сообщение о победителе
-                    cur.execute(f"SELECT COALESCE(nickname, persona_name) as name FROM {SCHEMA}.users "
-                                f"LEFT JOIN {SCHEMA}.tournament_registrations tr ON tr.steam_id = users.steam_id "
+                    cur.execute(f"SELECT COALESCE(users.nickname, users.persona_name) as name FROM {SCHEMA}.users "
                                 f"WHERE users.steam_id = '{v1.replace(chr(39), chr(39)*2)}'")
                     name_row = cur.fetchone()
                     winner_name = name_row['name'] if name_row else v1
