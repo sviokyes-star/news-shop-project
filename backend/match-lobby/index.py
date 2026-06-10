@@ -1,6 +1,9 @@
 import json
 import os
+import base64
+import uuid
 import psycopg2
+import boto3
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
 
@@ -78,7 +81,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         lobby_id = lobby['id']
 
         cur.execute(f"""
-            SELECT id, steam_id, persona_name, avatar_url, message,
+            SELECT id, steam_id, persona_name, avatar_url, message, image_url,
                    to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as created_at
             FROM {SCHEMA}.lobby_messages
             WHERE lobby_id = {lobby_id}
@@ -155,6 +158,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         lobby_id = lobby['id']
 
+        # ── Загрузить скриншот в S3 и отправить в чат ───────────────────────
+        if action == 'upload_screenshot':
+            image_b64 = body.get('image_b64', '')
+            content_type = body.get('content_type', 'image/png')
+            if not image_b64:
+                conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Нет изображения'})}
+
+            ext = 'jpg' if 'jpeg' in content_type else 'png'
+            key = f"match-screenshots/{tournament_id}/{round_index}_{match_index}_{uuid.uuid4().hex[:8]}.{ext}"
+            img_data = base64.b64decode(image_b64)
+
+            s3 = boto3.client(
+                's3',
+                endpoint_url='https://bucket.poehali.dev',
+                aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+                aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+            )
+            s3.put_object(Bucket='files', Key=key, Body=img_data, ContentType=content_type)
+            image_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+            image_url_esc = image_url.replace("'", "''")
+
+            persona_name = body.get('persona_name', steam_id).replace("'", "''")
+            avatar_url_val = (body.get('avatar_url') or '').replace("'", "''")
+            msg_text = 'Скриншот победного экрана'.replace("'", "''")
+
+            cur.execute(f"""
+                INSERT INTO {SCHEMA}.lobby_messages
+                    (lobby_id, steam_id, persona_name, avatar_url, message, image_url)
+                VALUES ({lobby_id}, '{escaped}', '{persona_name}', '{avatar_url_val}', '{msg_text}', '{image_url_esc}')
+                RETURNING id, steam_id, persona_name, avatar_url, message, image_url,
+                          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as created_at
+            """)
+            msg = dict(cur.fetchone())
+            conn.commit()
+            conn.close()
+            return {'statusCode': 201, 'headers': HEADERS, 'body': json.dumps({'message': msg, 'image_url': image_url})}
+
         # ── Отправить сообщение ──────────────────────────────────────────────
         if action == 'message':
             message = body.get('message', '').strip()
@@ -168,7 +209,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 INSERT INTO {SCHEMA}.lobby_messages
                     (lobby_id, steam_id, persona_name, avatar_url, message)
                 VALUES ({lobby_id}, '{escaped}', '{persona_name}', '{avatar_url}', '{escaped_message}')
-                RETURNING id, steam_id, persona_name, avatar_url, message,
+                RETURNING id, steam_id, persona_name, avatar_url, message, image_url,
                           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as created_at
             """)
             msg = dict(cur.fetchone())

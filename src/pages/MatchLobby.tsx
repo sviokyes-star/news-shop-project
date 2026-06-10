@@ -27,6 +27,7 @@ interface Message {
   persona_name: string;
   avatar_url: string | null;
   message: string;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -72,6 +73,9 @@ export default function MatchLobby() {
   const [isSending, setIsSending] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [showReportPanel, setShowReportPanel] = useState(false);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -135,6 +139,48 @@ export default function MatchLobby() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScreenshotFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setScreenshotPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const uploadScreenshot = async (winnerSteamId: string) => {
+    if (!user || !screenshotFile) return;
+    setIsUploadingScreenshot(true);
+    try {
+      const reader = new FileReader();
+      const b64 = await new Promise<string>((resolve) => {
+        reader.onload = ev => {
+          const result = ev.target?.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.readAsDataURL(screenshotFile);
+      });
+      await fetch(func2url['match-lobby'], {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
+        body: JSON.stringify({
+          action: 'upload_screenshot',
+          tournament_id: Number(tournamentId),
+          round_index: Number(roundIndex),
+          match_index: Number(matchIndex),
+          steam_id: user.steamId,
+          persona_name: user.personaName,
+          avatar_url: user.avatarUrl,
+          image_b64: b64,
+          content_type: screenshotFile.type || 'image/png',
+        }),
+      });
+    } finally {
+      setIsUploadingScreenshot(false);
+    }
+    await reportResult(winnerSteamId);
   };
 
   const reportResult = async (winnerSteamId: string) => {
@@ -316,17 +362,45 @@ export default function MatchLobby() {
                 Сообщить результат
               </Button>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                {/* Загрузка скриншота */}
+                <div>
+                  <p className="text-sm font-medium mb-2">Скриншот победного экрана <span className="text-destructive">*</span></p>
+                  {screenshotPreview ? (
+                    <div className="relative">
+                      <img src={screenshotPreview} className="w-full max-h-48 object-cover rounded-lg border border-border" />
+                      <button
+                        className="absolute top-2 right-2 w-6 h-6 bg-background/80 rounded-full flex items-center justify-center hover:bg-background"
+                        onClick={() => { setScreenshotFile(null); setScreenshotPreview(null); }}
+                      >
+                        <Icon name="X" size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center gap-2 p-4 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                      <Icon name="ImagePlus" size={24} className="text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Нажмите чтобы выбрать файл</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleScreenshotChange} />
+                    </label>
+                  )}
+                </div>
+
                 <p className="text-sm font-medium text-center">Кто победил?</p>
                 <div className="flex gap-3">
                   {[player1, player2].map(p => p && (
-                    <Button key={p.steam_id} className="flex-1 gap-2" disabled={isReporting} onClick={() => reportResult(p.steam_id)}>
-                      {p.avatar_url && <img src={p.avatar_url} className="w-5 h-5 rounded-full" />}
+                    <Button
+                      key={p.steam_id}
+                      className="flex-1 gap-2"
+                      disabled={isReporting || isUploadingScreenshot || !screenshotFile}
+                      onClick={() => uploadScreenshot(p.steam_id)}
+                    >
+                      {(isReporting || isUploadingScreenshot) ? <Icon name="Loader2" size={14} className="animate-spin" /> : p.avatar_url && <img src={p.avatar_url} className="w-5 h-5 rounded-full" />}
                       {p.persona_name}
                     </Button>
                   ))}
                 </div>
-                <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowReportPanel(false)}>Отмена</Button>
+                {!screenshotFile && <p className="text-xs text-muted-foreground text-center">Загрузите скриншот перед отправкой результата</p>}
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => { setShowReportPanel(false); setScreenshotFile(null); setScreenshotPreview(null); }}>Отмена</Button>
               </div>
             );
           })()}
@@ -397,24 +471,42 @@ export default function MatchLobby() {
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {messages.length === 0 ? (
             <p className="text-center text-muted-foreground text-sm mt-8">Сообщений пока нет</p>
-          ) : messages.map(msg => (
-            <div key={msg.id} className={`flex gap-2 ${msg.steam_id === user?.steamId ? 'flex-row-reverse' : ''}`}>
-              {msg.avatar_url
-                ? <img src={msg.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5" />
-                : <div className="w-7 h-7 rounded-full bg-primary/20 flex-shrink-0 mt-0.5" />
-              }
-              <div className={`max-w-[75%] ${msg.steam_id === user?.steamId ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
-                <span className="text-xs text-muted-foreground px-1">{msg.persona_name}</span>
-                <div className={`px-3 py-2 rounded-xl text-sm ${
-                  msg.steam_id === user?.steamId
-                    ? 'bg-primary text-primary-foreground rounded-tr-none'
-                    : 'bg-muted/60 rounded-tl-none'
-                }`}>
-                  {msg.message}
+          ) : messages.map(msg => {
+            const isSystem = msg.steam_id === 'system';
+            const isMine = msg.steam_id === user?.steamId;
+            if (isSystem) return (
+              <div key={msg.id} className="flex justify-center">
+                <span className="text-xs text-muted-foreground bg-muted/40 px-3 py-1 rounded-full">{msg.message}</span>
+              </div>
+            );
+            return (
+              <div key={msg.id} className={`flex gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
+                {msg.avatar_url
+                  ? <img src={msg.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5" />
+                  : <div className="w-7 h-7 rounded-full bg-primary/20 flex-shrink-0 mt-0.5" />
+                }
+                <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
+                  <span className="text-xs text-muted-foreground px-1">{msg.persona_name}</span>
+                  {msg.image_url ? (
+                    <div className={`rounded-xl overflow-hidden border ${isMine ? 'border-primary/40' : 'border-border'}`}>
+                      <a href={msg.image_url} target="_blank" rel="noopener noreferrer">
+                        <img src={msg.image_url} className="max-w-[240px] max-h-48 object-cover block" />
+                      </a>
+                      <div className={`px-3 py-1.5 text-xs ${isMine ? 'bg-primary text-primary-foreground' : 'bg-muted/60'}`}>
+                        {msg.message}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`px-3 py-2 rounded-xl text-sm ${
+                      isMine ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted/60 rounded-tl-none'
+                    }`}>
+                      {msg.message}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={chatEndRef} />
         </div>
 
