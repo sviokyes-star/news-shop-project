@@ -12,6 +12,7 @@ export interface Tournament {
   participants_count: number;
   rules?: string;
   prizes_description?: string;
+  is_rated?: boolean;
   tournament_admins?: { steam_id: string; persona_name: string; avatar_url: string | null }[];
 }
 
@@ -34,4 +35,5 @@ export interface TournamentFormData {
   rules: string;
   prizes_description: string;
   admin_steam_ids: string[];
+  is_rated: boolean;
 }

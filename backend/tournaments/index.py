@@ -91,6 +91,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.bracket_type,
                         t.rules,
                         t.prizes_description,
+                        t.is_rated,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count
                     FROM tournaments t
@@ -184,6 +185,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.bracket_type,
                         t.rules,
                         t.prizes_description,
+                        t.is_rated,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count,
                         EXISTS(
@@ -215,6 +217,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.bracket_type,
                         t.rules,
                         t.prizes_description,
+                        t.is_rated,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count
                     FROM tournaments t
@@ -271,6 +274,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 bracket_type = body_data.get('bracket_type', 'random')
                 rules = body_data.get('rules', '').strip()
                 prizes_description = body_data.get('prizes_description', '').strip()
+                is_rated = bool(body_data.get('is_rated', False))
                 
                 if not name or prize_pool is None or max_participants is None or not start_date:
                     return {
@@ -291,9 +295,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 escaped_prizes = prizes_description.replace("'", "''")
                 
                 cursor.execute(f"""
-                    INSERT INTO tournaments (name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type, rules, prizes_description)
-                    VALUES ('{escaped_name}', '{escaped_description}', {int(prize_pool)}, {int(max_participants)}, '{tournament_type}', '{escaped_start_date}', '{status}', '{escaped_game}', '{bracket_type}', '{escaped_rules}', '{escaped_prizes}')
-                    RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type, rules, prizes_description
+                    INSERT INTO tournaments (name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type, rules, prizes_description, is_rated)
+                    VALUES ('{escaped_name}', '{escaped_description}', {int(prize_pool)}, {int(max_participants)}, '{tournament_type}', '{escaped_start_date}', '{status}', '{escaped_game}', '{bracket_type}', '{escaped_rules}', '{escaped_prizes}', {is_rated})
+                    RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type, rules, prizes_description, is_rated
                 """)
                 
                 tournament = cursor.fetchone()
@@ -538,6 +542,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if 'prizes_description' in body_data:
                 escaped_prizes = body_data['prizes_description'].replace("'", "''")
                 update_fields.append(f"prizes_description = '{escaped_prizes}'")
+
+            if 'is_rated' in body_data:
+                update_fields.append(f"is_rated = {bool(body_data['is_rated'])}")
             
             if not update_fields:
                 return {
@@ -554,7 +561,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 UPDATE tournaments 
                 SET {', '.join(update_fields)}
                 WHERE id = {int(tournament_id)}
-                RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game
+                RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game, is_rated
             """)
             
             tournament = cursor.fetchone()
@@ -569,7 +576,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False,
                     'body': json.dumps({'error': 'Tournament not found'})
                 }
-            
+
+            # Начислить рейтинг Эло если турнир завершён и рейтинговый
+            if body_data.get('status') == 'completed' and tournament['is_rated']:
+                try:
+                    apply_elo_ratings(cursor, conn, int(tournament_id), tournament['game'])
+                except Exception as e:
+                    print(f"Elo calculation error: {e}")
+
             # Обновить список администраторов турнира если передан
             if 'admin_steam_ids' in body_data:
                 cursor.execute(f"DELETE FROM t_p15345778_news_shop_project.tournament_admins WHERE tournament_id = {int(tournament_id)}")
@@ -760,6 +774,80 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     finally:
         if conn:
             conn.close()
+
+
+def apply_elo_ratings(cursor, conn, tournament_id: int, game: str):
+    """Начисляет рейтинг Эло участникам рейтингового турнира по итогам сетки матчей."""
+    K = 32  # коэффициент Эло
+    SCHEMA = 't_p15345778_news_shop_project'
+
+    # Получаем всех участников турнира
+    cursor.execute(f"""
+        SELECT steam_id FROM {SCHEMA}.tournament_registrations WHERE tournament_id = {tournament_id}
+    """)
+    participants = [r['steam_id'] for r in cursor.fetchall()]
+
+    if not participants:
+        return
+
+    # Загружаем текущий рейтинг (или 1000 по умолчанию)
+    ratings = {}
+    for sid in participants:
+        esc = sid.replace("'", "''")
+        cursor.execute(f"""
+            SELECT points FROM {SCHEMA}.player_rankings WHERE steam_id = '{esc}' AND game = '{game.replace("'","''")}' 
+        """)
+        row = cursor.fetchone()
+        ratings[sid] = row['points'] if row else 1000
+
+    # Получаем все завершённые матчи турнира с победителем
+    cursor.execute(f"""
+        SELECT player1_steam_id, player2_steam_id, winner_steam_id
+        FROM {SCHEMA}.match_lobbies
+        WHERE tournament_id = {tournament_id}
+          AND status = 'completed'
+          AND winner_steam_id IS NOT NULL
+          AND player1_steam_id IS NOT NULL
+          AND player2_steam_id IS NOT NULL
+    """)
+    matches = cursor.fetchall()
+
+    # Применяем Эло за каждый матч
+    for match in matches:
+        p1, p2, winner = match['player1_steam_id'], match['player2_steam_id'], match['winner_steam_id']
+        if p1 not in ratings or p2 not in ratings:
+            continue
+        r1, r2 = ratings[p1], ratings[p2]
+        e1 = 1 / (1 + 10 ** ((r2 - r1) / 400))
+        e2 = 1 - e1
+        s1 = 1.0 if winner == p1 else 0.0
+        s2 = 1.0 - s1
+        ratings[p1] = round(r1 + K * (s1 - e1))
+        ratings[p2] = round(r2 + K * (s2 - e2))
+
+    # Сохраняем обновлённые рейтинги
+    esc_game = game.replace("'", "''")
+    for sid, new_rating in ratings.items():
+        esc_sid = sid.replace("'", "''")
+        cursor.execute(f"""
+            INSERT INTO {SCHEMA}.player_rankings (steam_id, game, points)
+            VALUES ('{esc_sid}', '{esc_game}', {new_rating})
+            ON CONFLICT (steam_id, game) DO UPDATE SET points = {new_rating}
+        """)
+
+        # Уведомление игроку
+        old_rating = ratings.get(sid, 1000)
+        delta = new_rating - old_rating
+        sign = '+' if delta >= 0 else ''
+        cursor.execute(f"""
+            INSERT INTO {SCHEMA}.notifications (steam_id, type, title, body, link)
+            VALUES ('{esc_sid}', 'rating_update',
+                    'Рейтинг обновлён',
+                    'Ваш рейтинг изменился: {sign}{delta} → {new_rating} pts',
+                    '/profile')
+        """)
+
+    conn.commit()
 
 
 def generate_tournament_reminders(cursor, conn):

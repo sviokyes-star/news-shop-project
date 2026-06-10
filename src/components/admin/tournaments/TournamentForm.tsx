@@ -179,6 +179,19 @@ export default function TournamentForm({
           />
         </div>
 
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-muted/20 cursor-pointer select-none"
+          onClick={() => setFormData({ is_rated: !formData.is_rated })}
+        >
+          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${formData.is_rated ? 'bg-primary border-primary' : 'border-border bg-background'}`}>
+            {formData.is_rated && <Icon name="Check" size={12} className="text-primary-foreground" />}
+          </div>
+          <div>
+            <p className="text-sm font-medium">Рейтинговый турнир</p>
+            <p className="text-xs text-muted-foreground">По завершению участникам будет начислен рейтинг Эло</p>
+          </div>
+        </div>
+
         <TournamentAdminPicker
           value={formData.admin_steam_ids ?? []}
           onChange={(ids) => setFormData({ admin_steam_ids: ids })}

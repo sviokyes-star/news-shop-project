@@ -9,8 +9,10 @@
     {
       "name": "Get tournament details",
       "method": "GET",
-      "path": "/?tournament_id=4",
-      "expectedStatus": 200
+      "path": "/?tournament_id=9",
+      "expectedStatus": 200,
+      "expectedBody": {"is_rated": false},
+      "bodyMatcher": "partial"
     }
   ]
 }

@@ -32,6 +32,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
     rules: '',
     prizes_description: '',
     admin_steam_ids: [],
+    is_rated: false,
   });
   
   console.log('📝 Current formData:', formData);
@@ -69,6 +70,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
         rules: formData.rules,
         prizes_description: formData.prizes_description,
         admin_steam_ids: formData.admin_steam_ids,
+        is_rated: formData.is_rated,
       };
       
       console.log('📤 Request body:', requestBody);
@@ -102,6 +104,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           rules: '',
           prizes_description: '',
           admin_steam_ids: [],
+          is_rated: false,
         });
         await onReload();
       } else {
@@ -137,6 +140,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           rules: formData.rules,
           prizes_description: formData.prizes_description,
           admin_steam_ids: formData.admin_steam_ids,
+          is_rated: formData.is_rated,
         })
       });
 
@@ -203,6 +207,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       rules: tournament.rules || '',
       prizes_description: tournament.prizes_description || '',
       admin_steam_ids: adminIds,
+      is_rated: tournament.is_rated ?? false,
     });
     setEditingId(tournament.id);
   };
@@ -222,6 +227,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       rules: '',
       prizes_description: '',
       admin_steam_ids: [],
+      is_rated: false,
     });
   };
 
