@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import func2url from '../../backend/func2url.json';
 import TournamentInfo from '@/components/tournament/TournamentInfo';
@@ -9,7 +10,7 @@ import TournamentActions from '@/components/tournament/TournamentActions';
 import ParticipantsList from '@/components/tournament/ParticipantsList';
 import BracketView from '@/components/tournament/BracketView';
 import { TournamentDetail as TournamentDetailType, SteamUser } from '@/components/tournament/types';
-import { getTimeUntilStart } from '@/components/tournament/utils';
+import { getTimeUntilStart, findUserMatch } from '@/components/tournament/utils';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -260,6 +261,11 @@ const TournamentDetail = () => {
 
   const isRegistered = tournament.participants.some(p => p.steam_id === user?.steamId);
   const isFull = tournament.participants_count >= tournament.max_participants;
+  const tournamentStarted = ['active', 'ongoing', 'completed'].includes(tournament.status)
+    || new Date(tournament.start_date).getTime() <= Date.now();
+  const userMatch = (tournamentStarted && isRegistered && user)
+    ? findUserMatch(tournament.participants, tournament.bracket_type || 'random', user.steamId)
+    : null;
 
   return (
     <main className="container mx-auto px-6 py-16">
@@ -279,18 +285,66 @@ const TournamentDetail = () => {
           <CountdownTimer startDate={tournament.start_date} />
         )}
 
-        <TournamentActions
-          tournament={tournament}
-          user={user}
-          isRegistered={isRegistered}
-          isFull={isFull}
-          isRegistering={isRegistering}
-          isUnregistering={isUnregistering}
-          isConfirming={isConfirming}
-          onRegister={handleRegister}
-          onUnregister={() => setShowUnregisterDialog(true)}
-          onConfirm={handleConfirmParticipation}
-        />
+        {tournamentStarted && isRegistered ? (
+          // Блок "Ваш матч" после старта
+          <Card className="p-6 border-border bg-card/60">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Icon name="Swords" size={20} className="text-primary" />
+              Ваш матч
+            </h3>
+            {userMatch ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-background/50 border border-border">
+                  {userMatch.players.map((player, i) => (
+                    <div key={i} className={`flex items-center gap-2 flex-1 ${i === 1 ? 'flex-row-reverse' : ''}`}>
+                      {player ? (
+                        <>
+                          {player.avatar_url
+                            ? <img src={player.avatar_url} className="w-10 h-10 rounded-lg border border-border flex-shrink-0" />
+                            : <div className="w-10 h-10 rounded-lg bg-primary/20 flex-shrink-0" />
+                          }
+                          <div className={i === 1 ? 'text-right' : ''}>
+                            <p className="font-semibold text-sm">{player.persona_name}</p>
+                            <p className="text-xs text-muted-foreground">{player.rating ?? 0} pts</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-muted-foreground italic">TBD</div>
+                      )}
+                      {i === 0 && <span className="mx-auto text-lg font-bold text-muted-foreground">VS</span>}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => {
+                    const p1 = userMatch.players[0]?.steam_id ?? '';
+                    const p2 = userMatch.players[1]?.steam_id ?? '';
+                    navigate(`/tournament/${tournament.id}/match/${userMatch.roundIndex}/${userMatch.matchIndex}?p1=${p1}&p2=${p2}`);
+                  }}
+                >
+                  <Icon name="DoorOpen" size={18} />
+                  Войти в лобби матча
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">Сетка ещё формируется или вы не в первом раунде</p>
+            )}
+          </Card>
+        ) : (
+          <TournamentActions
+            tournament={tournament}
+            user={user}
+            isRegistered={isRegistered}
+            isFull={isFull}
+            isRegistering={isRegistering}
+            isUnregistering={isUnregistering}
+            isConfirming={isConfirming}
+            onRegister={handleRegister}
+            onUnregister={() => setShowUnregisterDialog(true)}
+            onConfirm={handleConfirmParticipation}
+          />
+        )}
 
         <div className="space-y-4">
           <div className="flex gap-1 p-1 bg-muted/40 rounded-xl w-fit border border-border flex-wrap">
