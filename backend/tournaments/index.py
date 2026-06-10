@@ -219,12 +219,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             SELECT to_char(confirmed_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"')
                             FROM tournament_registrations 
                             WHERE tournament_id = t.id AND steam_id = %s
-                        ) as confirmed_at
+                        ) as confirmed_at,
+                        (
+                            SELECT final_place
+                            FROM tournament_registrations
+                            WHERE tournament_id = t.id AND steam_id = %s
+                        ) as final_place
                     FROM tournaments t
                     LEFT JOIN tournament_registrations tr ON t.id = tr.tournament_id
                     GROUP BY t.id
                     ORDER BY CASE t.status WHEN 'completed' THEN 1 ELSE 0 END, t.start_date
-                ''', (steam_id, steam_id))
+                ''', (steam_id, steam_id, steam_id))
             else:
                 # Получить все турниры с количеством участников
                 cursor.execute('''

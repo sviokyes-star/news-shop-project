@@ -19,6 +19,7 @@ interface Tournament {
   is_registered?: boolean;
   confirmed_at?: string | null;
   is_rated?: boolean;
+  final_place?: number | null;
 }
 
 interface SteamUser {
@@ -283,10 +284,28 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
                           <Icon name="CheckCircle2" size={16} />
                           Подтвердить участие
                         </Button>
+                      ) : tournament.status === 'completed' && tournament.final_place ? (
+                        <Button disabled className={`gap-2 text-xs h-9 flex-1 ${
+                          tournament.final_place === 1 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                          tournament.final_place === 2 ? 'bg-slate-400/20 text-slate-300 border-slate-400/30' :
+                          tournament.final_place === 3 ? 'bg-orange-700/20 text-orange-500 border-orange-700/30' :
+                          'bg-muted/20 text-muted-foreground border-border'
+                        }`} variant="secondary">
+                          <Icon name="Trophy" size={16} />
+                          {tournament.final_place === 1 ? '🥇 1 место' :
+                           tournament.final_place === 2 ? '🥈 2 место' :
+                           tournament.final_place === 3 ? '🥉 3 место' :
+                           `${tournament.final_place} место`}
+                        </Button>
+                      ) : tournament.status === 'completed' ? (
+                        <Button disabled className="gap-2 text-xs h-9 bg-muted/20 text-muted-foreground border-border flex-1" variant="secondary">
+                          <Icon name="CheckCircle2" size={16} />
+                          Участвовали
+                        </Button>
                       ) : tournament.confirmed_at ? (
                         <Button disabled className="gap-2 text-xs h-9 bg-green-500/20 text-green-500 border-green-500/30 flex-1" variant="secondary">
-                          <Icon name="CheckCircle2" size={16} />
-                          Участие подтверждено
+                          <Icon name="Swords" size={16} />
+                          Участвуете
                         </Button>
                       ) : getTimeUntilConfirmation(tournament.start_date) ? (
                         <Button disabled className="gap-2 text-xs h-9 bg-blue-500/20 text-blue-500 border-blue-500/30 flex-1" variant="secondary">

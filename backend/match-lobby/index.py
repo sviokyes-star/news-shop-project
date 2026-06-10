@@ -63,6 +63,64 @@ def apply_elo_ratings(cursor, conn, tournament_id: int, game: str):
     conn.commit()
 
 
+def assign_final_places(cursor, conn, tournament_id: int):
+    """Расставляет итоговые места участникам по результатам сетки."""
+    SCHEMA = 't_p15345778_news_shop_project'
+
+    # Получаем все завершённые матчи, сортируем по раунду (финал — максимальный round_index)
+    cursor.execute(f"""
+        SELECT round_index, match_index, player1_steam_id, player2_steam_id, winner_steam_id
+        FROM {SCHEMA}.match_lobbies
+        WHERE tournament_id = {tournament_id} AND status = 'completed'
+          AND winner_steam_id IS NOT NULL
+        ORDER BY round_index DESC
+    """)
+    matches = cursor.fetchall()
+    if not matches:
+        return
+
+    max_round = matches[0]['round_index']
+
+    # Собираем проигравших по раундам
+    losers_by_round = {}
+    winner_of_final = None
+    loser_of_final = None
+
+    for m in matches:
+        p1, p2, w = m['player1_steam_id'], m['player2_steam_id'], m['winner_steam_id']
+        loser = p2 if w == p1 else p1
+        r = m['round_index']
+        if r not in losers_by_round:
+            losers_by_round[r] = []
+        losers_by_round[r].append(loser)
+        if r == max_round:
+            winner_of_final = w
+            loser_of_final = loser
+
+    if not winner_of_final:
+        return
+
+    # Присваиваем места: 1 — победитель финала, 2 — проигравший финала,
+    # затем проигравшие предыдущих раундов получают места 3+
+    place_assignments = {winner_of_final: 1, loser_of_final: 2}
+    current_place = 3
+    for rnd in range(max_round - 1, -1, -1):
+        losers = losers_by_round.get(rnd, [])
+        for sid in losers:
+            if sid not in place_assignments:
+                place_assignments[sid] = current_place
+        current_place += len(losers)
+
+    for sid, place in place_assignments.items():
+        esc = sid.replace("'", "''")
+        cursor.execute(f"""
+            UPDATE {SCHEMA}.tournament_registrations
+            SET final_place = {place}
+            WHERE tournament_id = {tournament_id} AND steam_id = '{esc}'
+        """)
+    conn.commit()
+
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Лобби матча: чат, сообщить результат, разрешить спор
@@ -114,6 +172,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     apply_elo_ratings(cur, conn, int(tournament_id), t['game'].lower())
                 except Exception as e:
                     print(f"Elo error: {e}")
+            try:
+                assign_final_places(cur, conn, int(tournament_id))
+            except Exception as e:
+                print(f"Final places error: {e}")
             return
 
         field = 'player1_steam_id' if slot == 0 else 'player2_steam_id'
