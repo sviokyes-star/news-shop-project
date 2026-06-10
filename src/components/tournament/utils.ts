@@ -38,9 +38,8 @@ export const isConfirmationActive = (dateString: string) => {
 export const isRegistrationClosed = (dateString: string) => {
   const start = new Date(dateString).getTime();
   const now = Date.now();
-  const oneHourBefore = start - (60 * 60 * 1000);
   
-  return now >= oneHourBefore;
+  return now >= start;
 };
 
 export const getTimeUntilConfirmation = (dateString: string) => {

@@ -301,18 +301,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Турнир не найден'})
                 }
             
-            # Проверить, не осталось ли меньше часа до начала турнира
-            from datetime import datetime, timezone, timedelta
+            # Проверить, не начался ли уже турнир
+            from datetime import datetime, timezone
             start_date = tournament_info['start_date']
             
-            # Убедимся, что start_date имеет timezone
             if start_date.tzinfo is None:
                 start_date = start_date.replace(tzinfo=timezone.utc)
             
             now = datetime.now(timezone.utc)
-            one_hour_before = start_date - timedelta(hours=1)
             
-            if now >= one_hour_before:
+            if now >= start_date:
                 return {
                     'statusCode': 400,
                     'headers': {
@@ -320,7 +318,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Регистрация закрыта. До начала турнира осталось менее часа.'})
+                    'body': json.dumps({'error': 'Регистрация закрыта. Турнир уже начался.'})
                 }
             
             if tournament_info['participants_count'] >= tournament_info['max_participants']:
