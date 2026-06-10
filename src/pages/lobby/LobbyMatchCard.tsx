@@ -96,17 +96,24 @@ export default function LobbyMatchCard({
 
         {/* Статус голосов */}
         {(lobby.player1_reported_winner || lobby.player2_reported_winner) && lobby.status !== 'completed' && (
-          <div className="flex gap-2 text-xs text-muted-foreground">
-            <div className={`flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border ${lobby.player1_reported_winner ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border bg-muted/20'}`}>
-              <Icon name={lobby.player1_reported_winner ? 'CheckCircle2' : 'Clock'} size={13} className={lobby.player1_reported_winner ? 'text-primary' : 'text-muted-foreground'} />
-              <span className="truncate">{player1?.persona_name ?? 'Игрок 1'}</span>
-              {lobby.player1_reported_winner && <span className="ml-auto text-xs opacity-70">✓</span>}
-            </div>
-            <div className={`flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border ${lobby.player2_reported_winner ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border bg-muted/20'}`}>
-              <Icon name={lobby.player2_reported_winner ? 'CheckCircle2' : 'Clock'} size={13} className={lobby.player2_reported_winner ? 'text-primary' : 'text-muted-foreground'} />
-              <span className="truncate">{player2?.persona_name ?? 'Игрок 2'}</span>
-              {lobby.player2_reported_winner && <span className="ml-auto text-xs opacity-70">✓</span>}
-            </div>
+          <div className="flex flex-col gap-1.5 text-xs">
+            {[
+              { voterName: player1?.persona_name ?? 'Игрок 1', votedFor: lobby.player1_reported_winner },
+              { voterName: player2?.persona_name ?? 'Игрок 2', votedFor: lobby.player2_reported_winner },
+            ].map(({ voterName, votedFor }, i) => {
+              const votedName = votedFor ? ([player1, player2].find(p => p?.steam_id === votedFor)?.persona_name ?? votedFor) : null;
+              return (
+                <div key={i} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${votedFor ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border bg-muted/20 text-muted-foreground'}`}>
+                  <Icon name={votedFor ? 'CheckCircle2' : 'Clock'} size={13} className={votedFor ? 'text-primary' : 'text-muted-foreground'} />
+                  <span className="font-medium">{voterName}</span>
+                  {votedFor && <>
+                    <span className="text-muted-foreground mx-1">→</span>
+                    <span className="font-semibold text-primary">{votedName}</span>
+                  </>}
+                  {!votedFor && <span className="ml-1 opacity-60">не голосовал</span>}
+                </div>
+              );
+            })}
           </div>
         )}
 
