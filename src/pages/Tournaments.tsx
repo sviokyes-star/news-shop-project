@@ -37,17 +37,15 @@ interface Tournament {
 const Tournaments = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [user, setUser] = useState<SteamUser | null>(null);
+  const [user, setUser] = useState<SteamUser | null>(() => {
+    const saved = localStorage.getItem('steamUser');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isRegistering, setIsRegistering] = useState<number | null>(null);
   const [unregisterTournamentId, setUnregisterTournamentId] = useState<number | null>(null);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('steamUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-
     const params = new URLSearchParams(window.location.search);
     const claimedId = params.get('openid.claimed_id');
     
@@ -76,12 +74,6 @@ const Tournaments = () => {
   }, [user]);
 
   const loadTournaments = async () => {
-    const cacheKey = user ? `tournaments_${user.steamId}` : 'tournaments';
-    const cachedTournaments = localStorage.getItem(cacheKey);
-    if (cachedTournaments) {
-      setTournaments(JSON.parse(cachedTournaments));
-    }
-
     try {
       const url = user 
         ? `https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675?steam_id=${user.steamId}`
@@ -90,7 +82,6 @@ const Tournaments = () => {
       const response = await fetch(url);
       const data = await response.json();
       setTournaments(data.tournaments || []);
-      localStorage.setItem(cacheKey, JSON.stringify(data.tournaments || []));
     } catch (error) {
       console.error('Failed to load tournaments:', error);
     }
