@@ -24,8 +24,8 @@ export default function MatchLobby() {
   const [isSending, setIsSending] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [showReportPanel, setShowReportPanel] = useState(false);
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
   const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
   const [tournamentAdmins, setTournamentAdmins] = useState<TournamentAdmin[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -97,46 +97,53 @@ export default function MatchLobby() {
   };
 
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setScreenshotFile(file);
-    const reader = new FileReader();
-    reader.onload = ev => setScreenshotPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setScreenshotFiles(prev => [...prev, ...files]);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => setScreenshotPreviews(prev => [...prev, ev.target?.result as string]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
   };
 
-  const clearScreenshot = () => {
-    setScreenshotFile(null);
-    setScreenshotPreview(null);
+  const removeScreenshot = (index: number) => {
+    setScreenshotFiles(prev => prev.filter((_, i) => i !== index));
+    setScreenshotPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const clearScreenshots = () => {
+    setScreenshotFiles([]);
+    setScreenshotPreviews([]);
   };
 
   const uploadScreenshot = async (winnerSteamId: string) => {
-    if (!user || !screenshotFile) return;
+    if (!user || screenshotFiles.length === 0) return;
     setIsUploadingScreenshot(true);
     try {
-      const reader = new FileReader();
-      const b64 = await new Promise<string>((resolve) => {
-        reader.onload = ev => {
-          const result = ev.target?.result as string;
-          resolve(result.split(',')[1]);
-        };
-        reader.readAsDataURL(screenshotFile);
-      });
-      await fetch(func2url['match-lobby'], {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
-        body: JSON.stringify({
-          action: 'upload_screenshot',
-          tournament_id: Number(tournamentId),
-          round_index: Number(roundIndex),
-          match_index: Number(matchIndex),
-          steam_id: user.steamId,
-          persona_name: user.personaName,
-          avatar_url: user.avatarUrl,
-          image_b64: b64,
-          content_type: screenshotFile.type || 'image/png',
-        }),
-      });
+      for (const file of screenshotFiles) {
+        const b64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = ev => resolve((ev.target?.result as string).split(',')[1]);
+          reader.readAsDataURL(file);
+        });
+        await fetch(func2url['match-lobby'], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
+          body: JSON.stringify({
+            action: 'upload_screenshot',
+            tournament_id: Number(tournamentId),
+            round_index: Number(roundIndex),
+            match_index: Number(matchIndex),
+            steam_id: user.steamId,
+            persona_name: user.personaName,
+            avatar_url: user.avatarUrl,
+            image_b64: b64,
+            content_type: file.type || 'image/png',
+          }),
+        });
+      }
     } finally {
       setIsUploadingScreenshot(false);
     }
@@ -230,15 +237,16 @@ export default function MatchLobby() {
         isTournamentAdmin={isTournamentAdmin}
         showReportPanel={showReportPanel}
         setShowReportPanel={setShowReportPanel}
-        screenshotFile={screenshotFile}
-        screenshotPreview={screenshotPreview}
+        screenshotFiles={screenshotFiles}
+        screenshotPreviews={screenshotPreviews}
         isReporting={isReporting}
         isUploadingScreenshot={isUploadingScreenshot}
         tournamentId={tournamentId!}
         roundIndex={roundIndex!}
         matchIndex={matchIndex!}
         onScreenshotChange={handleScreenshotChange}
-        onClearScreenshot={clearScreenshot}
+        onRemoveScreenshot={removeScreenshot}
+        onClearScreenshots={clearScreenshots}
         onUploadScreenshot={uploadScreenshot}
         setIsReporting={setIsReporting}
         onReloadLobby={loadLobby}

@@ -15,15 +15,16 @@ interface LobbyMatchCardProps {
   isTournamentAdmin: boolean;
   showReportPanel: boolean;
   setShowReportPanel: (v: boolean) => void;
-  screenshotFile: File | null;
-  screenshotPreview: string | null;
+  screenshotFiles: File[];
+  screenshotPreviews: string[];
   isReporting: boolean;
   isUploadingScreenshot: boolean;
   tournamentId: string;
   roundIndex: string;
   matchIndex: string;
   onScreenshotChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearScreenshot: () => void;
+  onRemoveScreenshot: (index: number) => void;
+  onClearScreenshots: () => void;
   onUploadScreenshot: (winnerSteamId: string) => void;
   setIsReporting: (v: boolean) => void;
   onReloadLobby: () => void;
@@ -32,10 +33,10 @@ interface LobbyMatchCardProps {
 export default function LobbyMatchCard({
   lobby, player1, player2, user, isParticipant, isTournamentAdmin,
   showReportPanel, setShowReportPanel,
-  screenshotFile, screenshotPreview,
+  screenshotFiles, screenshotPreviews,
   isReporting, isUploadingScreenshot,
   tournamentId, roundIndex, matchIndex,
-  onScreenshotChange, onClearScreenshot, onUploadScreenshot,
+  onScreenshotChange, onRemoveScreenshot, onClearScreenshots, onUploadScreenshot,
   setIsReporting, onReloadLobby,
 }: LobbyMatchCardProps) {
   return (
@@ -154,24 +155,34 @@ export default function LobbyMatchCard({
           ) : (
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-medium mb-2">Скриншот победного экрана <span className="text-destructive">*</span></p>
-                {screenshotPreview ? (
-                  <div className="relative">
-                    <img src={screenshotPreview} className="w-full max-h-48 object-cover rounded-lg border border-border" />
-                    <button
-                      className="absolute top-2 right-2 w-6 h-6 bg-background/80 rounded-full flex items-center justify-center hover:bg-background"
-                      onClick={onClearScreenshot}
-                    >
-                      <Icon name="X" size={12} />
-                    </button>
+                <p className="text-sm font-medium mb-2">
+                  Скриншоты победного экрана <span className="text-destructive">*</span>
+                  {screenshotFiles.length > 0 && <span className="ml-2 text-xs text-muted-foreground">({screenshotFiles.length} шт.)</span>}
+                </p>
+
+                {screenshotPreviews.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    {screenshotPreviews.map((preview, i) => (
+                      <div key={i} className="relative">
+                        <img src={preview} className="w-full h-28 object-cover rounded-lg border border-border" />
+                        <button
+                          className="absolute top-1 right-1 w-5 h-5 bg-background/80 rounded-full flex items-center justify-center hover:bg-background"
+                          onClick={() => onRemoveScreenshot(i)}
+                        >
+                          <Icon name="X" size={10} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center gap-2 p-4 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
-                    <Icon name="ImagePlus" size={24} className="text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Нажмите чтобы выбрать файл</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={onScreenshotChange} />
-                  </label>
                 )}
+
+                <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                  <Icon name="ImagePlus" size={18} className="text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {screenshotFiles.length === 0 ? 'Выбрать скриншоты' : 'Добавить ещё'}
+                  </span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={onScreenshotChange} />
+                </label>
               </div>
 
               <p className="text-sm font-medium text-center">Кто победил?</p>
@@ -180,7 +191,7 @@ export default function LobbyMatchCard({
                   <Button
                     key={p.steam_id}
                     className="flex-1 gap-2"
-                    disabled={isReporting || isUploadingScreenshot || !screenshotFile}
+                    disabled={isReporting || isUploadingScreenshot || screenshotFiles.length === 0}
                     onClick={() => onUploadScreenshot(p.steam_id)}
                   >
                     {(isReporting || isUploadingScreenshot) ? <Icon name="Loader2" size={14} className="animate-spin" /> : p.avatar_url && <img src={p.avatar_url} className="w-5 h-5 rounded-full" />}
@@ -188,8 +199,8 @@ export default function LobbyMatchCard({
                   </Button>
                 ))}
               </div>
-              {!screenshotFile && <p className="text-xs text-muted-foreground text-center">Загрузите скриншот перед отправкой результата</p>}
-              <Button variant="ghost" size="sm" className="w-full" onClick={() => { setShowReportPanel(false); onClearScreenshot(); }}>Отмена</Button>
+              {screenshotFiles.length === 0 && <p className="text-xs text-muted-foreground text-center">Загрузите скриншот перед отправкой результата</p>}
+              <Button variant="ghost" size="sm" className="w-full" onClick={() => { setShowReportPanel(false); onClearScreenshots(); }}>Отмена</Button>
             </div>
           );
         })()}
