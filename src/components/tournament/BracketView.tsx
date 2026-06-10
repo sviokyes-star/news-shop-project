@@ -85,13 +85,17 @@ const BracketView = ({ participants, maxParticipants, status, bracketType }: Bra
     <div className="overflow-x-auto pb-2">
       <div className="flex gap-4 min-w-max items-start">
         {rounds.map((round, rIdx) => {
-          const gap = rIdx === 0 ? 8 : 80 * Math.pow(2, rIdx - 1) + 8;
+          const matchH = 76; // высота одного матча (2 строки ~36px + gap 4px)
+          const gap0 = 8;    // отступ между матчами в первом раунде
+          const matchWithGap = matchH + gap0;
+          const gap = rIdx === 0 ? gap0 : matchWithGap * Math.pow(2, rIdx) - matchH;
+          const paddingTop = rIdx === 0 ? 0 : (matchWithGap * Math.pow(2, rIdx - 1) - matchWithGap) / 2;
           return (
             <div key={rIdx} className="flex flex-col min-w-[190px]">
               <p className="text-xs font-semibold text-muted-foreground text-center mb-3 uppercase tracking-wider">
                 {roundName(rounds.length, rIdx)}
               </p>
-              <div className="flex flex-col" style={{ gap }}>
+              <div className="flex flex-col" style={{ gap, paddingTop }}>
                 {round.map((pair, pIdx) => (
                   <div key={pIdx} className="flex flex-col gap-0.5">
                     {pair.map((player, sIdx) => (
