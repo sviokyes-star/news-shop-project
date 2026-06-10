@@ -181,8 +181,6 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
   };
 
   const startEdit = async (tournament: Tournament) => {
-    setEditingId(tournament.id);
-
     let adminIds: string[] = [];
     try {
       const res = await fetch(`${func2url.tournaments}?tournament_id=${tournament.id}`);
@@ -206,6 +204,7 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       prizes_description: tournament.prizes_description || '',
       admin_steam_ids: adminIds,
     });
+    setEditingId(tournament.id);
   };
 
   const cancelEdit = () => {
