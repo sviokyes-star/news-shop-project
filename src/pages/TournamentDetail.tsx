@@ -7,6 +7,7 @@ import TournamentInfo from '@/components/tournament/TournamentInfo';
 import CountdownTimer from '@/components/tournament/CountdownTimer';
 import TournamentActions from '@/components/tournament/TournamentActions';
 import ParticipantsList from '@/components/tournament/ParticipantsList';
+import BracketView from '@/components/tournament/BracketView';
 import { TournamentDetail as TournamentDetailType, SteamUser } from '@/components/tournament/types';
 import { getTimeUntilStart } from '@/components/tournament/utils';
 import { toast } from '@/hooks/use-toast';
@@ -32,6 +33,7 @@ const TournamentDetail = () => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [, setTick] = useState(0);
   const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<'participants' | 'bracket'>('participants');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -290,7 +292,39 @@ const TournamentDetail = () => {
           onConfirm={handleConfirmParticipation}
         />
 
-        <ParticipantsList participants={tournament.participants} />
+        <div className="space-y-4">
+          <div className="flex gap-1 p-1 bg-muted/40 rounded-xl w-fit border border-border">
+            {(['participants', 'bracket'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === tab
+                    ? 'bg-background text-foreground shadow-sm border border-border'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon name={tab === 'participants' ? 'Users' : 'GitBranch'} size={15} />
+                {tab === 'participants'
+                  ? `Участники (${tournament.participants.length})`
+                  : 'Сетка'}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative">
+            {activeTab === 'participants' && (
+              <div className="animate-in fade-in duration-200">
+                <ParticipantsList participants={tournament.participants} />
+              </div>
+            )}
+            {activeTab === 'bracket' && (
+              <div className="animate-in fade-in duration-200">
+                <BracketView participants={tournament.participants} maxParticipants={tournament.max_participants} />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <AlertDialog open={showUnregisterDialog} onOpenChange={setShowUnregisterDialog}>
