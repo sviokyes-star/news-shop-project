@@ -104,16 +104,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {'steam_id': sid, 'persona_name': sid, 'avatar_url': None}
             return {'steam_id': sid, **dict(row)}
 
-        conn.close()
-        return {
-            'statusCode': 200, 'headers': HEADERS,
-            'body': json.dumps({
-                'lobby': dict(lobby),
-                'messages': messages,
-                'player1': get_player(lobby['player1_steam_id']),
-                'player2': get_player(lobby['player2_steam_id']),
-            })
+        result_body = {
+            'lobby': dict(lobby),
+            'messages': messages,
+            'player1': get_player(lobby['player1_steam_id']),
+            'player2': get_player(lobby['player2_steam_id']),
         }
+        conn.close()
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps(result_body)}
 
     # ─── POST: сообщение / результат / решение спора ─────────────────────────
     if method == 'POST':
