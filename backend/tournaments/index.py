@@ -223,7 +223,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     FROM tournaments t
                     LEFT JOIN tournament_registrations tr ON t.id = tr.tournament_id
                     GROUP BY t.id
-                    ORDER BY t.start_date
+                    ORDER BY CASE t.status WHEN 'completed' THEN 1 ELSE 0 END, t.start_date
                 ''', (steam_id, steam_id))
             else:
                 # Получить все турниры с количеством участников
@@ -246,7 +246,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     FROM tournaments t
                     LEFT JOIN tournament_registrations tr ON t.id = tr.tournament_id
                     GROUP BY t.id
-                    ORDER BY t.start_date
+                    ORDER BY CASE t.status WHEN 'completed' THEN 1 ELSE 0 END, t.start_date
                 ''')
             
             tournaments = cursor.fetchall()
