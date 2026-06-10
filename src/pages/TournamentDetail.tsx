@@ -337,7 +337,12 @@ const TournamentDetail = () => {
             )}
             {activeTab === 'bracket' && (
               <div className="animate-in fade-in duration-200">
-                <BracketView participants={tournament.participants} maxParticipants={tournament.max_participants} />
+                <BracketView
+                  participants={tournament.participants}
+                  maxParticipants={tournament.max_participants}
+                  status={tournament.status}
+                  bracketType={tournament.bracket_type || 'random'}
+                />
               </div>
             )}
             {activeTab === 'prizes' && (

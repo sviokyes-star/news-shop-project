@@ -26,6 +26,7 @@ export interface TournamentDetail {
   confirmed_at?: string | null;
   rules?: string;
   prizes_description?: string;
+  bracket_type?: string;
 }
 
 export interface SteamUser {
