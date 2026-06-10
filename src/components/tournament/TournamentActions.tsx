@@ -145,16 +145,23 @@ const TournamentActions = ({
               </div>
             )}
 
-            <Button 
-              size="lg" 
-              variant="destructive"
-              className="w-full py-6 text-lg font-bold"
-              onClick={onUnregister}
-              disabled={isUnregistering}
-            >
-              <Icon name="X" size={20} className="mr-2" />
-              {isUnregistering ? 'Отмена...' : 'Отменить регистрацию'}
-            </Button>
+            {['active', 'ongoing', 'completed'].includes(tournament.status) ? (
+              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/40 border border-border text-sm text-muted-foreground">
+                <Icon name="Lock" size={16} />
+                Отмена регистрации недоступна после начала турнира
+              </div>
+            ) : (
+              <Button 
+                size="lg" 
+                variant="destructive"
+                className="w-full py-6 text-lg font-bold"
+                onClick={onUnregister}
+                disabled={isUnregistering}
+              >
+                <Icon name="X" size={20} className="mr-2" />
+                {isUnregistering ? 'Отмена...' : 'Отменить регистрацию'}
+              </Button>
+            )}
           </div>
         )}
       </div>
