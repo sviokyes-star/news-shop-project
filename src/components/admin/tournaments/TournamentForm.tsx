@@ -131,6 +131,7 @@ export default function TournamentForm({
               onChange={(e) => setFormData({ status: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
             >
+              <option value="open">Открыт (регистрация)</option>
               <option value="upcoming">Предстоящий</option>
               <option value="active">Активный</option>
               <option value="completed">Завершен</option>
