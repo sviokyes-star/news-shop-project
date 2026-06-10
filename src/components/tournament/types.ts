@@ -8,6 +8,7 @@ export interface Participant {
   is_moderator?: boolean;
   is_online?: boolean;
   last_online?: string | null;
+  rating?: number;
 }
 
 export interface TournamentDetail {

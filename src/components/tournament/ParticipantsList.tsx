@@ -37,9 +37,9 @@ const ParticipantsList = ({ participants }: ParticipantsListProps) => {
                     {index + 1}
                   </div>
                   <PlayerLink steamId={participant.steam_id} name={participant.persona_name} avatarOnly avatarUrl={participant.avatar_url} avatarSize={12} isOnline={participant.is_online} />
-                  <PlayerLink steamId={participant.steam_id} name={participant.persona_name} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <PlayerLink steamId={participant.steam_id} name={participant.persona_name} />
                       {participant.is_admin && (
                         <span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-500 border border-red-500/20">
                           Администратор
@@ -50,8 +50,12 @@ const ParticipantsList = ({ participants }: ParticipantsListProps) => {
                           Модератор
                         </span>
                       )}
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-primary/10 text-primary border border-primary/20 font-semibold">
+                        <Icon name="Star" size={11} />
+                        {participant.rating ?? 0}
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Зарегистрирован: {formatShortDateTime(participant.registered_at)}
                     </p>
                   </div>

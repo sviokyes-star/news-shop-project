@@ -106,12 +106,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         to_char(tr.confirmed_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as confirmed_at,
                         COALESCE(u.is_admin, false) as is_admin,
                         COALESCE(u.is_moderator, false) as is_moderator,
-                        (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online
+                        (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online,
+                        COALESCE(pr.points, 0) as rating
                     FROM tournament_registrations tr
                     LEFT JOIN t_p15345778_news_shop_project.users u ON tr.steam_id = u.steam_id
+                    LEFT JOIN t_p15345778_news_shop_project.player_rankings pr 
+                        ON tr.steam_id = pr.steam_id AND pr.game = (SELECT game FROM t_p15345778_news_shop_project.tournaments WHERE id = %s)
                     WHERE tr.tournament_id = %s
                     ORDER BY tr.registered_at ASC
-                ''', (tournament_id,))
+                ''', (tournament_id, tournament_id,))
                 
                 participants = cursor.fetchall()
                 
