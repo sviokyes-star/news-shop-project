@@ -31,10 +31,10 @@ export default function TournamentAdminPicker({ value, onChange, adminSteamId }:
     })
       .then(r => r.json())
       .then(d => {
-        const users: UserOption[] = (d.users || []).map((u: { steam_id: string; persona_name: string | null; avatar_url: string | null }) => ({
-          steamId: u.steam_id ?? '',
-          personaName: u.persona_name ?? u.steam_id ?? '',
-          avatarUrl: u.avatar_url,
+        const users: UserOption[] = (d.users || []).map((u: { steamId: string; personaName: string | null; avatarUrl: string | null }) => ({
+          steamId: u.steamId ?? '',
+          personaName: u.personaName ?? u.steamId ?? '',
+          avatarUrl: u.avatarUrl,
         }));
         setAllUsers(users);
       })
