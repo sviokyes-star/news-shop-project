@@ -1,61 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
-import PlayerLink from '@/components/ui/player-link';
 import { toast } from '@/hooks/use-toast';
 import func2url from '../../backend/func2url.json';
-
-interface SteamUser {
-  steamId: string;
-  personaName: string;
-  avatarUrl: string;
-  isAdmin?: boolean;
-}
-
-interface Player {
-  steam_id: string;
-  persona_name: string;
-  avatar_url: string | null;
-}
-
-interface Message {
-  id: number;
-  steam_id: string;
-  persona_name: string;
-  avatar_url: string | null;
-  message: string;
-  image_url: string | null;
-  created_at: string;
-}
-
-interface Lobby {
-  id: number;
-  player1_steam_id: string | null;
-  player2_steam_id: string | null;
-  winner_steam_id: string | null;
-  status: string;
-  player1_reported_winner: string | null;
-  player2_reported_winner: string | null;
-  is_dispute: boolean;
-  admin_steam_id: string | null;
-}
-
-interface LobbyData {
-  lobby: Lobby;
-  messages: Message[];
-  player1: Player | null;
-  player2: Player | null;
-}
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  waiting:   { label: 'Ожидание',  color: 'text-yellow-500' },
-  active:    { label: 'Идёт',      color: 'text-green-500' },
-  dispute:   { label: 'Спор',      color: 'text-orange-500' },
-  completed: { label: 'Завершён',  color: 'text-muted-foreground' },
-};
+import LobbyMatchCard from './lobby/LobbyMatchCard';
+import LobbyChat from './lobby/LobbyChat';
+import { SteamUser, LobbyData, STATUS_LABELS } from './lobby/types';
 
 export default function MatchLobby() {
   const { tournamentId, roundIndex, matchIndex } = useParams<{
@@ -76,7 +27,6 @@ export default function MatchLobby() {
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -112,10 +62,6 @@ export default function MatchLobby() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [tournamentId, roundIndex, matchIndex]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [data?.messages.length]);
-
   const sendMessage = async () => {
     if (!message.trim() || !user) return;
     setIsSending(true);
@@ -148,6 +94,11 @@ export default function MatchLobby() {
     const reader = new FileReader();
     reader.onload = ev => setScreenshotPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const clearScreenshot = () => {
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
   };
 
   const uploadScreenshot = async (winnerSteamId: string) => {
@@ -212,11 +163,6 @@ export default function MatchLobby() {
     }
   };
 
-  const isParticipant = data && user && (
-    data.lobby.player1_steam_id === user.steamId ||
-    data.lobby.player2_steam_id === user.steamId
-  );
-
   const roundNames = ['1/4 финала', 'Полуфинал', 'Финал'];
   const getRoundName = () => {
     const ri = Number(roundIndex);
@@ -242,16 +188,18 @@ export default function MatchLobby() {
 
   const { lobby, messages, player1, player2 } = data;
   const statusInfo = STATUS_LABELS[lobby.status] ?? STATUS_LABELS.waiting;
+  const isParticipant = !!(user && (
+    lobby.player1_steam_id === user.steamId ||
+    lobby.player2_steam_id === user.steamId
+  ));
 
   return (
     <main className="container mx-auto px-6 py-10 max-w-3xl">
-      {/* Назад */}
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 gap-2">
         <Icon name="ArrowLeft" size={16} />
         Назад к турниру
       </Button>
 
-      {/* Заголовок */}
       <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Лобби матча</h1>
@@ -263,273 +211,36 @@ export default function MatchLobby() {
         </div>
       </div>
 
-      {/* Участники матча */}
-      <Card className="p-5 mb-6 border-border bg-card/60">
-        <div className="flex items-center justify-between gap-4">
-          {/* Игрок 1 */}
-          <div className="flex flex-col items-center gap-2 flex-1">
-            {player1 ? (
-              <>
-                <div className="relative">
-                  {player1.avatar_url
-                    ? <img src={player1.avatar_url} className="w-16 h-16 rounded-xl border-2 border-border" />
-                    : <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center"><Icon name="User" size={28} /></div>
-                  }
-                  {lobby.winner_steam_id === player1.steam_id && (
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                      <Icon name="Trophy" size={12} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <PlayerLink steamId={player1.steam_id} name={player1.persona_name} className="font-semibold text-sm" />
-              </>
-            ) : (
-              <div className="w-16 h-16 rounded-xl bg-muted/30 border border-dashed border-border flex items-center justify-center">
-                <Icon name="User" size={24} className="text-muted-foreground opacity-30" />
-              </div>
-            )}
-          </div>
+      <LobbyMatchCard
+        lobby={lobby}
+        player1={player1}
+        player2={player2}
+        user={user}
+        isParticipant={isParticipant}
+        showReportPanel={showReportPanel}
+        setShowReportPanel={setShowReportPanel}
+        screenshotFile={screenshotFile}
+        screenshotPreview={screenshotPreview}
+        isReporting={isReporting}
+        isUploadingScreenshot={isUploadingScreenshot}
+        tournamentId={tournamentId!}
+        roundIndex={roundIndex!}
+        matchIndex={matchIndex!}
+        onScreenshotChange={handleScreenshotChange}
+        onClearScreenshot={clearScreenshot}
+        onUploadScreenshot={uploadScreenshot}
+        setIsReporting={setIsReporting}
+        onReloadLobby={loadLobby}
+      />
 
-          <div className="text-2xl font-bold text-muted-foreground">VS</div>
-
-          {/* Игрок 2 */}
-          <div className="flex flex-col items-center gap-2 flex-1">
-            {player2 ? (
-              <>
-                <div className="relative">
-                  {player2.avatar_url
-                    ? <img src={player2.avatar_url} className="w-16 h-16 rounded-xl border-2 border-border" />
-                    : <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center"><Icon name="User" size={28} /></div>
-                  }
-                  {lobby.winner_steam_id === player2.steam_id && (
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                      <Icon name="Trophy" size={12} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <PlayerLink steamId={player2.steam_id} name={player2.persona_name} className="font-semibold text-sm" />
-              </>
-            ) : (
-              <div className="w-16 h-16 rounded-xl bg-muted/30 border border-dashed border-border flex items-center justify-center">
-                <Icon name="User" size={24} className="text-muted-foreground opacity-30" />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-border space-y-3">
-
-          {/* Статус голосов */}
-          {(lobby.player1_reported_winner || lobby.player2_reported_winner) && lobby.status !== 'completed' && (
-            <div className="flex gap-2 text-xs text-muted-foreground">
-              <div className={`flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border ${lobby.player1_reported_winner ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border bg-muted/20'}`}>
-                <Icon name={lobby.player1_reported_winner ? 'CheckCircle2' : 'Clock'} size={13} className={lobby.player1_reported_winner ? 'text-primary' : 'text-muted-foreground'} />
-                <span className="truncate">{player1?.persona_name ?? 'Игрок 1'}</span>
-                {lobby.player1_reported_winner && <span className="ml-auto text-xs opacity-70">✓</span>}
-              </div>
-              <div className={`flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border ${lobby.player2_reported_winner ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-border bg-muted/20'}`}>
-                <Icon name={lobby.player2_reported_winner ? 'CheckCircle2' : 'Clock'} size={13} className={lobby.player2_reported_winner ? 'text-primary' : 'text-muted-foreground'} />
-                <span className="truncate">{player2?.persona_name ?? 'Игрок 2'}</span>
-                {lobby.player2_reported_winner && <span className="ml-auto text-xs opacity-70">✓</span>}
-              </div>
-            </div>
-          )}
-
-          {/* Баннер спора */}
-          {lobby.is_dispute && (
-            <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
-              <Icon name="AlertTriangle" size={18} className="text-orange-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-orange-500">Открыт спор</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Игроки указали разных победителей. Ожидается решение администратора.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Кнопка результата — участник, не завершён, не спор или ещё не голосовал */}
-          {isParticipant && lobby.status !== 'completed' && !lobby.is_dispute && (() => {
-            const myVote = user?.steamId === lobby.player1_steam_id
-              ? lobby.player1_reported_winner
-              : lobby.player2_reported_winner;
-            if (myVote) return (
-              <p className="text-center text-sm text-muted-foreground py-1">
-                Вы указали победителем: <span className="font-semibold text-foreground">{[player1, player2].find(p => p?.steam_id === myVote)?.persona_name ?? myVote}</span>
-              </p>
-            );
-            return !showReportPanel ? (
-              <Button variant="outline" className="w-full gap-2" onClick={() => setShowReportPanel(true)}>
-                <Icon name="Flag" size={16} />
-                Сообщить результат
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                {/* Загрузка скриншота */}
-                <div>
-                  <p className="text-sm font-medium mb-2">Скриншот победного экрана <span className="text-destructive">*</span></p>
-                  {screenshotPreview ? (
-                    <div className="relative">
-                      <img src={screenshotPreview} className="w-full max-h-48 object-cover rounded-lg border border-border" />
-                      <button
-                        className="absolute top-2 right-2 w-6 h-6 bg-background/80 rounded-full flex items-center justify-center hover:bg-background"
-                        onClick={() => { setScreenshotFile(null); setScreenshotPreview(null); }}
-                      >
-                        <Icon name="X" size={12} />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-2 p-4 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
-                      <Icon name="ImagePlus" size={24} className="text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Нажмите чтобы выбрать файл</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleScreenshotChange} />
-                    </label>
-                  )}
-                </div>
-
-                <p className="text-sm font-medium text-center">Кто победил?</p>
-                <div className="flex gap-3">
-                  {[player1, player2].map(p => p && (
-                    <Button
-                      key={p.steam_id}
-                      className="flex-1 gap-2"
-                      disabled={isReporting || isUploadingScreenshot || !screenshotFile}
-                      onClick={() => uploadScreenshot(p.steam_id)}
-                    >
-                      {(isReporting || isUploadingScreenshot) ? <Icon name="Loader2" size={14} className="animate-spin" /> : p.avatar_url && <img src={p.avatar_url} className="w-5 h-5 rounded-full" />}
-                      {p.persona_name}
-                    </Button>
-                  ))}
-                </div>
-                {!screenshotFile && <p className="text-xs text-muted-foreground text-center">Загрузите скриншот перед отправкой результата</p>}
-                <Button variant="ghost" size="sm" className="w-full" onClick={() => { setShowReportPanel(false); setScreenshotFile(null); setScreenshotPreview(null); }}>Отмена</Button>
-              </div>
-            );
-          })()}
-
-          {/* Кнопка решения спора — только для администратора */}
-          {lobby.is_dispute && user && (() => {
-            const isAdmin = user.isAdmin;
-            if (!isAdmin) return null;
-            return !showReportPanel ? (
-              <Button variant="destructive" className="w-full gap-2" onClick={() => setShowReportPanel(true)}>
-                <Icon name="Gavel" size={16} />
-                Разрешить спор
-              </Button>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-center text-orange-500">Выберите победителя (решение администратора)</p>
-                <div className="flex gap-3">
-                  {[player1, player2].map(p => p && (
-                    <Button key={p.steam_id} variant="outline" className="flex-1 gap-2 border-orange-500/40 hover:bg-orange-500/10"
-                      disabled={isReporting}
-                      onClick={async () => {
-                        setIsReporting(true);
-                        try {
-                          const res = await fetch(func2url['match-lobby'], {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
-                            body: JSON.stringify({
-                              action: 'resolve_dispute',
-                              tournament_id: Number(tournamentId),
-                              round_index: Number(roundIndex),
-                              match_index: Number(matchIndex),
-                              steam_id: user.steamId,
-                              winner_steam_id: p.steam_id,
-                            }),
-                          });
-                          if (res.ok) { toast({ title: 'Спор разрешён' }); setShowReportPanel(false); await loadLobby(); }
-                          else { const d = await res.json(); toast({ title: 'Ошибка', description: d.error, variant: 'destructive' }); }
-                        } finally { setIsReporting(false); }
-                      }}
-                    >
-                      {p.avatar_url && <img src={p.avatar_url} className="w-5 h-5 rounded-full" />}
-                      {p.persona_name}
-                    </Button>
-                  ))}
-                </div>
-                <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowReportPanel(false)}>Отмена</Button>
-              </div>
-            );
-          })()}
-
-          {/* Победитель */}
-          {lobby.status === 'completed' && lobby.winner_steam_id && (
-            <div className="flex items-center justify-center gap-2 text-sm font-semibold text-yellow-500 py-1">
-              <Icon name="Trophy" size={16} />
-              Победитель: {[player1, player2].find(p => p?.steam_id === lobby.winner_steam_id)?.persona_name ?? lobby.winner_steam_id}
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Чат */}
-      <Card className="border-border bg-card/60 flex flex-col" style={{ height: 400 }}>
-        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-          <Icon name="MessageSquare" size={16} className="text-primary" />
-          <span className="font-semibold text-sm">Чат матча</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-          {messages.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm mt-8">Сообщений пока нет</p>
-          ) : messages.map(msg => {
-            const isSystem = msg.steam_id === 'system';
-            const isMine = msg.steam_id === user?.steamId;
-            if (isSystem) return (
-              <div key={msg.id} className="flex justify-center">
-                <span className="text-xs text-muted-foreground bg-muted/40 px-3 py-1 rounded-full">{msg.message}</span>
-              </div>
-            );
-            return (
-              <div key={msg.id} className={`flex gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
-                {msg.avatar_url
-                  ? <img src={msg.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5" />
-                  : <div className="w-7 h-7 rounded-full bg-primary/20 flex-shrink-0 mt-0.5" />
-                }
-                <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
-                  <span className="text-xs text-muted-foreground px-1">{msg.persona_name}</span>
-                  {msg.image_url ? (
-                    <div className={`rounded-xl overflow-hidden border ${isMine ? 'border-primary/40' : 'border-border'}`}>
-                      <a href={msg.image_url} target="_blank" rel="noopener noreferrer">
-                        <img src={msg.image_url} className="max-w-[240px] max-h-48 object-cover block" />
-                      </a>
-                      <div className={`px-3 py-1.5 text-xs ${isMine ? 'bg-primary text-primary-foreground' : 'bg-muted/60'}`}>
-                        {msg.message}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`px-3 py-2 rounded-xl text-sm ${
-                      isMine ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted/60 rounded-tl-none'
-                    }`}>
-                      {msg.message}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div className="px-3 py-3 border-t border-border">
-          {user ? (
-            <div className="flex gap-2">
-              <Input
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                placeholder="Написать сообщение..."
-                className="flex-1 h-9 text-sm"
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                disabled={isSending}
-              />
-              <Button size="sm" className="h-9 px-3" onClick={sendMessage} disabled={isSending || !message.trim()}>
-                <Icon name="Send" size={15} />
-              </Button>
-            </div>
-          ) : (
-            <p className="text-center text-xs text-muted-foreground">Войдите через Steam чтобы писать в чат</p>
-          )}
-        </div>
-      </Card>
+      <LobbyChat
+        messages={messages}
+        user={user}
+        message={message}
+        isSending={isSending}
+        onMessageChange={setMessage}
+        onSend={sendMessage}
+      />
     </main>
   );
 }
