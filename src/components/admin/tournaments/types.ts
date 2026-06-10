@@ -10,6 +10,8 @@ export interface Tournament {
   bracket_type: string;
   start_date: string;
   participants_count: number;
+  rules?: string;
+  prizes_description?: string;
 }
 
 export interface SteamUser {
@@ -28,4 +30,6 @@ export interface TournamentFormData {
   status: string;
   game: string;
   bracket_type: string;
+  rules: string;
+  prizes_description: string;
 }

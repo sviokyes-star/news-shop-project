@@ -24,6 +24,8 @@ export interface TournamentDetail {
   participants_count: number;
   participants: Participant[];
   confirmed_at?: string | null;
+  rules?: string;
+  prizes_description?: string;
 }
 
 export interface SteamUser {

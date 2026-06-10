@@ -76,6 +76,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.tournament_type,
                         t.game,
                         t.bracket_type,
+                        t.rules,
+                        t.prizes_description,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count
                     FROM tournaments t
@@ -228,6 +230,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 status = body_data.get('status', 'upcoming')
                 game = body_data.get('game', 'CS2')
                 bracket_type = body_data.get('bracket_type', 'random')
+                rules = body_data.get('rules', '').strip()
+                prizes_description = body_data.get('prizes_description', '').strip()
                 
                 if not name or prize_pool is None or max_participants is None or not start_date:
                     return {
@@ -244,11 +248,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 escaped_description = description.replace("'", "''")
                 escaped_start_date = start_date.replace("'", "''")
                 escaped_game = game.replace("'", "''")
+                escaped_rules = rules.replace("'", "''")
+                escaped_prizes = prizes_description.replace("'", "''")
                 
                 cursor.execute(f"""
-                    INSERT INTO tournaments (name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type)
-                    VALUES ('{escaped_name}', '{escaped_description}', {int(prize_pool)}, {int(max_participants)}, '{tournament_type}', '{escaped_start_date}', '{status}', '{escaped_game}', '{bracket_type}')
-                    RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type
+                    INSERT INTO tournaments (name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type, rules, prizes_description)
+                    VALUES ('{escaped_name}', '{escaped_description}', {int(prize_pool)}, {int(max_participants)}, '{tournament_type}', '{escaped_start_date}', '{status}', '{escaped_game}', '{bracket_type}', '{escaped_rules}', '{escaped_prizes}')
+                    RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type, rules, prizes_description
                 """)
                 
                 tournament = cursor.fetchone()
@@ -466,6 +472,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if 'bracket_type' in body_data:
                 update_fields.append(f"bracket_type = '{body_data['bracket_type']}'")
+            
+            if 'rules' in body_data:
+                escaped_rules = body_data['rules'].replace("'", "''")
+                update_fields.append(f"rules = '{escaped_rules}'")
+            
+            if 'prizes_description' in body_data:
+                escaped_prizes = body_data['prizes_description'].replace("'", "''")
+                update_fields.append(f"prizes_description = '{escaped_prizes}'")
             
             if not update_fields:
                 return {

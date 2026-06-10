@@ -33,7 +33,7 @@ const TournamentDetail = () => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [, setTick] = useState(0);
   const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState<'participants' | 'bracket'>('participants');
+  const [activeTab, setActiveTab] = useState<'rules' | 'participants' | 'bracket' | 'prizes'>('rules');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -293,26 +293,43 @@ const TournamentDetail = () => {
         />
 
         <div className="space-y-4">
-          <div className="flex gap-1 p-1 bg-muted/40 rounded-xl w-fit border border-border">
-            {(['participants', 'bracket'] as const).map(tab => (
+          <div className="flex gap-1 p-1 bg-muted/40 rounded-xl w-fit border border-border flex-wrap">
+            {([
+              { key: 'rules', icon: 'BookOpen', label: 'Правила' },
+              { key: 'participants', icon: 'Users', label: `Участники (${tournament.participants.length})` },
+              { key: 'bracket', icon: 'GitBranch', label: 'Сетка' },
+              { key: 'prizes', icon: 'Trophy', label: 'Призы' },
+            ] as const).map(tab => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === tab
+                  activeTab === tab.key
                     ? 'bg-background text-foreground shadow-sm border border-border'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Icon name={tab === 'participants' ? 'Users' : 'GitBranch'} size={15} />
-                {tab === 'participants'
-                  ? `Участники (${tournament.participants.length})`
-                  : 'Сетка'}
+                <Icon name={tab.icon} size={15} />
+                {tab.label}
               </button>
             ))}
           </div>
 
           <div className="relative">
+            {activeTab === 'rules' && (
+              <div className="animate-in fade-in duration-200">
+                {tournament.rules ? (
+                  <div className="prose prose-invert max-w-none whitespace-pre-wrap text-sm text-foreground leading-relaxed p-6 rounded-xl border border-border bg-card/50">
+                    {tournament.rules}
+                  </div>
+                ) : (
+                  <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+                    <Icon name="BookOpen" size={36} className="mx-auto mb-3 opacity-30" />
+                    <p>Правила турнира не указаны</p>
+                  </div>
+                )}
+              </div>
+            )}
             {activeTab === 'participants' && (
               <div className="animate-in fade-in duration-200">
                 <ParticipantsList participants={tournament.participants} />
@@ -321,6 +338,20 @@ const TournamentDetail = () => {
             {activeTab === 'bracket' && (
               <div className="animate-in fade-in duration-200">
                 <BracketView participants={tournament.participants} maxParticipants={tournament.max_participants} />
+              </div>
+            )}
+            {activeTab === 'prizes' && (
+              <div className="animate-in fade-in duration-200">
+                {tournament.prizes_description ? (
+                  <div className="prose prose-invert max-w-none whitespace-pre-wrap text-sm text-foreground leading-relaxed p-6 rounded-xl border border-border bg-card/50">
+                    {tournament.prizes_description}
+                  </div>
+                ) : (
+                  <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+                    <Icon name="Trophy" size={36} className="mx-auto mb-3 opacity-30" />
+                    <p>Призовая информация не указана</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

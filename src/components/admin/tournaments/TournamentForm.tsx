@@ -67,6 +67,28 @@ export default function TournamentForm({
           />
         </div>
 
+        <div>
+          <Label htmlFor={`${idPrefix}-rules`}>Правила</Label>
+          <Textarea
+            id={`${idPrefix}-rules`}
+            value={formData.rules}
+            onChange={(e) => setFormData({ rules: e.target.value })}
+            placeholder="Опишите правила турнира..."
+            rows={4}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor={`${idPrefix}-prizes_description`}>Призы</Label>
+          <Textarea
+            id={`${idPrefix}-prizes_description`}
+            value={formData.prizes_description}
+            onChange={(e) => setFormData({ prizes_description: e.target.value })}
+            placeholder="1 место — ..., 2 место — ..."
+            rows={3}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor={`${idPrefix}-prize_pool`}>Призовой фонд (₽) *</Label>

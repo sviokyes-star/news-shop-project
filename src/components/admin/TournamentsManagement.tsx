@@ -28,7 +28,9 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
     start_date: '',
     status: 'upcoming',
     game: 'CS2',
-    bracket_type: 'random'
+    bracket_type: 'random',
+    rules: '',
+    prizes_description: ''
   });
   
   console.log('📝 Current formData:', formData);
@@ -62,7 +64,9 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
         start_date: toUTCISOString(formData.start_date),
         status: formData.status,
         game: formData.game,
-        bracket_type: formData.bracket_type
+        bracket_type: formData.bracket_type,
+        rules: formData.rules,
+        prizes_description: formData.prizes_description
       };
       
       console.log('📤 Request body:', requestBody);
@@ -92,7 +96,9 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           start_date: '',
           status: 'upcoming',
           game: 'CS2',
-          bracket_type: 'random'
+          bracket_type: 'random',
+          rules: '',
+          prizes_description: ''
         });
         await onReload();
       } else {
@@ -124,7 +130,9 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           start_date: toUTCISOString(formData.start_date),
           status: formData.status,
           game: formData.game,
-          bracket_type: formData.bracket_type
+          bracket_type: formData.bracket_type,
+          rules: formData.rules,
+          prizes_description: formData.prizes_description
         })
       });
 
@@ -179,7 +187,9 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       start_date: toLocalDateTimeInput(tournament.start_date),
       status: tournament.status,
       game: tournament.game || 'CS2',
-      bracket_type: tournament.bracket_type || 'random'
+      bracket_type: tournament.bracket_type || 'random',
+      rules: tournament.rules || '',
+      prizes_description: tournament.prizes_description || ''
     });
   };
 
@@ -194,7 +204,9 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       start_date: '',
       status: 'upcoming',
       game: 'CS2',
-      bracket_type: 'random'
+      bracket_type: 'random',
+      rules: '',
+      prizes_description: ''
     });
   };
 

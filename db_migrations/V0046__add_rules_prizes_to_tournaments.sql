@@ -1,0 +1,3 @@
+ALTER TABLE t_p15345778_news_shop_project.tournaments
+  ADD COLUMN IF NOT EXISTS rules TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS prizes_description TEXT NOT NULL DEFAULT '';
