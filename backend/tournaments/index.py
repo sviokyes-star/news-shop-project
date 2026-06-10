@@ -160,6 +160,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.tournament_type,
                         t.game,
                         t.bracket_type,
+                        t.rules,
+                        t.prizes_description,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count,
                         EXISTS(
@@ -189,6 +191,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.tournament_type,
                         t.game,
                         t.bracket_type,
+                        t.rules,
+                        t.prizes_description,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count
                     FROM tournaments t

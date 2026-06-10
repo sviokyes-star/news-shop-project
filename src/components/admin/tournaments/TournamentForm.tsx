@@ -4,17 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
-
-interface TournamentFormData {
-  name: string;
-  description: string;
-  prize_pool: string;
-  max_participants: string;
-  tournament_type: string;
-  start_date: string;
-  status: string;
-  game: string;
-}
+import { TournamentFormData } from './types';
 
 interface TournamentFormProps {
   formData: TournamentFormData;
