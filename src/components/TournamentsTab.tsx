@@ -291,7 +291,6 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
                           tournament.final_place === 3 ? 'bg-orange-700/20 text-orange-500 border-orange-700/30' :
                           'bg-muted/20 text-muted-foreground border-border'
                         }`} variant="secondary">
-                          <Icon name="Trophy" size={16} />
                           {tournament.final_place} место
                         </Button>
                       ) : tournament.status === 'completed' ? (
