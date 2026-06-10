@@ -4,6 +4,8 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import func2url from '../../../../backend/func2url.json';
 
+const USERS_URL: string = (func2url as Record<string, string>)['users'] ?? '';
+
 interface UserOption {
   steamId: string;
   personaName: string;
@@ -23,7 +25,8 @@ export default function TournamentAdminPicker({ value, onChange, adminSteamId }:
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch(`${func2url['users']}`, {
+    if (!USERS_URL || !adminSteamId) return;
+    fetch(USERS_URL, {
       headers: { 'X-Admin-Steam-Id': adminSteamId }
     })
       .then(r => r.json())

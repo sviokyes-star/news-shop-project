@@ -1,4 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component, ReactNode } from 'react';
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) return (
+      <div className="p-6 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-sm">
+        <p className="font-bold mb-1">Ошибка в компоненте:</p>
+        <pre className="text-xs whitespace-pre-wrap">{this.state.error.message}</pre>
+      </div>
+    );
+    return this.props.children;
+  }
+}
 import func2url from '../../backend/func2url.json';
 import NewsManagement from '@/components/admin/NewsManagement';
 import ShopManagement from '@/components/admin/ShopManagement';
@@ -252,7 +266,7 @@ export default function Admin() {
       if (data.servers) {
         setServers(prevServers => {
           return prevServers.map(server => {
-            const updatedServer = data.servers.find((s: any) => s.id === server.id);
+            const updatedServer = data.servers.find((s: { id: number }) => s.id === server.id);
             return updatedServer ? { ...server, ...updatedServer } : server;
           });
         });
@@ -311,11 +325,13 @@ export default function Admin() {
         )}
 
         {activeTab === 'tournaments' && user && (
-          <TournamentsManagement
-            tournaments={tournaments}
-            user={user}
-            onReload={loadTournaments}
-          />
+          <ErrorBoundary>
+            <TournamentsManagement
+              tournaments={tournaments}
+              user={user}
+              onReload={loadTournaments}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'partners' && (
