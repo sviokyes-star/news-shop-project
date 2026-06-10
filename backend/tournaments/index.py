@@ -75,6 +75,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.status,
                         t.tournament_type,
                         t.game,
+                        t.bracket_type,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count
                     FROM tournaments t
@@ -140,6 +141,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.status,
                         t.tournament_type,
                         t.game,
+                        t.bracket_type,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count,
                         EXISTS(
@@ -168,6 +170,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.status,
                         t.tournament_type,
                         t.game,
+                        t.bracket_type,
                         to_char(t.start_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as start_date,
                         COUNT(tr.id) as participants_count
                     FROM tournaments t
@@ -221,6 +224,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 start_date = body_data.get('start_date')
                 status = body_data.get('status', 'upcoming')
                 game = body_data.get('game', 'CS2')
+                bracket_type = body_data.get('bracket_type', 'random')
                 
                 if not name or prize_pool is None or max_participants is None or not start_date:
                     return {
@@ -239,9 +243,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 escaped_game = game.replace("'", "''")
                 
                 cursor.execute(f"""
-                    INSERT INTO tournaments (name, description, prize_pool, max_participants, tournament_type, start_date, status, game)
-                    VALUES ('{escaped_name}', '{escaped_description}', {int(prize_pool)}, {int(max_participants)}, '{tournament_type}', '{escaped_start_date}', '{status}', '{escaped_game}')
-                    RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game
+                    INSERT INTO tournaments (name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type)
+                    VALUES ('{escaped_name}', '{escaped_description}', {int(prize_pool)}, {int(max_participants)}, '{tournament_type}', '{escaped_start_date}', '{status}', '{escaped_game}', '{bracket_type}')
+                    RETURNING id, name, description, prize_pool, max_participants, tournament_type, start_date, status, game, bracket_type
                 """)
                 
                 tournament = cursor.fetchone()
@@ -456,6 +460,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 game = body_data['game']
                 escaped_game = game.replace("'", "''")
                 update_fields.append(f"game = '{escaped_game}'")
+            
+            if 'bracket_type' in body_data:
+                update_fields.append(f"bracket_type = '{body_data['bracket_type']}'")
             
             if not update_fields:
                 return {

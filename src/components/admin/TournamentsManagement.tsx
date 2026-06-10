@@ -27,7 +27,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
     tournament_type: 'solo',
     start_date: '',
     status: 'upcoming',
-    game: 'CS2'
+    game: 'CS2',
+    bracket_type: 'random'
   });
   
   console.log('📝 Current formData:', formData);
@@ -60,7 +61,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
         tournament_type: formData.tournament_type,
         start_date: toUTCISOString(formData.start_date),
         status: formData.status,
-        game: formData.game
+        game: formData.game,
+        bracket_type: formData.bracket_type
       };
       
       console.log('📤 Request body:', requestBody);
@@ -89,7 +91,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           tournament_type: 'solo',
           start_date: '',
           status: 'upcoming',
-          game: 'CS2'
+          game: 'CS2',
+          bracket_type: 'random'
         });
         await onReload();
       } else {
@@ -120,7 +123,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
           tournament_type: formData.tournament_type,
           start_date: toUTCISOString(formData.start_date),
           status: formData.status,
-          game: formData.game
+          game: formData.game,
+          bracket_type: formData.bracket_type
         })
       });
 
@@ -174,7 +178,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       tournament_type: tournament.tournament_type,
       start_date: toLocalDateTimeInput(tournament.start_date),
       status: tournament.status,
-      game: tournament.game || 'CS2'
+      game: tournament.game || 'CS2',
+      bracket_type: tournament.bracket_type || 'random'
     });
   };
 
@@ -188,7 +193,8 @@ export default function TournamentsManagement({ tournaments, user, onReload }: T
       tournament_type: 'solo',
       start_date: '',
       status: 'upcoming',
-      game: 'CS2'
+      game: 'CS2',
+      bracket_type: 'random'
     });
   };
 

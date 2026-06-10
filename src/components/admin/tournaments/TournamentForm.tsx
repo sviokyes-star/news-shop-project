@@ -91,21 +91,17 @@ export default function TournamentForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor={`${idPrefix}-game`}>Игра</Label>
+            <Label htmlFor={`${idPrefix}-bracket_type`}>Создание сетки</Label>
             <select
-              id={`${idPrefix}-game`}
-              value={formData.game}
-              onChange={(e) => setFormData({ game: e.target.value })}
+              id={`${idPrefix}-bracket_type`}
+              value={formData.bracket_type}
+              onChange={(e) => setFormData({ bracket_type: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
             >
-              <option value="CS2">CS2</option>
-              <option value="Dota 2">Dota 2</option>
-              <option value="Valorant">Valorant</option>
-              <option value="League of Legends">League of Legends</option>
-              <option value="Overwatch 2">Overwatch 2</option>
-              <option value="Hearthstone">Hearthstone</option>
+              <option value="random">Случайно</option>
+              <option value="rating">По рейтингу</option>
             </select>
           </div>
 
@@ -120,6 +116,25 @@ export default function TournamentForm({
               <option value="solo">Соло</option>
               <option value="team">Командный</option>
               <option value="weekly">Еженедельный</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor={`${idPrefix}-game`}>Игра</Label>
+            <select
+              id={`${idPrefix}-game`}
+              value={formData.game}
+              onChange={(e) => setFormData({ game: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+            >
+              <option value="CS2">CS2</option>
+              <option value="Dota 2">Dota 2</option>
+              <option value="Valorant">Valorant</option>
+              <option value="League of Legends">League of Legends</option>
+              <option value="Overwatch 2">Overwatch 2</option>
+              <option value="Hearthstone">Hearthstone</option>
             </select>
           </div>
 

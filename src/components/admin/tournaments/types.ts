@@ -7,6 +7,7 @@ export interface Tournament {
   status: string;
   tournament_type: string;
   game: string;
+  bracket_type: string;
   start_date: string;
   participants_count: number;
 }
@@ -26,4 +27,5 @@ export interface TournamentFormData {
   start_date: string;
   status: string;
   game: string;
+  bracket_type: string;
 }
