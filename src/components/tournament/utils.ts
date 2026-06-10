@@ -58,8 +58,30 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 export const findUserMatch = (
   participants: Participant[],
   bracketType: string,
-  steamId: string
+  steamId: string,
+  matchLobbies: { round_index: number; match_index: number; player1_steam_id: string | null; player2_steam_id: string | null; winner_steam_id: string | null; status: string }[] = []
 ): { roundIndex: number; matchIndex: number; players: (Participant | null)[] } | null => {
+  const participantMap = new Map(participants.map(p => [p.steam_id, p]));
+
+  // Ищем в реальных лобби — берём матч где игрок участвует и нет победителя (ещё не завершён)
+  const activeLobby = matchLobbies
+    .filter(ml =>
+      (ml.player1_steam_id === steamId || ml.player2_steam_id === steamId) &&
+      ml.status !== 'completed'
+    )
+    .sort((a, b) => b.round_index - a.round_index)[0]; // самый поздний раунд
+
+  if (activeLobby) {
+    const p1 = activeLobby.player1_steam_id
+      ? (participantMap.get(activeLobby.player1_steam_id) ?? { steam_id: activeLobby.player1_steam_id, persona_name: activeLobby.player1_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' } as Participant)
+      : null;
+    const p2 = activeLobby.player2_steam_id
+      ? (participantMap.get(activeLobby.player2_steam_id) ?? { steam_id: activeLobby.player2_steam_id, persona_name: activeLobby.player2_steam_id.slice(-6), avatar_url: null, registered_at: '', confirmed_at: '' } as Participant)
+      : null;
+    return { roundIndex: activeLobby.round_index, matchIndex: activeLobby.match_index, players: [p1, p2] };
+  }
+
+  // Фолбэк — вычисляем из первого раунда (если лобби ещё не созданы)
   const pool = participants.filter(p => p.confirmed_at).length >= 2
     ? participants.filter(p => p.confirmed_at)
     : participants;

@@ -264,7 +264,7 @@ const TournamentDetail = () => {
   const tournamentStarted = ['active', 'ongoing', 'completed'].includes(tournament.status)
     || new Date(tournament.start_date).getTime() <= Date.now();
   const userMatch = (tournamentStarted && isRegistered && user)
-    ? findUserMatch(tournament.participants, tournament.bracket_type || 'random', user.steamId)
+    ? findUserMatch(tournament.participants, tournament.bracket_type || 'random', user.steamId, tournament.match_lobbies || [])
     : null;
 
   return (
