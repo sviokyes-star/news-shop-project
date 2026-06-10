@@ -23,6 +23,17 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 
 const STARTED_STATUSES = ['active', 'ongoing', 'completed'];
 
+// Высота одного слота (строки игрока) в px
+const SLOT_H = 36;
+// Высота матча (2 слота)
+const MATCH_H = SLOT_H * 2;
+// Минимальный отступ между матчами в первом раунде
+const BASE_GAP = 12;
+// Ширина колонки
+const COL_W = 200;
+// Горизонтальный отступ между колонками
+const COL_GAP = 48;
+
 const BracketView = ({ participants, maxParticipants, status, bracketType }: BracketViewProps) => {
   const hasStarted = STARTED_STATUSES.includes(status);
 
@@ -61,17 +72,32 @@ const BracketView = ({ participants, maxParticipants, status, bracketType }: Bra
   const slots: (Participant | null)[] = [...sorted];
   while (slots.length < size) slots.push(null);
 
+  // Строим структуру раундов
   const firstRound: (Participant | null)[][] = [];
-  for (let i = 0; i < slots.length; i += 2) {
-    firstRound.push([slots[i], slots[i + 1]]);
-  }
+  for (let i = 0; i < slots.length; i += 2) firstRound.push([slots[i], slots[i + 1]]);
 
   const rounds: (Participant | null)[][][] = [firstRound];
-  let roundSize = firstRound.length;
-  while (roundSize > 1) {
-    roundSize = Math.ceil(roundSize / 2);
-    rounds.push(Array.from({ length: roundSize }, () => [null, null]));
+  let rs = firstRound.length;
+  while (rs > 1) {
+    rs = Math.ceil(rs / 2);
+    rounds.push(Array.from({ length: rs }, () => [null, null]));
   }
+
+  // Вычисляем Y-позицию каждого матча
+  // В раунде 0: матчи расположены друг за другом с BASE_GAP
+  // В раунде r: каждый матч центрирован между двумя матчами раунда r-1
+  const matchStep0 = MATCH_H + BASE_GAP; // шаг между матчами в раунде 0
+
+  function matchY(roundIdx: number, matchIdx: number): number {
+    if (roundIdx === 0) return matchIdx * matchStep0;
+    // Шаг удваивается каждый раунд
+    const step = matchStep0 * Math.pow(2, roundIdx);
+    const offset = (step - matchStep0) / 2; // сдвиг первого матча
+    return offset + matchIdx * step;
+  }
+
+  const totalRounds = rounds.length;
+  const totalHeight = rounds[0].length * matchStep0 - BASE_GAP;
 
   const roundName = (total: number, idx: number) => {
     const fromEnd = total - 1 - idx;
@@ -81,58 +107,66 @@ const BracketView = ({ participants, maxParticipants, status, bracketType }: Bra
     return `Раунд ${idx + 1}`;
   };
 
+  const totalWidth = totalRounds * COL_W + (totalRounds - 1) * COL_GAP;
+
   return (
-    <div className="overflow-x-auto pb-2">
-      <div className="flex gap-4 min-w-max items-start">
-        {rounds.map((round, rIdx) => {
-          const matchH = 76; // высота одного матча (2 строки ~36px + gap 4px)
-          const gap0 = 8;    // отступ между матчами в первом раунде
-          const matchWithGap = matchH + gap0;
-          const gap = rIdx === 0 ? gap0 : matchWithGap * Math.pow(2, rIdx) - matchH;
-          const paddingTop = rIdx === 0 ? 0 : (matchWithGap * Math.pow(2, rIdx - 1) - matchWithGap) / 2;
-          return (
-            <div key={rIdx} className="flex flex-col min-w-[190px]">
-              <p className="text-xs font-semibold text-muted-foreground text-center mb-3 uppercase tracking-wider">
-                {roundName(rounds.length, rIdx)}
-              </p>
-              <div className="flex flex-col" style={{ gap, paddingTop }}>
-                {round.map((pair, pIdx) => (
-                  <div key={pIdx} className="flex flex-col gap-0.5">
-                    {pair.map((player, sIdx) => (
-                      <div
-                        key={sIdx}
-                        className={`flex items-center gap-2 px-3 py-2 text-sm border transition-colors ${
-                          sIdx === 0 ? 'rounded-t-lg' : 'rounded-b-lg border-t-0'
-                        } ${
-                          player
-                            ? player.confirmed_at
-                              ? 'bg-primary/10 border-primary/30 text-foreground'
-                              : 'bg-card border-border text-foreground'
-                            : 'bg-muted/20 border-dashed border-border/50 text-muted-foreground'
-                        }`}
-                      >
-                        {player ? (
-                          <>
-                            {player.avatar_url
-                              ? <img src={player.avatar_url} className="w-5 h-5 rounded-full flex-shrink-0" />
-                              : <div className="w-5 h-5 rounded-full bg-primary/20 flex-shrink-0" />
-                            }
-                            <span className="truncate max-w-[110px] font-medium">{player.persona_name}</span>
-                            {bracketType === 'rating' && (
-                              <span className="ml-auto text-xs text-muted-foreground flex-shrink-0">{player.rating ?? 0}</span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-xs italic opacity-50">TBD</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
+    <div className="overflow-x-auto pb-4">
+      <div style={{ width: totalWidth, minHeight: totalHeight + MATCH_H }} className="relative">
+        {rounds.map((round, rIdx) => (
+          <div
+            key={rIdx}
+            style={{
+              position: 'absolute',
+              left: rIdx * (COL_W + COL_GAP),
+              top: 0,
+              width: COL_W,
+            }}
+          >
+            {/* Заголовок раунда */}
+            <div className="text-xs font-semibold text-muted-foreground text-center mb-0 uppercase tracking-wider"
+              style={{ position: 'absolute', top: -24, width: COL_W }}>
+              {roundName(totalRounds, rIdx)}
             </div>
-          );
-        })}
+
+            {round.map((pair, pIdx) => {
+              const top = matchY(rIdx, pIdx);
+              return (
+                <div key={pIdx} style={{ position: 'absolute', top, width: COL_W }}>
+                  {pair.map((player, sIdx) => (
+                    <div
+                      key={sIdx}
+                      style={{ height: SLOT_H }}
+                      className={`flex items-center gap-2 px-3 text-sm border transition-colors ${
+                        sIdx === 0 ? 'rounded-t-lg' : 'rounded-b-lg border-t-0'
+                      } ${
+                        player
+                          ? player.confirmed_at
+                            ? 'bg-primary/10 border-primary/30 text-foreground'
+                            : 'bg-card border-border text-foreground'
+                          : 'bg-muted/20 border-dashed border-border/50 text-muted-foreground'
+                      }`}
+                    >
+                      {player ? (
+                        <>
+                          {player.avatar_url
+                            ? <img src={player.avatar_url} className="w-5 h-5 rounded-full flex-shrink-0" />
+                            : <div className="w-5 h-5 rounded-full bg-primary/20 flex-shrink-0" />
+                          }
+                          <span className="truncate font-medium" style={{ maxWidth: 110 }}>{player.persona_name}</span>
+                          {bracketType === 'rating' && (
+                            <span className="ml-auto text-xs text-muted-foreground flex-shrink-0">{player.rating ?? 0}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs italic opacity-50">TBD</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );
