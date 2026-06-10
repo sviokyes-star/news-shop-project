@@ -1,0 +1,10 @@
+{
+  "tests": [
+    {
+      "name": "Missing params returns 400",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400
+    }
+  ]
+}

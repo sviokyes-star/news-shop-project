@@ -23,6 +23,7 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import NewsDetail from "./pages/NewsDetail";
 import Admin from "./pages/Admin";
+import MatchLobby from "./pages/MatchLobby";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/news/:id" element={<NewsDetail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:steamId" element={<UserProfile />} />
+            <Route path="/tournament/:tournamentId/match/:roundIndex/:matchIndex" element={<MatchLobby />} />
           </Route>
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFoundPage />} />

@@ -8,6 +8,8 @@ interface BracketViewProps {
   maxParticipants: number;
   status: string;
   bracketType: string;
+  tournamentId: number;
+  onMatchClick: (tournamentId: number, roundIndex: number, matchIndex: number, players: (Participant | null)[]) => void;
 }
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
@@ -34,7 +36,7 @@ const COL_W = 200;
 // Горизонтальный отступ между колонками
 const COL_GAP = 48;
 
-const BracketView = ({ participants, maxParticipants, status, bracketType }: BracketViewProps) => {
+const BracketView = ({ participants, maxParticipants, status, bracketType, tournamentId, onMatchClick }: BracketViewProps) => {
   const hasStarted = STARTED_STATUSES.includes(status);
 
   const pool = participants.filter(p => p.confirmed_at).length >= 2
@@ -130,14 +132,23 @@ const BracketView = ({ participants, maxParticipants, status, bracketType }: Bra
 
             {round.map((pair, pIdx) => {
               const top = matchY(rIdx, pIdx);
+              const hasPlayers = pair.some(p => p !== null);
               return (
-                <div key={pIdx} style={{ position: 'absolute', top, width: COL_W }}>
+                <div
+                  key={pIdx}
+                  style={{ position: 'absolute', top, width: COL_W }}
+                  className={hasPlayers ? 'cursor-pointer group' : ''}
+                  onClick={hasPlayers ? () => onMatchClick(tournamentId, rIdx, pIdx, pair) : undefined}
+                  title={hasPlayers ? 'Открыть лобби матча' : undefined}
+                >
                   {pair.map((player, sIdx) => (
                     <div
                       key={sIdx}
                       style={{ height: SLOT_H }}
                       className={`flex items-center gap-2 px-3 text-sm border transition-colors ${
                         sIdx === 0 ? 'rounded-t-lg' : 'rounded-b-lg border-t-0'
+                      } ${
+                        hasPlayers ? 'group-hover:border-primary/60' : ''
                       } ${
                         player
                           ? player.confirmed_at
@@ -152,7 +163,7 @@ const BracketView = ({ participants, maxParticipants, status, bracketType }: Bra
                             ? <img src={player.avatar_url} className="w-5 h-5 rounded-full flex-shrink-0" />
                             : <div className="w-5 h-5 rounded-full bg-primary/20 flex-shrink-0" />
                           }
-                          <span className="truncate font-medium" style={{ maxWidth: 110 }}>{player.persona_name}</span>
+                          <span className="truncate font-medium" style={{ maxWidth: 100 }}>{player.persona_name}</span>
                           {bracketType === 'rating' && (
                             <span className="ml-auto text-xs text-muted-foreground flex-shrink-0">{player.rating ?? 0}</span>
                           )}
@@ -162,6 +173,11 @@ const BracketView = ({ participants, maxParticipants, status, bracketType }: Bra
                       )}
                     </div>
                   ))}
+                  {hasPlayers && (
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Icon name="ExternalLink" size={12} className="text-primary" />
+                    </div>
+                  )}
                 </div>
               );
             })}

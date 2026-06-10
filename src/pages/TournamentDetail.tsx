@@ -342,6 +342,12 @@ const TournamentDetail = () => {
                   maxParticipants={tournament.max_participants}
                   status={tournament.status}
                   bracketType={tournament.bracket_type || 'random'}
+                  tournamentId={tournament.id}
+                  onMatchClick={(tId, rIdx, mIdx, players) => {
+                    const p1 = players[0]?.steam_id ?? '';
+                    const p2 = players[1]?.steam_id ?? '';
+                    navigate(`/tournament/${tId}/match/${rIdx}/${mIdx}?p1=${p1}&p2=${p2}`);
+                  }}
                 />
               </div>
             )}
