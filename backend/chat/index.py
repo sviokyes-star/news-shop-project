@@ -121,6 +121,14 @@ def get_messages(event: Dict[str, Any]) -> Dict[str, Any]:
         'body': json.dumps({'messages': messages, 'isFrozen': is_frozen})
     }
 
+def is_user_banned(cur, steam_id: str) -> bool:
+    cur.execute('''
+        SELECT id FROM t_p15345778_news_shop_project.chat_bans
+        WHERE steam_id = %s AND (expires_at IS NULL OR expires_at > NOW())
+        LIMIT 1
+    ''', (steam_id,))
+    return cur.fetchone() is not None
+
 def post_message(event: Dict[str, Any]) -> Dict[str, Any]:
     body_data = json.loads(event.get('body', '{}'))
     
@@ -146,11 +154,17 @@ def post_message(event: Dict[str, Any]) -> Dict[str, Any]:
         conn.close()
         return {
             'statusCode': 403,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': 'Chat is frozen by administrator'})
+        }
+
+    if is_user_banned(cur, steam_id):
+        cur.close()
+        conn.close()
+        return {
+            'statusCode': 403,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Вы заблокированы в чате'})
         }
     
     cur.close()
@@ -209,67 +223,63 @@ def post_message(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
+    HEADERS = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
     headers = event.get('headers', {})
     admin_steam_id = headers.get('x-admin-steam-id') or headers.get('X-Admin-Steam-Id')
     
     if not admin_steam_id:
-        return {
-            'statusCode': 401,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'error': 'Admin authentication required'})
-        }
+        return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Admin authentication required'})}
     
     conn = get_db_connection()
     cur = conn.cursor()
     
     cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (admin_steam_id,))
     result = cur.fetchone()
-    is_admin = result[0] if result else False
-    
-    if not is_admin:
+    if not (result and result[0]):
         cur.close()
         conn.close()
-        return {
-            'statusCode': 403,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'error': 'Admin access required'})
-        }
+        return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Admin access required'})}
     
+    body_data = json.loads(event.get('body') or '{}')
     params = event.get('queryStringParameters') or {}
-    message_id = params.get('message_id')
+    message_id = body_data.get('message_id') or params.get('message_id')
+    ban_type = body_data.get('ban_type', 'delete_only')  # delete_only | ban_60 | ban_permanent
+    target_steam_id = body_data.get('target_steam_id')
     
     if not message_id:
         cur.close()
         conn.close()
-        return {
-            'statusCode': 400,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'error': 'message_id required'})
-        }
+        return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'message_id required'})}
     
+    # Скрываем сообщение
     cur.execute('UPDATE t_p15345778_news_shop_project.chat_messages SET is_hidden = TRUE WHERE id = %s', (message_id,))
-    conn.commit()
     
+    # Если нужен бан — получаем steam_id автора из сообщения
+    if ban_type in ('ban_60', 'ban_permanent') and not target_steam_id:
+        cur.execute('SELECT steam_id FROM t_p15345778_news_shop_project.chat_messages WHERE id = %s', (message_id,))
+        row = cur.fetchone()
+        target_steam_id = row[0] if row else None
+    
+    if ban_type != 'delete_only' and target_steam_id:
+        if ban_type == 'ban_60':
+            cur.execute('''
+                INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
+                VALUES (%s, %s, NOW() + INTERVAL '60 minutes')
+            ''', (target_steam_id, admin_steam_id))
+        elif ban_type == 'ban_permanent':
+            cur.execute('''
+                INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
+                VALUES (%s, %s, NULL)
+            ''', (target_steam_id, admin_steam_id))
+    
+    conn.commit()
     cur.close()
     conn.close()
     
     return {
         'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'isBase64Encoded': False,
-        'body': json.dumps({'message': 'Message hidden successfully'})
+        'headers': HEADERS,
+        'body': json.dumps({'message': 'Done', 'ban_type': ban_type})
     }
 
 def toggle_chat_freeze(event: Dict[str, Any]) -> Dict[str, Any]:

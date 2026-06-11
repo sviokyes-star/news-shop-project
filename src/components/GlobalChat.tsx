@@ -6,6 +6,7 @@ import Icon from '@/components/ui/icon';
 import PlayerLink from '@/components/ui/player-link';
 import { formatChatDateTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
+import BanDialog, { BanType } from '@/components/ui/ban-dialog';
 
 interface ReplyTo {
   id: number;
@@ -48,6 +49,8 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
   const [isFrozen, setIsFrozen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [userNickname, setUserNickname] = useState<string | null>(null);
+  const [banDialog, setBanDialog] = useState<{ open: boolean; messageId: number | null }>({ open: false, messageId: null });
+  const [isBanning, setIsBanning] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -147,28 +150,32 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
     }
   };
 
-  const handleDeleteMessage = async (messageId: number) => {
-    if (!user || !isAdmin) return;
+  const handleDeleteMessage = (messageId: number) => {
+    setBanDialog({ open: true, messageId });
+  };
 
+  const handleBanConfirm = async (banType: BanType) => {
+    if (!user || !banDialog.messageId) return;
+    setIsBanning(true);
     try {
-      const response = await fetch(`${func2url.chat}?message_id=${messageId}`, {
+      await fetch(func2url.chat, {
         method: 'DELETE',
-        headers: {
-          'X-Admin-Steam-Id': user.steamId
-        }
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Steam-Id': user.steamId },
+        body: JSON.stringify({ message_id: banDialog.messageId, ban_type: banType }),
       });
-
-      if (response.ok) {
-        await loadMessages();
-      }
+      setBanDialog({ open: false, messageId: null });
+      await loadMessages();
     } catch (error) {
       console.error('Failed to delete message:', error);
+    } finally {
+      setIsBanning(false);
     }
   };
 
 
 
   return (
+    <>
     <Card className="w-full flex flex-col bg-card/95 backdrop-blur">
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-border">
@@ -321,5 +328,13 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
         )}
       </form>
     </Card>
+
+    <BanDialog
+      open={banDialog.open}
+      onClose={() => setBanDialog({ open: false, messageId: null })}
+      onConfirm={handleBanConfirm}
+      isLoading={isBanning}
+    />
+    </>
   );
 }

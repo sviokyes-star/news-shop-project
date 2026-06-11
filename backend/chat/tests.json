@@ -7,17 +7,11 @@
       "expectedStatus": 200
     },
     {
-      "name": "Post new message",
-      "method": "POST",
+      "name": "Delete message no auth",
+      "method": "DELETE",
       "path": "/",
-      "body": {
-        "steam_id": "76561198000000000",
-        "persona_name": "TestUser",
-        "avatar_url": "https://example.com/avatar.jpg",
-        "message": "Hello world!",
-        "reply_to_message_id": null
-      },
-      "expectedStatus": 201
+      "body": {"message_id": 999, "ban_type": "delete_only"},
+      "expectedStatus": 401
     }
   ]
 }

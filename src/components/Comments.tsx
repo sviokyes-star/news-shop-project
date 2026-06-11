@@ -7,16 +7,7 @@ import PlayerLink from '@/components/ui/player-link';
 import { formatDateTime } from '@/utils/dateFormat';
 import func2url from '../../backend/func2url.json';
 import { toast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import BanDialog, { BanType } from '@/components/ui/ban-dialog';
 
 interface Comment {
   id: number;
@@ -75,8 +66,8 @@ export default function Comments({ newsId }: CommentsProps) {
   }, [user]);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
+  const [banDialog, setBanDialog] = useState<{ open: boolean; commentId: number | null }>({ open: false, commentId: null });
+  const [isBanning, setIsBanning] = useState(false);
 
   useEffect(() => {
     loadComments();
@@ -210,59 +201,35 @@ export default function Comments({ newsId }: CommentsProps) {
     }
   };
 
-  const handleDelete = async (commentId: number) => {
+  const handleDelete = (commentId: number) => {
     if (!user) {
-      toast({
-        title: 'Требуется авторизация',
-        description: 'Войдите через Steam',
-        variant: 'destructive',
-      });
+      toast({ title: 'Требуется авторизация', description: 'Войдите через Steam', variant: 'destructive' });
       return;
     }
-
-    setCommentToDelete(commentId);
-    setDeleteDialogOpen(true);
+    setBanDialog({ open: true, commentId });
   };
 
-  const confirmDelete = async () => {
-    if (!commentToDelete) return;
-
+  const confirmDelete = async (banType: BanType) => {
+    if (!banDialog.commentId) return;
+    setIsBanning(true);
     try {
       const response = await fetch(func2url.comments, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          comment_id: commentToDelete,
-          steam_id: user?.steamId
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment_id: banDialog.commentId, steam_id: user?.steamId, ban_type: banType }),
       });
-
       const data = await response.json();
       if (data.success) {
-        setComments(comments.filter(c => c.id !== commentToDelete && c.parent_comment_id !== commentToDelete));
-        toast({
-          title: 'Комментарий удален',
-          description: 'Комментарий успешно удален',
-        });
+        setComments(comments.filter(c => c.id !== banDialog.commentId && c.parent_comment_id !== banDialog.commentId));
+        toast({ title: 'Комментарий удалён' });
       } else {
-        toast({
-          title: 'Ошибка',
-          description: data.error || 'Не удалось удалить комментарий',
-          variant: 'destructive',
-        });
+        toast({ title: 'Ошибка', description: data.error, variant: 'destructive' });
       }
-    } catch (error) {
-      console.error('Failed to delete comment:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Ошибка при удалении комментария',
-        variant: 'destructive',
-      });
+    } catch {
+      toast({ title: 'Ошибка при удалении', variant: 'destructive' });
     } finally {
-      setDeleteDialogOpen(false);
-      setCommentToDelete(null);
+      setIsBanning(false);
+      setBanDialog({ open: false, commentId: null });
     }
   };
 
@@ -459,24 +426,12 @@ export default function Comments({ newsId }: CommentsProps) {
         )}
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить комментарий?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Вы уверены, что хотите удалить этот комментарий? Это действие нельзя отменить.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCommentToDelete(null)}>
-              Отмена
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <BanDialog
+        open={banDialog.open}
+        onClose={() => setBanDialog({ open: false, commentId: null })}
+        onConfirm={confirmDelete}
+        isLoading={isBanning}
+      />
     </div>
   );
 }

@@ -118,12 +118,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not news_id or not text:
                 return {
                     'statusCode': 400,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': 'news_id and text required'})
                 }
+
+            if steam_id:
+                cur.execute('''
+                    SELECT id FROM t_p15345778_news_shop_project.chat_bans
+                    WHERE steam_id = %s AND (expires_at IS NULL OR expires_at > NOW())
+                    LIMIT 1
+                ''', (steam_id,))
+                if cur.fetchone():
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Вы заблокированы в чате'})
+                    }
             
             if not author:
                 author = 'Аноним'
@@ -221,76 +231,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
         
         elif method == 'DELETE':
+            HEADERS = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
             body_data = json.loads(event.get('body', '{}'))
             comment_id = body_data.get('comment_id')
             steam_id = body_data.get('steam_id')
-            
+            ban_type = body_data.get('ban_type', 'delete_only')  # delete_only | ban_60 | ban_permanent
+
             if not comment_id:
-                return {
-                    'statusCode': 400,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'error': 'comment_id required'})
-                }
-            
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'comment_id required'})}
             if not steam_id:
-                return {
-                    'statusCode': 403,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'error': 'steam_id required'})
-                }
-            
-            cur.execute('''
-                SELECT steam_id FROM t_p15345778_news_shop_project.comments 
-                WHERE id = %s
-            ''', (comment_id,))
+                return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'steam_id required'})}
+
+            cur.execute('SELECT steam_id FROM t_p15345778_news_shop_project.comments WHERE id = %s', (comment_id,))
             result = cur.fetchone()
-            
             if not result:
-                return {
-                    'statusCode': 404,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'error': 'Comment not found'})
-                }
-            
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Comment not found'})}
+
             comment_owner_steam_id = result[0]
-            
-            escaped_steam_id = steam_id.replace("'", "''")
-            cur.execute(f"SELECT COUNT(*) FROM t_p15345778_news_shop_project.users WHERE steam_id = '{escaped_steam_id}' AND is_admin = true")
-            is_admin = cur.fetchone()[0] > 0
-            
+
+            cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (steam_id,))
+            admin_row = cur.fetchone()
+            is_admin = admin_row and admin_row[0]
+
             if comment_owner_steam_id != steam_id and not is_admin:
-                return {
-                    'statusCode': 403,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'error': 'You can only delete your own comments'})
-                }
-            
-            cur.execute('''
-                DELETE FROM t_p15345778_news_shop_project.comments 
-                WHERE id = %s
-            ''', (comment_id,))
+                return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'You can only delete your own comments'})}
+
+            # Удаляем комментарий и дочерние
+            cur.execute('DELETE FROM t_p15345778_news_shop_project.comments WHERE id = %s OR parent_comment_id = %s', (comment_id, comment_id))
+
+            # Бан автора (только для админа)
+            if is_admin and ban_type in ('ban_60', 'ban_permanent') and comment_owner_steam_id:
+                if ban_type == 'ban_60':
+                    cur.execute('''
+                        INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
+                        VALUES (%s, %s, NOW() + INTERVAL '60 minutes')
+                    ''', (comment_owner_steam_id, steam_id))
+                elif ban_type == 'ban_permanent':
+                    cur.execute('''
+                        INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
+                        VALUES (%s, %s, NULL)
+                    ''', (comment_owner_steam_id, steam_id))
+
             conn.commit()
-            
-            return {
-                'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'success': True, 'message': 'Comment deleted'})
-            }
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'ban_type': ban_type})}
         
         return {
             'statusCode': 405,
