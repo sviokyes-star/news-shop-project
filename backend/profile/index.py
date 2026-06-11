@@ -70,7 +70,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cursor.execute(f"""
             SELECT id, steam_id, persona_name, nickname, avatar_url, profile_url, 
-                   balance, is_blocked, block_reason,
+                   balance, is_blocked, block_reason, is_moderator, is_admin,
                    to_char(last_login, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as last_login,
                    to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"+00:00"') as created_at,
                    (last_online IS NOT NULL AND last_online > NOW() - INTERVAL '5 minutes') AS is_online,
@@ -100,7 +100,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'lastLogin': user_profile['last_login'],
                 'createdAt': user_profile['created_at'],
                 'isOnline': user_profile['is_online'],
-                'lastOnline': user_profile['last_online']
+                'lastOnline': user_profile['last_online'],
+                'is_moderator': bool(user_profile['is_moderator']),
+                'is_admin': bool(user_profile['is_admin']),
             }
         
         # Получить турниры пользователя
