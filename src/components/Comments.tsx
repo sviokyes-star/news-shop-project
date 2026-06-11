@@ -201,12 +201,33 @@ export default function Comments({ newsId }: CommentsProps) {
     }
   };
 
-  const handleDelete = (commentId: number) => {
+  const handleDelete = async (commentId: number, isOwn: boolean) => {
     if (!user) {
       toast({ title: 'Требуется авторизация', description: 'Войдите через Steam', variant: 'destructive' });
       return;
     }
-    setBanDialog({ open: true, commentId });
+    if (isOwn) {
+      // Своё сообщение — удаляем сразу без диалога
+      try {
+        const response = await fetch(func2url.comments, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comment_id: commentId, steam_id: user.steamId, ban_type: 'delete_only' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          setComments(comments.filter(c => c.id !== commentId && c.parent_comment_id !== commentId));
+          toast({ title: 'Комментарий удалён' });
+        } else {
+          toast({ title: 'Ошибка', description: data.error, variant: 'destructive' });
+        }
+      } catch {
+        toast({ title: 'Ошибка при удалении', variant: 'destructive' });
+      }
+    } else {
+      // Чужое сообщение (админ) — открываем диалог с блокировкой
+      setBanDialog({ open: true, commentId });
+    }
   };
 
   const confirmDelete = async (banType: BanType, reason: string) => {
@@ -294,14 +315,15 @@ export default function Comments({ newsId }: CommentsProps) {
                 </button>
               )}
               {user && comment.steam_id === user.steamId && (
-                <button 
-                  onClick={() => handleDelete(comment.id)}
+                <button
+                  onClick={() => handleDelete(comment.id, true)}
                   className="text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
                 >
                   <Icon name="Trash2" size={16} />
                   Удалить
                 </button>
               )}
+
             </div>
           </div>
         </div>
