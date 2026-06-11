@@ -90,7 +90,7 @@ def get_users(cursor) -> Dict[str, Any]:
             WHERE steam_id = u.steam_id AND (expires_at IS NULL OR expires_at > NOW())
             LIMIT 1
         ) cb ON true
-        ORDER BY u.last_login DESC NULLS LAST, u.created_at DESC
+        ORDER BY u.created_at DESC NULLS LAST
     """)
     
     users = cursor.fetchall()
