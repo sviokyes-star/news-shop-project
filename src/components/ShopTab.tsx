@@ -235,65 +235,85 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
         </Card>
       )}
 
-      <div id="topup-products" className="grid gap-2">
-        {products.map((product) => {
-          const qty = sliderValues[product.id] ?? product.slider_min;
-          const totalPrice = product.is_slider ? qty * product.unit_price : product.price;
+      <div id="topup-products" className="space-y-8">
+        {(() => {
+          const groups: { category: string; items: Product[] }[] = [];
+          products.forEach(product => {
+            const cat = product.category?.trim() || '';
+            const existing = groups.find(g => g.category === cat);
+            if (existing) existing.items.push(product);
+            else groups.push({ category: cat, items: [product] });
+          });
+          return groups.map(({ category, items }) => (
+            <div key={category}>
+              {category && (
+                <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                  <span className="w-1 h-5 rounded-full bg-primary inline-block" />
+                  {category}
+                </h2>
+              )}
+              <div className="grid gap-2">
+                {items.map(product => {
+                  const qty = sliderValues[product.id] ?? product.slider_min;
+                  const totalPrice = product.is_slider ? qty * product.unit_price : product.price;
+                  return (
+                    <Card
+                      key={product.id}
+                      className="group px-4 py-3 border-border hover:border-primary/50 transition-all duration-200 bg-card/50 backdrop-blur"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <Icon name="Coins" size={18} className="text-primary" />
+                        </div>
 
-          return (
-            <Card
-              key={product.id}
-              className="group px-4 py-3 border-border hover:border-primary/50 transition-all duration-200 bg-card/50 backdrop-blur"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                  <Icon name="Coins" size={18} className="text-primary" />
-                </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm leading-tight truncate">{product.name}</p>
+                          {product.amount && <p className="text-xs text-muted-foreground truncate">{product.amount}</p>}
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm leading-tight truncate">{product.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{product.amount}</p>
+                          {product.is_slider && (
+                            <div className="flex items-center gap-3 mt-2">
+                              <Slider
+                                min={product.slider_min}
+                                max={product.slider_max}
+                                step={product.slider_step}
+                                value={[qty]}
+                                onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
+                                className="w-32"
+                              />
+                              <span className="text-xs font-semibold text-foreground whitespace-nowrap">{qty} {product.unit_name}</span>
+                            </div>
+                          )}
+                        </div>
 
-                  {product.is_slider && (
-                    <div className="flex items-center gap-3 mt-2">
-                      <Slider
-                        min={product.slider_min}
-                        max={product.slider_max}
-                        step={product.slider_step}
-                        value={[qty]}
-                        onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
-                        className="w-32"
-                      />
-                      <span className="text-xs font-semibold text-foreground whitespace-nowrap">{qty} {product.unit_name}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <div className="text-right">
-                    <span className="text-xl font-bold">{totalPrice}</span>
-                    <span className="text-sm text-muted-foreground ml-0.5">₽</span>
-                    {product.is_slider && (
-                      <p className="text-xs text-muted-foreground">{product.unit_price} ₽/{product.unit_name}</p>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    className="h-8 px-3 text-xs"
-                    onClick={() => handleBuy(product, product.is_slider ? qty : undefined)}
-                    disabled={!user || purchasingItemId === product.id}
-                  >
-                    {purchasingItemId === product.id ? (
-                      <Icon name="Loader2" size={14} className="animate-spin" />
-                    ) : (
-                      <><Icon name="ShoppingCart" size={14} className="mr-1" />Купить</>
-                    )}
-                  </Button>
-                </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <div className="text-right">
+                            <span className="text-xl font-bold">{totalPrice}</span>
+                            <span className="text-sm text-muted-foreground ml-0.5">₽</span>
+                            {product.is_slider && (
+                              <p className="text-xs text-muted-foreground">{product.unit_price} ₽/{product.unit_name}</p>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="h-8 px-3 text-xs"
+                            onClick={() => handleBuy(product, product.is_slider ? qty : undefined)}
+                            disabled={!user || purchasingItemId === product.id}
+                          >
+                            {purchasingItemId === product.id ? (
+                              <Icon name="Loader2" size={14} className="animate-spin" />
+                            ) : (
+                              <><Icon name="ShoppingCart" size={14} className="mr-1" />Купить</>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
-            </Card>
-          );
-        })}
+            </div>
+          ));
+        })()}
       </div>
     </div>
   );
