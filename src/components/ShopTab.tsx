@@ -283,14 +283,27 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="custom-amount">Сумма (₽)</Label>
-                      <Input
-                        id="custom-amount"
-                        type="number"
-                        placeholder="Минимум 10 ₽"
-                        value={customAmount}
-                        onChange={(e) => setCustomAmount(e.target.value)}
-                        min="10"
-                      />
+                      <div className="flex items-center border border-border rounded-md overflow-hidden bg-background">
+                        <button
+                          type="button"
+                          className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors text-lg font-bold select-none"
+                          onClick={() => setCustomAmount(v => String(Math.max(10, (Number(v) || 10) - 10)))}
+                        >−</button>
+                        <input
+                          id="custom-amount"
+                          type="number"
+                          placeholder="Минимум 10 ₽"
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                          min="10"
+                          className="flex-1 bg-transparent text-center text-sm py-2 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                          type="button"
+                          className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors text-lg font-bold select-none"
+                          onClick={() => setCustomAmount(v => String((Number(v) || 0) + 10))}
+                        >+</button>
+                      </div>
                     </div>
                     <Button
                       onClick={() => handleTopUp()}
