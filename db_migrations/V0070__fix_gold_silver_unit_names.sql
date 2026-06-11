@@ -1,0 +1,2 @@
+UPDATE t_p15345778_news_shop_project.shop_items SET unit_name = 'золото', unit_multiplier = 1 WHERE id = 7;
+UPDATE t_p15345778_news_shop_project.shop_items SET unit_name = 'серебра', unit_multiplier = 1000 WHERE id = 8;

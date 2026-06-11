@@ -297,7 +297,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                             <span className="text-sm text-muted-foreground ml-0.5">₽</span>
                             {product.is_slider && (
                               <p className="text-xs text-muted-foreground">
-                                {multiplier > 1 ? `${multiplier * product.unit_price} ${product.unit_name}/₽` : `${product.unit_price} ₽/${product.unit_name}`}
+                                {multiplier > 1 ? `${multiplier} ${product.unit_name} = ${product.unit_price} ₽` : `1 ${product.unit_name} = ${product.unit_price} ₽`}
                               </p>
                             )}
                           </div>
