@@ -54,7 +54,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     steam_id = body_data.get('steam_id', '').strip()
     persona_name = body_data.get('persona_name', '').strip()
     shop_item_id = body_data.get('shop_item_id')
-    
+    quantity = body_data.get('quantity')
+
     if not steam_id or not shop_item_id:
         return {
             'statusCode': 400,
@@ -77,7 +78,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         escaped_persona_name = persona_name.replace("'", "''")
         
         cursor.execute(f"""
-            SELECT name, amount, price 
+            SELECT name, amount, price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step
             FROM t_p15345778_news_shop_project.shop_items 
             WHERE id = {int(shop_item_id)} AND is_active = true
         """)
@@ -97,7 +98,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        item_name, item_amount, item_price = item
+        item_name, item_amount, item_price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step = item
+
+        # Для товаров с ползунком — считаем цену из quantity
+        if is_slider:
+            if quantity is None:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'quantity required for slider items'}),
+                    'isBase64Encoded': False
+                }
+            qty = int(quantity)
+            if qty < slider_min or qty > slider_max:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': f'quantity must be between {slider_min} and {slider_max}'}),
+                    'isBase64Encoded': False
+                }
+            item_price = qty * unit_price
+            item_amount = f'{qty} {unit_name}'
         
         # Get user balance
         cursor.execute(f"""
