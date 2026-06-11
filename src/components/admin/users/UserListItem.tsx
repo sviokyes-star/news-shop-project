@@ -90,10 +90,10 @@ export default function UserListItem({
             <span className="font-mono">{user.steamId}</span>
             <span className="text-green-500 font-semibold">{user.balance} ₽</span>
             {user.createdAt && (
-              <span title="Первый вход">🕐 {new Date(user.createdAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              <span title="Первый вход">🕐 {new Date(user.createdAt + 'Z').toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
             )}
             {user.lastLogin && (
-              <span title="Последний вход">↩ {new Date(user.lastLogin).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              <span title="Последний вход">↩ {new Date(user.lastLogin + 'Z').toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
             )}
           </div>
           {user.isBlocked && user.blockReason && (
