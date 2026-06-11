@@ -362,7 +362,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Пользователь регистрируется на турнир
             registration = TournamentRegistration(**body_data)
-            
+
+            # Проверить бан
+            cursor.execute(f'''
+                SELECT id FROM {SCHEMA}.chat_bans
+                WHERE steam_id = %s AND (expires_at IS NULL OR expires_at > NOW())
+                LIMIT 1
+            ''', (registration.steam_id,))
+            if cursor.fetchone():
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': 'Вы заблокированы и не можете участвовать в турнирах'})
+                }
+
             # Проверить, не зарегистрирован ли уже пользователь
             cursor.execute('''
                 SELECT id FROM tournament_registrations 
