@@ -12,6 +12,7 @@ export interface ShopItem {
   slider_step: number;
   unit_price: number;
   unit_name: string;
+  unit_multiplier: number;
 }
 
 export interface SteamUser {
@@ -33,6 +34,7 @@ export interface ShopFormData {
   slider_step: number;
   unit_price: number;
   unit_name: string;
+  unit_multiplier: number;
 }
 
 export const EMPTY_FORM: ShopFormData = {
@@ -46,5 +48,6 @@ export const EMPTY_FORM: ShopFormData = {
   slider_max: 100,
   slider_step: 1,
   unit_price: 10,
-  unit_name: ''
+  unit_name: '',
+  unit_multiplier: 1
 };

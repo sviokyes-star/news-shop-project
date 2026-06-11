@@ -27,6 +27,8 @@ interface Product {
   slider_step: number;
   unit_price: number;
   unit_name: string;
+  unit_multiplier: number;
+  category?: string;
 }
 
 interface SteamUser {

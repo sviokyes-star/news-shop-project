@@ -139,8 +139,20 @@ export default function ShopItemForm({ formData, editingId, error, success, onCh
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Множитель (кол-во единиц товара за 1 ₽)</label>
+                <Input
+                  type="number"
+                  value={formData.unit_multiplier}
+                  onChange={(e) => set({ unit_multiplier: Number(e.target.value) })}
+                  placeholder="1"
+                  min="1"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Покупатель выберет от {formData.slider_min} до {formData.slider_max} {formData.unit_name || 'ед.'} с шагом {formData.slider_step}. Итоговая цена = кол-во × {formData.unit_price} ₽
+                Покупатель выберет от {formData.slider_min} до {formData.slider_max} ₽ с шагом {formData.slider_step} ₽.
+                За каждый ₽ даётся {formData.unit_multiplier} {formData.unit_name || 'ед.'}.
+                Итого за {formData.slider_min} ₽ → {formData.slider_min * formData.unit_multiplier} {formData.unit_name || 'ед.'}.
               </p>
             </div>
           )}

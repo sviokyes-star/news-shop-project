@@ -78,7 +78,8 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
       slider_max: item.slider_max ?? 100,
       slider_step: item.slider_step ?? 1,
       unit_price: item.unit_price ?? 10,
-      unit_name: item.unit_name || ''
+      unit_name: item.unit_name || '',
+      unit_multiplier: item.unit_multiplier ?? 1
     });
   };
 

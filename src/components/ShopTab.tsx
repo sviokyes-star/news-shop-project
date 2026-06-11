@@ -19,6 +19,8 @@ interface Product {
   slider_step: number;
   unit_price: number;
   unit_name: string;
+  unit_multiplier: number;
+  category?: string;
 }
 
 interface SteamUser {
@@ -254,8 +256,10 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
               )}
               <div className="grid gap-2">
                 {items.map(product => {
+                  const multiplier = product.unit_multiplier ?? 1;
                   const qty = sliderValues[product.id] ?? product.slider_min;
                   const totalPrice = product.is_slider ? qty * product.unit_price : product.price;
+                  const totalUnits = product.is_slider ? qty * multiplier : 0;
                   return (
                     <Card
                       key={product.id}
@@ -280,7 +284,9 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                                 onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
                                 className="w-32"
                               />
-                              <span className="text-xs font-semibold text-foreground whitespace-nowrap">{qty} {product.unit_name}</span>
+                              <span className="text-xs font-semibold text-foreground whitespace-nowrap">
+                                {multiplier > 1 ? totalUnits : qty} {product.unit_name}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -290,7 +296,9 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                             <span className="text-xl font-bold">{totalPrice}</span>
                             <span className="text-sm text-muted-foreground ml-0.5">₽</span>
                             {product.is_slider && (
-                              <p className="text-xs text-muted-foreground">{product.unit_price} ₽/{product.unit_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {multiplier > 1 ? `${multiplier * product.unit_price} ${product.unit_name}/₽` : `${product.unit_price} ₽/${product.unit_name}`}
+                              </p>
                             )}
                           </div>
                           <Button

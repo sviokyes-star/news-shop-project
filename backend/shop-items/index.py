@@ -42,9 +42,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'slider_step': row[10],
             'unit_price': row[11],
             'unit_name': row[12] or '',
+            'unit_multiplier': row[13],
         }
 
-    SELECT_FIELDS = "id, name, amount, price, is_active, order_position, category, is_slider, slider_min, slider_max, slider_step, unit_price, unit_name"
+    SELECT_FIELDS = "id, name, amount, price, is_active, order_position, category, is_slider, slider_min, slider_max, slider_step, unit_price, unit_name, unit_multiplier"
     
     try:
         if method == 'GET':
@@ -99,6 +100,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             slider_step = int(body_data.get('slider_step', 1))
             unit_price = int(body_data.get('unit_price', 0))
             unit_name = body_data.get('unit_name', '').strip()
+            unit_multiplier = int(body_data.get('unit_multiplier', 1))
             
             if not name or price is None:
                 return {
@@ -118,9 +120,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cur.execute(f"""
                 INSERT INTO t_p15345778_news_shop_project.shop_items
-                (name, amount, price, order_position, category, is_slider, slider_min, slider_max, slider_step, unit_price, unit_name)
+                (name, amount, price, order_position, category, is_slider, slider_min, slider_max, slider_step, unit_price, unit_name, unit_multiplier)
                 VALUES ('{escaped_name}', '{escaped_amount}', {int(price)}, {new_position}, '{escaped_category}',
-                        {is_slider}, {slider_min}, {slider_max}, {slider_step}, {unit_price}, '{escaped_unit_name}')
+                        {is_slider}, {slider_min}, {slider_max}, {slider_step}, {unit_price}, '{escaped_unit_name}', {unit_multiplier})
                 RETURNING {SELECT_FIELDS}
             """)
             
@@ -186,6 +188,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if 'unit_name' in body_data:
                 un = body_data['unit_name'].strip().replace("'", "''")
                 update_fields.append(f"unit_name = '{un}'")
+
+            if 'unit_multiplier' in body_data:
+                update_fields.append(f"unit_multiplier = {int(body_data['unit_multiplier'])}")
             
             if not update_fields:
                 return {
