@@ -267,7 +267,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             lobby = cur.fetchone()
             conn.commit()
 
-        # Проверить дедлайн готовности — если прошёл, дать техническую победу готовому игроку
+        # Проверить дедлайн готовности — если прошёл, обработать неявку
         if lobby and lobby['ready_deadline'] and lobby['status'] == 'waiting' and lobby['player1_steam_id'] and lobby['player2_steam_id']:
             from datetime import datetime, timezone
             deadline_str = lobby['ready_deadline'].replace('+00:00', '')
@@ -277,30 +277,84 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 p1r = lobby['player1_ready']
                 p2r = lobby['player2_ready']
                 if not (p1r and p2r):
-                    # Определяем техническую победу
                     if p1r and not p2r:
+                        # Готов только player1 — он побеждает
                         tech_winner = lobby['player1_steam_id']
-                        tech_loser_slot = 'player2'
+                        tw_esc = tech_winner.replace("'", "''")
+                        cur.execute(f"""
+                            UPDATE {SCHEMA}.match_lobbies
+                            SET winner_steam_id = '{tw_esc}', status = 'completed', updated_at = NOW()
+                            WHERE id = {lobby['id']}
+                        """)
+                        sys_msg = '⏰ Время вышло. Игрок 2 не подтвердил готовность — техническая победа Игрока 1.'
+                        cur.execute(f"""
+                            INSERT INTO {SCHEMA}.lobby_messages (lobby_id, steam_id, persona_name, message)
+                            VALUES ({lobby['id']}, 'system', 'Система', '{sys_msg}')
+                        """)
+                        conn.commit()
+                        advance_winner(cur, conn, tournament_id, int(round_index), int(match_index), tech_winner)
                     elif p2r and not p1r:
+                        # Готов только player2 — он побеждает
                         tech_winner = lobby['player2_steam_id']
-                        tech_loser_slot = 'player1'
+                        tw_esc = tech_winner.replace("'", "''")
+                        cur.execute(f"""
+                            UPDATE {SCHEMA}.match_lobbies
+                            SET winner_steam_id = '{tw_esc}', status = 'completed', updated_at = NOW()
+                            WHERE id = {lobby['id']}
+                        """)
+                        sys_msg = '⏰ Время вышло. Игрок 1 не подтвердил готовность — техническая победа Игрока 2.'
+                        cur.execute(f"""
+                            INSERT INTO {SCHEMA}.lobby_messages (lobby_id, steam_id, persona_name, message)
+                            VALUES ({lobby['id']}, 'system', 'Система', '{sys_msg}')
+                        """)
+                        conn.commit()
+                        advance_winner(cur, conn, tournament_id, int(round_index), int(match_index), tech_winner)
                     else:
-                        # Оба не готовы — победа player1 по умолчанию
-                        tech_winner = lobby['player1_steam_id']
-                        tech_loser_slot = 'player2'
-                    tw_esc = tech_winner.replace("'", "''")
-                    cur.execute(f"""
-                        UPDATE {SCHEMA}.match_lobbies
-                        SET winner_steam_id = '{tw_esc}', status = 'completed', updated_at = NOW()
-                        WHERE id = {lobby['id']}
-                    """)
-                    sys_msg = f'⏰ Время вышло. Техническая победа присвоена игроку, нажавшему "Готов".'
-                    cur.execute(f"""
-                        INSERT INTO {SCHEMA}.lobby_messages (lobby_id, steam_id, persona_name, message)
-                        VALUES ({lobby['id']}, 'system', 'Система', '{sys_msg}')
-                    """)
-                    conn.commit()
-                    advance_winner(cur, conn, tournament_id, int(round_index), int(match_index), tech_winner)
+                        # Оба не готовы — никто не проходит, матч завершается без победителя.
+                        # Следующий соперник (если есть) получает автопобеду при встрече с пустым слотом.
+                        cur.execute(f"""
+                            UPDATE {SCHEMA}.match_lobbies
+                            SET status = 'completed', updated_at = NOW()
+                            WHERE id = {lobby['id']}
+                        """)
+                        sys_msg = '⏰ Время вышло. Оба игрока не подтвердили готовность — оба выбывают из турнира.'
+                        cur.execute(f"""
+                            INSERT INTO {SCHEMA}.lobby_messages (lobby_id, steam_id, persona_name, message)
+                            VALUES ({lobby['id']}, 'system', 'Система', '{sys_msg}')
+                        """)
+                        conn.commit()
+                        # Уведомить будущего соперника следующего раунда об автопобеде
+                        next_round = int(round_index) + 1
+                        next_match = int(match_index) // 2
+                        slot = int(match_index) % 2
+                        cur.execute(f"""
+                            SELECT id, player1_steam_id, player2_steam_id
+                            FROM {SCHEMA}.match_lobbies
+                            WHERE tournament_id = {int(tournament_id)}
+                              AND round_index = {next_round}
+                              AND match_index = {next_match}
+                        """)
+                        next_lobby = cur.fetchone()
+                        if next_lobby:
+                            # Найти живого соперника в следующем лобби
+                            if slot == 0:
+                                rival = next_lobby['player2_steam_id']
+                            else:
+                                rival = next_lobby['player1_steam_id']
+                            if rival:
+                                rival_esc = rival.replace("'", "''")
+                                cur.execute(f"""
+                                    UPDATE {SCHEMA}.match_lobbies
+                                    SET winner_steam_id = '{rival_esc}', status = 'completed', updated_at = NOW()
+                                    WHERE id = {next_lobby['id']}
+                                """)
+                                sys_msg2 = '🏆 Соперники не явились — автоматическая победа!'
+                                cur.execute(f"""
+                                    INSERT INTO {SCHEMA}.lobby_messages (lobby_id, steam_id, persona_name, message)
+                                    VALUES ({next_lobby['id']}, 'system', 'Система', '{sys_msg2}')
+                                """)
+                                conn.commit()
+                                advance_winner(cur, conn, tournament_id, next_round, next_match, rival)
                     # Перечитать лобби
                     cur.execute(f"""
                         SELECT id, player1_steam_id, player2_steam_id, winner_steam_id, status,
