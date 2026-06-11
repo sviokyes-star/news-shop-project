@@ -150,6 +150,20 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
     }
   };
 
+  const handleSelfDelete = async (messageId: number) => {
+    if (!user) return;
+    try {
+      await fetch(func2url.chat, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
+        body: JSON.stringify({ message_id: messageId, ban_type: 'delete_only' }),
+      });
+      await loadMessages();
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
+  };
+
   const handleDeleteMessage = (messageId: number) => {
     setBanDialog({ open: true, messageId });
   };
@@ -243,7 +257,17 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
                     <Icon name="Reply" size={14} />
                   </Button>
                 )}
-                {isAdmin && (
+                {user && msg.steamId === user.steamId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSelfDelete(msg.id)}
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Icon name="Trash2" size={14} />
+                  </Button>
+                )}
+                {isAdmin && msg.steamId !== user?.steamId && (
                   <Button
                     variant="ghost"
                     size="sm"

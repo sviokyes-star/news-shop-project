@@ -226,19 +226,18 @@ def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
     HEADERS = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
     headers = event.get('headers', {})
     admin_steam_id = headers.get('x-admin-steam-id') or headers.get('X-Admin-Steam-Id')
-    
-    if not admin_steam_id:
-        return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Admin authentication required'})}
-    
+    user_steam_id = headers.get('x-user-steam-id') or headers.get('X-User-Steam-Id')
+    requester_id = admin_steam_id or user_steam_id
+
+    if not requester_id:
+        return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
+
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (admin_steam_id,))
+
+    cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (requester_id,))
     result = cur.fetchone()
-    if not (result and result[0]):
-        cur.close()
-        conn.close()
-        return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Admin access required'})}
+    is_admin = bool(result and result[0])
     
     body_data = json.loads(event.get('body') or '{}')
     params = event.get('queryStringParameters') or {}
@@ -252,15 +251,30 @@ def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
         cur.close()
         conn.close()
         return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'message_id required'})}
-    
+
+    # Получаем автора сообщения
+    cur.execute('SELECT steam_id FROM t_p15345778_news_shop_project.chat_messages WHERE id = %s', (message_id,))
+    msg_row = cur.fetchone()
+    if not msg_row:
+        cur.close()
+        conn.close()
+        return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Message not found'})}
+    msg_author = msg_row[0]
+
+    # Обычный пользователь может удалять только своё сообщение и без бана
+    if not is_admin:
+        if msg_author != requester_id:
+            cur.close()
+            conn.close()
+            return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Можно удалять только свои сообщения'})}
+        ban_type = 'delete_only'
+
     # Скрываем сообщение
     cur.execute('UPDATE t_p15345778_news_shop_project.chat_messages SET is_hidden = TRUE WHERE id = %s', (message_id,))
-    
-    # Если нужен бан — получаем steam_id автора из сообщения
+
+    # Если нужен бан — используем уже полученный steam_id автора
     if ban_type in ('ban_60', 'ban_permanent') and not target_steam_id:
-        cur.execute('SELECT steam_id FROM t_p15345778_news_shop_project.chat_messages WHERE id = %s', (message_id,))
-        row = cur.fetchone()
-        target_steam_id = row[0] if row else None
+        target_steam_id = msg_author
     
     if ban_type != 'delete_only' and target_steam_id:
         if ban_type == 'ban_60':
