@@ -79,8 +79,15 @@ def get_users(cursor) -> Dict[str, Any]:
                u.balance, u.is_blocked, u.block_reason, u.is_moderator, u.last_login, u.created_at, u.updated_at,
                COALESCE(u.is_admin, false) as is_admin,
                (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online,
-               u.last_online
+               u.last_online,
+               cb.id as chat_ban_id,
+               cb.expires_at as chat_ban_expires
         FROM t_p15345778_news_shop_project.users u
+        LEFT JOIN LATERAL (
+            SELECT id, expires_at FROM t_p15345778_news_shop_project.chat_bans
+            WHERE steam_id = u.steam_id AND (expires_at IS NULL OR expires_at > NOW())
+            LIMIT 1
+        ) cb ON true
         ORDER BY u.last_login DESC NULLS LAST, u.created_at DESC
     """)
     
@@ -88,6 +95,12 @@ def get_users(cursor) -> Dict[str, Any]:
     
     users_list = []
     for user in users:
+        chat_banned = user['chat_ban_id'] is not None
+        chat_ban_expires = user['chat_ban_expires'].isoformat() if user['chat_ban_expires'] else None
+        is_blocked = bool(user['is_blocked']) or chat_banned
+        block_reason = user['block_reason']
+        if chat_banned and not block_reason:
+            block_reason = 'Заблокирован через чат' + (f' до {chat_ban_expires}' if chat_ban_expires else ' навсегда')
         users_list.append({
             'id': user['id'],
             'steamId': user['steam_id'],
@@ -95,15 +108,16 @@ def get_users(cursor) -> Dict[str, Any]:
             'avatarUrl': user['avatar_url'],
             'profileUrl': user['profile_url'],
             'balance': user['balance'],
-            'isBlocked': user['is_blocked'],
-            'blockReason': user['block_reason'],
+            'isBlocked': is_blocked,
+            'blockReason': block_reason,
             'isAdmin': user['is_admin'],
             'isModerator': user['is_moderator'] if user['is_moderator'] else False,
             'lastLogin': user['last_login'].isoformat() if user['last_login'] else None,
             'createdAt': user['created_at'].isoformat() if user['created_at'] else None,
             'updatedAt': user['updated_at'].isoformat() if user['updated_at'] else None,
             'isOnline': user['is_online'],
-            'lastOnline': user['last_online'].isoformat() if user['last_online'] else None
+            'lastOnline': user['last_online'].isoformat() if user['last_online'] else None,
+            'chatBanExpires': chat_ban_expires,
         })
     
     return {
