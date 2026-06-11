@@ -153,8 +153,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if 'amount' in body_data:
                 amount = body_data['amount'].strip()
-                if amount:
-                    update_fields.append(f"amount = '{amount.replace(chr(39), chr(39)*2)}'")
+                update_fields.append(f"amount = '{amount.replace(chr(39), chr(39)*2)}'")
             
             if 'price' in body_data:
                 update_fields.append(f"price = {int(body_data['price'])}")
