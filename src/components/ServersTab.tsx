@@ -96,24 +96,24 @@ const ServersTab = () => {
               {gameServers.map((server, index) => (
                 <Card
                   key={server.id}
-                  className="group p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 bg-card/50 backdrop-blur"
+                  className="group px-5 py-3 border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 bg-card/50 backdrop-blur"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-6 flex-1">
-                      <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                        <Icon name="Server" size={28} />
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 flex-shrink-0">
+                        <Icon name="Server" size={18} />
                       </div>
 
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-2xl font-bold tracking-tight">{server.name}</h3>
-                          <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <h3 className="font-bold truncate">{server.name}</h3>
+                          <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border flex-shrink-0 ${
                             server.status === 'online' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
                             server.status === 'offline' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
                             'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
                           }`}>
-                            <div className={`w-2 h-2 rounded-full ${
+                            <div className={`w-1.5 h-1.5 rounded-full ${
                               server.status === 'online' ? 'bg-green-500 animate-pulse' :
                               server.status === 'offline' ? 'bg-red-500' :
                               'bg-yellow-500'
@@ -122,17 +122,17 @@ const ServersTab = () => {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <Icon name="Map" size={16} />
-                            <span>{server.map || 'Загрузка...'}</span>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Icon name="Map" size={12} />
+                            <span>{server.map || '...'}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Icon name="Users" size={16} />
+                          <div className="flex items-center gap-1">
+                            <Icon name="Users" size={12} />
                             <span>{server.currentPlayers}/{server.maxPlayers}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Icon name="Globe" size={16} />
+                          <div className="flex items-center gap-1">
+                            <Icon name="Globe" size={12} />
                             <span>{server.ipAddress}:{server.port}</span>
                           </div>
                         </div>
@@ -142,19 +142,19 @@ const ServersTab = () => {
                     <div className="flex gap-3">
                       <Button
                         variant="outline"
-                        size="lg"
+                        size="sm"
                         onClick={() => copyToClipboard(`${server.ipAddress}:${server.port}`)}
-                        className="gap-2"
+                        className="gap-1.5"
                       >
-                        <Icon name="Copy" size={18} />
+                        <Icon name="Copy" size={14} />
                         IP
                       </Button>
                       <Button
-                        size="lg"
-                        className="gap-2 shadow-lg shadow-primary/20"
+                        size="sm"
+                        className="gap-1.5"
                         onClick={() => window.location.href = `steam://connect/${server.ipAddress}:${server.port}`}
                       >
-                        <Icon name="Play" size={18} />
+                        <Icon name="Play" size={14} />
                         Подключиться
                       </Button>
                     </div>
