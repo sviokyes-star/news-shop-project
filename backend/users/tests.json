@@ -1,17 +1,11 @@
 {
   "tests": [
     {
-      "name": "Update user balance",
-      "method": "PUT",
+      "name": "Get users list",
+      "method": "GET",
       "path": "/",
-      "body": {
-        "steamId": "76561198974174275",
-        "balance": 1000
-      },
       "expectedStatus": 200,
-      "expectedBody": {
-        "success": true
-      },
+      "expectedBody": {},
       "bodyMatcher": "partial"
     }
   ]
