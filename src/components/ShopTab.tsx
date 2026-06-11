@@ -227,7 +227,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                     История
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
+                <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
                   <DialogHeader>
                     <DialogTitle>История операций</DialogTitle>
                     <DialogDescription>Пополнения и расходы баланса</DialogDescription>
