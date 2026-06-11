@@ -284,20 +284,46 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                                 onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
                                 className="w-32"
                               />
-                              <input
-                                type="number"
-                                min={product.slider_min}
-                                max={product.slider_max}
-                                step={product.slider_step}
-                                value={multiplier > 1 ? totalUnits : qty}
-                                onChange={(e) => {
-                                  let raw = Number(e.target.value);
-                                  if (multiplier > 1) raw = Math.round(raw / multiplier);
-                                  const clamped = Math.max(product.slider_min, Math.min(product.slider_max, raw));
-                                  setSliderValues(prev => ({ ...prev, [product.id]: clamped }));
-                                }}
-                                className="w-20 text-xs font-semibold bg-background border border-border rounded px-2 py-1 text-center focus:outline-none focus:border-primary"
-                              />
+                              <div className="flex items-center border border-border rounded overflow-hidden bg-background">
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold"
+                                  onClick={() => {
+                                    const step = multiplier > 1 ? product.slider_step * multiplier : product.slider_step;
+                                    const cur = multiplier > 1 ? totalUnits : qty;
+                                    let raw = cur - step;
+                                    if (multiplier > 1) raw = Math.round(raw / multiplier);
+                                    const clamped = Math.max(product.slider_min, Math.min(product.slider_max, raw));
+                                    setSliderValues(prev => ({ ...prev, [product.id]: clamped }));
+                                  }}
+                                >−</button>
+                                <input
+                                  type="number"
+                                  min={product.slider_min}
+                                  max={product.slider_max}
+                                  step={product.slider_step}
+                                  value={multiplier > 1 ? totalUnits : qty}
+                                  onChange={(e) => {
+                                    let raw = Number(e.target.value);
+                                    if (multiplier > 1) raw = Math.round(raw / multiplier);
+                                    const clamped = Math.max(product.slider_min, Math.min(product.slider_max, raw));
+                                    setSliderValues(prev => ({ ...prev, [product.id]: clamped }));
+                                  }}
+                                  className="w-16 text-xs font-semibold bg-transparent py-1 text-center focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold"
+                                  onClick={() => {
+                                    const step = multiplier > 1 ? product.slider_step * multiplier : product.slider_step;
+                                    const cur = multiplier > 1 ? totalUnits : qty;
+                                    let raw = cur + step;
+                                    if (multiplier > 1) raw = Math.round(raw / multiplier);
+                                    const clamped = Math.max(product.slider_min, Math.min(product.slider_max, raw));
+                                    setSliderValues(prev => ({ ...prev, [product.id]: clamped }));
+                                  }}
+                                >+</button>
+                              </div>
                               <span className="text-xs text-muted-foreground whitespace-nowrap">{product.unit_name}</span>
                             </div>
                           )}
