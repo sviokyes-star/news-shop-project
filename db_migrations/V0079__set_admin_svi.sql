@@ -1,0 +1,1 @@
+UPDATE t_p15345778_news_shop_project.users SET is_admin = TRUE WHERE steam_id = '76561198974174275';
