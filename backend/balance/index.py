@@ -31,47 +31,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET':
             params = event.get('queryStringParameters') or {}
             steam_id = params.get('steam_id', '').strip()
-            
+            action = params.get('action', '')
+
             if not steam_id:
                 return {
                     'statusCode': 400,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': 'steam_id required'})
                 }
-            
+
             escaped_steam_id = steam_id.replace("'", "''")
-            
+
+            if action == 'history':
+                cur.execute(f"""
+                    SELECT id, amount, transaction_type, description, created_at
+                    FROM t_p15345778_news_shop_project.balance_transactions
+                    WHERE steam_id = '{escaped_steam_id}'
+                    ORDER BY created_at DESC
+                    LIMIT 50
+                """)
+                rows = cur.fetchall()
+                history = [{
+                    'id': r[0],
+                    'amount': r[1],
+                    'type': r[2],
+                    'description': r[3] or '',
+                    'created_at': r[4].isoformat() if r[4] else None
+                } for r in rows]
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'history': history})
+                }
+
             cur.execute(f"""
                 SELECT balance
                 FROM t_p15345778_news_shop_project.users
                 WHERE steam_id = '{escaped_steam_id}'
             """)
-            
+
             row = cur.fetchone()
-            
-            if row:
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({
-                        'balance': row[0]
-                    })
-                }
-            else:
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'balance': 0})
-                }
+
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'balance': row[0] if row else 0})
+            }
         
         if method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
