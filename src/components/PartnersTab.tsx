@@ -51,38 +51,39 @@ const PartnersTab = () => {
         </div>
 
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-3">
           {partners.map((partner) => (
-                  <Card
-                    key={partner.id}
-                    className="p-6 bg-card/80 backdrop-blur border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
-                  >
-                    <div className="flex flex-col items-center text-center space-y-4">
-                      <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-5xl overflow-hidden">
-                        {partner.logo && partner.logo.startsWith('http') ? (
-                          <img src={partner.logo} alt={partner.name} className="w-full h-full object-cover" />
-                        ) : (
-                          partner.logo || '🤝'
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <h4 className="text-xl font-bold">{partner.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {partner.description}
-                        </p>
-                      </div>
+            <Card
+              key={partner.id}
+              className="px-5 py-4 bg-card/80 backdrop-blur border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
+                  {partner.logo && partner.logo.startsWith('http') ? (
+                    <img src={partner.logo} alt={partner.name} className="w-full h-full object-cover" />
+                  ) : (
+                    partner.logo || '🤝'
+                  )}
+                </div>
 
-                      <Button
-                        variant="outline"
-                        className="w-full gap-2"
-                        onClick={() => window.open(partner.website, '_blank')}
-                      >
-                        <Icon name="ExternalLink" size={16} />
-                        Перейти на сайт
-                      </Button>
-                    </div>
-                  </Card>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold">{partner.name}</h4>
+                  {partner.description && (
+                    <p className="text-sm text-muted-foreground truncate">{partner.description}</p>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 flex-shrink-0"
+                  onClick={() => window.open(partner.website, '_blank')}
+                >
+                  <Icon name="ExternalLink" size={14} />
+                  Перейти
+                </Button>
+              </div>
+            </Card>
           ))}
         </div>
 
