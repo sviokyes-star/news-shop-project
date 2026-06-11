@@ -75,6 +75,11 @@ export default function LobbyChat({
                     {msg.message}
                   </div>
                 )}
+                {msg.created_at && (
+                  <span className={`text-[10px] text-muted-foreground px-1 ${isMine ? 'text-right' : ''}`}>
+                    {new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
               </div>
             </div>
           );
