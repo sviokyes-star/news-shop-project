@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import func2url from '../../backend/func2url.json';
+import { toast } from '@/hooks/use-toast';
 
 interface Transaction {
   id: number;
@@ -154,7 +155,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
 
   const handleBuy = async (product: Product, quantity?: number) => {
     if (!user) {
-      alert('Войдите через Steam для покупки');
+      toast({ title: 'Войдите через Steam для покупки', variant: 'destructive' });
       return;
     }
 
@@ -163,7 +164,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
       : product.price;
 
     if (balance < totalPrice) {
-      alert(`Недостаточно средств! Требуется ${totalPrice} ₽, у вас ${balance} ₽`);
+      toast({ title: 'Недостаточно средств', description: `Требуется ${totalPrice} ₽, у вас ${balance} ₽`, variant: 'destructive' });
       return;
     }
 
@@ -183,13 +184,13 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
       const data = await response.json();
       if (response.ok && data.success) {
         setBalance(data.new_balance);
-        alert(`Успешно куплено: ${data.item_name}${quantity ? ` × ${quantity}` : ''}`);
+        toast({ title: 'Успешно куплено!', description: `${data.item_name}${quantity ? ` × ${quantity}` : ''}` });
       } else {
-        alert(data.error || 'Ошибка при покупке');
+        toast({ title: 'Ошибка при покупке', description: data.error || 'Попробуйте ещё раз', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Purchase failed:', error);
-      alert('Ошибка при покупке');
+      toast({ title: 'Ошибка при покупке', variant: 'destructive' });
     } finally {
       setPurchasingItemId(null);
     }
