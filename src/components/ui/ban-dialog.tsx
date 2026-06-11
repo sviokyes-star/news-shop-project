@@ -26,14 +26,14 @@ const options: { type: BanType; label: string; description: string; icon: string
   },
   {
     type: 'ban_60',
-    label: 'Забанить на 60 минут',
+    label: 'Заблокировать на 60 минут',
     description: 'Удалить сообщение и заблокировать на 1 час',
     icon: 'Clock',
     variant: 'destructive',
   },
   {
     type: 'ban_permanent',
-    label: 'Забанить навсегда',
+    label: 'Заблокировать навсегда',
     description: 'Удалить сообщение и заблокировать навсегда',
     icon: 'Ban',
     variant: 'destructive',
