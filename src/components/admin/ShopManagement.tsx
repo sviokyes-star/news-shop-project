@@ -13,6 +13,12 @@ interface ShopItem {
   is_active: boolean;
   order_position: number;
   category: string;
+  is_slider: boolean;
+  slider_min: number;
+  slider_max: number;
+  slider_step: number;
+  unit_price: number;
+  unit_name: string;
 }
 
 interface SteamUser {
@@ -45,7 +51,13 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
     amount: '',
     price: 0,
     is_active: true,
-    category: ''
+    category: '',
+    is_slider: false,
+    slider_min: 1,
+    slider_max: 100,
+    slider_step: 1,
+    unit_price: 10,
+    unit_name: ''
   });
 
   const handleShopSubmit = async (e: React.FormEvent) => {
@@ -105,7 +117,13 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
       amount: item.amount,
       price: item.price,
       is_active: item.is_active,
-      category: item.category || ''
+      category: item.category || '',
+      is_slider: item.is_slider || false,
+      slider_min: item.slider_min ?? 1,
+      slider_max: item.slider_max ?? 100,
+      slider_step: item.slider_step ?? 1,
+      unit_price: item.unit_price ?? 10,
+      unit_name: item.unit_name || ''
     });
   };
 
@@ -163,7 +181,13 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
       amount: '',
       price: 0,
       is_active: true,
-      category: ''
+      category: '',
+      is_slider: false,
+      slider_min: 1,
+      slider_max: 100,
+      slider_step: 1,
+      unit_price: 10,
+      unit_name: ''
     });
     setError('');
     setSuccess('');
@@ -299,6 +323,76 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
               />
             </div>
 
+            <div className="p-4 border border-border rounded-lg space-y-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_slider"
+                  checked={shopFormData.is_slider}
+                  onChange={(e) => setShopFormData({ ...shopFormData, is_slider: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="is_slider" className="text-sm font-medium">
+                  Товар с ползунком (покупатель выбирает количество)
+                </label>
+              </div>
+
+              {shopFormData.is_slider && (
+                <div className="space-y-3 pl-6 border-l-2 border-primary/30">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Название единицы (напр: фишка, монета)</label>
+                    <Input
+                      value={shopFormData.unit_name}
+                      onChange={(e) => setShopFormData({ ...shopFormData, unit_name: e.target.value })}
+                      placeholder="фишка"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Цена за 1 единицу (₽)</label>
+                    <Input
+                      type="number"
+                      value={shopFormData.unit_price}
+                      onChange={(e) => setShopFormData({ ...shopFormData, unit_price: Number(e.target.value) })}
+                      placeholder="10"
+                      min="1"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Мин.</label>
+                      <Input
+                        type="number"
+                        value={shopFormData.slider_min}
+                        onChange={(e) => setShopFormData({ ...shopFormData, slider_min: Number(e.target.value) })}
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Макс.</label>
+                      <Input
+                        type="number"
+                        value={shopFormData.slider_max}
+                        onChange={(e) => setShopFormData({ ...shopFormData, slider_max: Number(e.target.value) })}
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Шаг</label>
+                      <Input
+                        type="number"
+                        value={shopFormData.slider_step}
+                        onChange={(e) => setShopFormData({ ...shopFormData, slider_step: Number(e.target.value) })}
+                        min="1"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Покупатель выберет от {shopFormData.slider_min} до {shopFormData.slider_max} {shopFormData.unit_name || 'ед.'} с шагом {shopFormData.slider_step}. Итоговая цена = кол-во × {shopFormData.unit_price} ₽
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -373,7 +467,14 @@ export default function ShopManagement({ shopItems, isLoading, onRefresh }: Shop
                         </div>
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <span>{item.amount}</span>
-                          <span className="font-semibold text-primary">{item.price} ₽</span>
+                          {item.is_slider ? (
+                            <span className="font-semibold text-primary">{item.unit_price} ₽/{item.unit_name || 'ед.'}</span>
+                          ) : (
+                            <span className="font-semibold text-primary">{item.price} ₽</span>
+                          )}
+                          {item.is_slider && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/15 text-blue-400">ползунок</span>
+                          )}
                         </div>
                       </div>
                     </div>
