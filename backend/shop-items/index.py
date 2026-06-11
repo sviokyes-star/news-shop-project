@@ -100,11 +100,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             unit_price = int(body_data.get('unit_price', 0))
             unit_name = body_data.get('unit_name', '').strip()
             
-            if not name or not amount or price is None:
+            if not name or price is None:
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'name, amount, and price are required'})
+                    'body': json.dumps({'error': 'name and price are required'})
                 }
             
             escaped_name = name.replace("'", "''")

@@ -61,7 +61,6 @@ export default function ShopItemForm({ formData, editingId, error, success, onCh
             value={formData.amount}
             onChange={(e) => set({ amount: e.target.value })}
             placeholder="1000 монет, 30 дней, и т.д."
-            required
           />
         </div>
 
