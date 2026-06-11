@@ -21,6 +21,12 @@ interface Product {
   name: string;
   amount: string;
   price: number;
+  is_slider: boolean;
+  slider_min: number;
+  slider_max: number;
+  slider_step: number;
+  unit_price: number;
+  unit_name: string;
 }
 
 interface SteamUser {
