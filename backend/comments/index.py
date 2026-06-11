@@ -251,18 +251,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
             comment_owner_steam_id = result[0]
 
-            cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (steam_id,))
+            cur.execute('SELECT is_admin, is_moderator FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (steam_id,))
             admin_row = cur.fetchone()
-            is_admin = admin_row and admin_row[0]
+            is_admin = bool(admin_row and admin_row[0])
+            is_moderator = bool(admin_row and admin_row[1])
 
-            if comment_owner_steam_id != steam_id and not is_admin:
+            if comment_owner_steam_id != steam_id and not is_admin and not is_moderator:
                 return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'You can only delete your own comments'})}
 
             # Удаляем комментарий и дочерние
             cur.execute('DELETE FROM t_p15345778_news_shop_project.comments WHERE id = %s OR parent_comment_id = %s', (comment_id, comment_id))
 
-            # Бан автора (только для админа)
-            if is_admin and ban_type in ('ban_60', 'ban_permanent') and comment_owner_steam_id:
+            # Бан автора (для админа и модератора)
+            if (is_admin or is_moderator) and ban_type in ('ban_60', 'ban_permanent') and comment_owner_steam_id:
                 if ban_type == 'ban_60':
                     cur.execute('''
                         INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, banned_by_name, reason, expires_at)

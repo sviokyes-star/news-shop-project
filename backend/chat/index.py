@@ -240,9 +240,10 @@ def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
         conn.close()
         return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
 
-    cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (requester_id,))
+    cur.execute('SELECT is_admin, is_moderator FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (requester_id,))
     result = cur.fetchone()
     is_admin = bool(result and result[0])
+    is_moderator = bool(result and result[1])
     
     params = event.get('queryStringParameters') or {}
     message_id = body_data.get('message_id') or params.get('message_id')
@@ -266,7 +267,7 @@ def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
     msg_author = msg_row[0]
 
     # Обычный пользователь может удалять только своё сообщение и без бана
-    if not is_admin:
+    if not is_admin and not is_moderator:
         if msg_author != requester_id:
             cur.close()
             conn.close()

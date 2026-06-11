@@ -47,6 +47,8 @@ export default function Comments({ newsId }: CommentsProps) {
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [userNickname, setUserNickname] = useState<string | null>(null);
+  const [isModerator, setIsModerator] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const loadUserNickname = async () => {
@@ -57,6 +59,8 @@ export default function Comments({ newsId }: CommentsProps) {
           );
           const data = await response.json();
           setUserNickname(data.user.nickname || user.personaName);
+          setIsModerator(data.user.is_moderator || false);
+          setIsAdmin(data.user.is_admin || false);
         } catch (error) {
           setUserNickname(user.personaName);
         }
@@ -323,7 +327,15 @@ export default function Comments({ newsId }: CommentsProps) {
                   Удалить
                 </button>
               )}
-
+              {user && comment.steam_id !== user.steamId && (isAdmin || isModerator) && (
+                <button
+                  onClick={() => handleDelete(comment.id, false)}
+                  className="text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+                >
+                  <Icon name="Trash2" size={16} />
+                  Удалить
+                </button>
+              )}
             </div>
           </div>
         </div>

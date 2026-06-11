@@ -269,7 +269,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
                     <Icon name="Trash2" size={14} />
                   </Button>
                 )}
-                {isAdmin && msg.steamId !== user?.steamId && (
+                {(isAdmin || isModerator) && msg.steamId !== user?.steamId && (
                   <Button
                     variant="ghost"
                     size="sm"
