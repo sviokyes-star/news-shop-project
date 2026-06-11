@@ -235,7 +235,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
         </Card>
       )}
 
-      <div id="topup-products" className="space-y-6">
+      <div id="topup-products" className="grid gap-2">
         {products.map((product) => {
           const qty = sliderValues[product.id] ?? product.slider_min;
           const totalPrice = product.is_slider ? qty * product.unit_price : product.price;
@@ -243,62 +243,50 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
           return (
             <Card
               key={product.id}
-              className="group p-8 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 bg-card/50 backdrop-blur"
+              className="group px-4 py-3 border-border hover:border-primary/50 transition-all duration-200 bg-card/50 backdrop-blur"
             >
-              <div className="flex items-center justify-between gap-8">
-                <div className="flex items-center gap-6 flex-1">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                    <Icon name="Coins" size={40} className="text-primary" />
-                  </div>
-
-                  <div className="space-y-3 flex-1">
-                    <h3 className="text-3xl font-bold">{product.name}</h3>
-                    <p className="text-xl text-primary font-semibold">{product.amount}</p>
-
-                    {product.is_slider && (
-                      <div className="space-y-2 pt-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Количество:</span>
-                          <span className="font-bold text-lg">{qty} {product.unit_name}</span>
-                        </div>
-                        <Slider
-                          min={product.slider_min}
-                          max={product.slider_max}
-                          step={product.slider_step}
-                          value={[qty]}
-                          onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
-                          className="w-full max-w-xs"
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground max-w-xs">
-                          <span>{product.slider_min}</span>
-                          <span>{product.slider_max}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                  <Icon name="Coins" size={18} className="text-primary" />
                 </div>
 
-                <div className="flex items-center gap-8">
-                  <div className="text-right">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-5xl font-bold">{totalPrice}</span>
-                      <span className="text-2xl text-muted-foreground">₽</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm leading-tight truncate">{product.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{product.amount}</p>
+
+                  {product.is_slider && (
+                    <div className="flex items-center gap-3 mt-2">
+                      <Slider
+                        min={product.slider_min}
+                        max={product.slider_max}
+                        step={product.slider_step}
+                        value={[qty]}
+                        onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
+                        className="w-32"
+                      />
+                      <span className="text-xs font-semibold text-foreground whitespace-nowrap">{qty} {product.unit_name}</span>
                     </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="text-right">
+                    <span className="text-xl font-bold">{totalPrice}</span>
+                    <span className="text-sm text-muted-foreground ml-0.5">₽</span>
                     {product.is_slider && (
-                      <p className="text-sm text-muted-foreground">{product.unit_price} ₽ / {product.unit_name}</p>
+                      <p className="text-xs text-muted-foreground">{product.unit_price} ₽/{product.unit_name}</p>
                     )}
                   </div>
-
                   <Button
-                    size="lg"
-                    className="h-14 px-8 text-lg font-semibold shadow-lg shadow-primary/20 group-hover:shadow-xl group-hover:shadow-primary/30"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
                     onClick={() => handleBuy(product, product.is_slider ? qty : undefined)}
                     disabled={!user || purchasingItemId === product.id}
                   >
                     {purchasingItemId === product.id ? (
-                      <><Icon name="Loader2" size={24} className="animate-spin mr-2" />Покупка...</>
+                      <Icon name="Loader2" size={14} className="animate-spin" />
                     ) : (
-                      <><Icon name="ShoppingCart" size={24} className="mr-2" />Купить</>
+                      <><Icon name="ShoppingCart" size={14} className="mr-1" />Купить</>
                     )}
                   </Button>
                 </div>
