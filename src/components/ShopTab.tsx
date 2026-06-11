@@ -102,7 +102,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
 
   const handleTopUp = async (productId?: number) => {
     if (!user) {
-      alert('Войдите через Steam для пополнения баланса');
+      toast({ title: 'Войдите через Steam для пополнения баланса', variant: 'destructive' });
       return;
     }
 
@@ -112,7 +112,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
     } else if (customAmount) {
       const amount = parseFloat(customAmount);
       if (isNaN(amount) || amount < 10) {
-        alert('Минимальная сумма пополнения: 10 ₽');
+        toast({ title: 'Минимальная сумма пополнения: 10 ₽', variant: 'destructive' });
         return;
       }
       selectedProduct = products.find(p => p.price === amount) || products[0];
@@ -121,7 +121,7 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
     }
 
     if (!selectedProduct) {
-      alert('Нет доступных товаров для пополнения');
+      toast({ title: 'Нет доступных товаров для пополнения', variant: 'destructive' });
       return;
     }
 
@@ -143,11 +143,11 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
         setIsTopUpDialogOpen(false);
         setCustomAmount('');
       } else {
-        alert(data.error || 'Ошибка при создании платежа');
+        toast({ title: 'Ошибка при создании платежа', description: data.error, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Payment creation failed:', error);
-      alert('Ошибка при создании платежа');
+      toast({ title: 'Ошибка при создании платежа', variant: 'destructive' });
     } finally {
       setIsCreatingPayment(false);
     }
