@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
@@ -30,6 +31,27 @@ interface LobbyMatchCardProps {
   onReloadLobby: () => void;
 }
 
+function useReadyCountdown(deadline: string | null) {
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (!deadline) { setSecondsLeft(null); return; }
+    const calc = () => {
+      const diff = Math.floor((new Date(deadline).getTime() - Date.now()) / 1000);
+      setSecondsLeft(diff > 0 ? diff : 0);
+    };
+    calc();
+    const t = setInterval(calc, 1000);
+    return () => clearInterval(t);
+  }, [deadline]);
+  return secondsLeft;
+}
+
+function formatCountdown(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
 export default function LobbyMatchCard({
   lobby, player1, player2, user, isParticipant, isTournamentAdmin,
   showReportPanel, setShowReportPanel,
@@ -39,6 +61,42 @@ export default function LobbyMatchCard({
   onScreenshotChange, onRemoveScreenshot, onClearScreenshots, onUploadScreenshot,
   setIsReporting, onReloadLobby,
 }: LobbyMatchCardProps) {
+  const [isSettingReady, setIsSettingReady] = useState(false);
+  const secondsLeft = useReadyCountdown(lobby.ready_deadline);
+
+  const bothPlayersPresent = !!(lobby.player1_steam_id && lobby.player2_steam_id);
+  const isMyTurn = isParticipant && lobby.status !== 'completed' && !lobby.is_dispute && bothPlayersPresent;
+  const amPlayer1 = user?.steamId === lobby.player1_steam_id;
+  const myReady = amPlayer1 ? lobby.player1_ready : lobby.player2_ready;
+  const showReadyBlock = isMyTurn && !myReady;
+  const needReadyPhase = bothPlayersPresent && lobby.status === 'waiting' && !(lobby.player1_ready && lobby.player2_ready);
+
+  const handleReady = async () => {
+    if (!user) return;
+    setIsSettingReady(true);
+    try {
+      const res = await fetch(func2url['match-lobby'], {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
+        body: JSON.stringify({
+          action: 'set_ready',
+          tournament_id: Number(tournamentId),
+          round_index: Number(roundIndex),
+          match_index: Number(matchIndex),
+          steam_id: user.steamId,
+        }),
+      });
+      if (res.ok) {
+        await onReloadLobby();
+      } else {
+        const d = await res.json();
+        toast({ title: 'Ошибка', description: d.error, variant: 'destructive' });
+      }
+    } finally {
+      setIsSettingReady(false);
+    }
+  };
+
   return (
     <Card className="p-5 mb-6 border-border bg-card/60">
       <div className="flex items-center justify-between gap-4">
@@ -137,8 +195,44 @@ export default function LobbyMatchCard({
           </div>
         )}
 
-        {/* Кнопка результата — участник, не завершён, не спор, оба игрока определены */}
-        {isParticipant && lobby.status !== 'completed' && !lobby.is_dispute && lobby.player1_steam_id && lobby.player2_steam_id && (() => {
+        {/* Блок готовности */}
+        {needReadyPhase && (
+          <div className="space-y-2">
+            {/* Таймер */}
+            {lobby.ready_deadline && secondsLeft !== null && (
+              <div className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border ${secondsLeft <= 60 ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500'}`}>
+                <Icon name="Timer" size={15} />
+                До технической победы: {formatCountdown(secondsLeft)}
+              </div>
+            )}
+            {/* Статус игроков */}
+            <div className="flex gap-2">
+              {[
+                { player: player1, ready: lobby.player1_ready },
+                { player: player2, ready: lobby.player2_ready },
+              ].map(({ player, ready }, i) => player && (
+                <div key={i} className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${ready ? 'bg-green-500/10 border-green-500/30 text-green-500' : 'bg-muted/30 border-border text-muted-foreground'}`}>
+                  <Icon name={ready ? 'CheckCircle2' : 'Clock'} size={13} />
+                  <span className="truncate">{player.persona_name}</span>
+                  <span className="ml-auto">{ready ? 'Готов' : 'Ждёт'}</span>
+                </div>
+              ))}
+            </div>
+            {/* Кнопка Готов */}
+            {showReadyBlock && (
+              <Button className="w-full gap-2" onClick={handleReady} disabled={isSettingReady}>
+                {isSettingReady ? <Icon name="Loader2" size={16} className="animate-spin" /> : <Icon name="CheckCheck" size={16} />}
+                Я готов
+              </Button>
+            )}
+            {isParticipant && myReady && needReadyPhase && (
+              <p className="text-center text-xs text-green-500 font-medium">Вы готовы — ждём соперника</p>
+            )}
+          </div>
+        )}
+
+        {/* Кнопка результата — участник, не завершён, не спор, оба игрока определены и оба готовы */}
+        {isParticipant && lobby.status !== 'completed' && !lobby.is_dispute && lobby.player1_steam_id && lobby.player2_steam_id && lobby.player1_ready && lobby.player2_ready && (() => {
           const myVote = user?.steamId === lobby.player1_steam_id
             ? lobby.player1_reported_winner
             : lobby.player2_reported_winner;

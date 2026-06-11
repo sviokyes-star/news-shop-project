@@ -31,6 +31,9 @@ export interface Lobby {
   player2_reported_winner: string | null;
   is_dispute: boolean;
   admin_steam_id: string | null;
+  player1_ready: boolean;
+  player2_ready: boolean;
+  ready_deadline: string | null;
 }
 
 export interface LobbyData {

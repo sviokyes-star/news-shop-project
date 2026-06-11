@@ -5,6 +5,12 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 400
+    },
+    {
+      "name": "OPTIONS CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
     }
   ]
 }

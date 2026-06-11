@@ -240,7 +240,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         cur.execute(f"""
             SELECT id, player1_steam_id, player2_steam_id, winner_steam_id, status,
-                   player1_reported_winner, player2_reported_winner, is_dispute, admin_steam_id
+                   player1_reported_winner, player2_reported_winner, is_dispute, admin_steam_id,
+                   player1_ready, player2_ready,
+                   to_char(ready_deadline, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as ready_deadline
             FROM {SCHEMA}.match_lobbies
             WHERE tournament_id = {int(tournament_id)}
               AND round_index   = {int(round_index)}
@@ -258,10 +260,56 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     (tournament_id, round_index, match_index, status, player1_steam_id, player2_steam_id)
                 VALUES ({int(tournament_id)}, {int(round_index)}, {int(match_index)}, 'waiting', {p1v}, {p2v})
                 RETURNING id, player1_steam_id, player2_steam_id, winner_steam_id, status,
-                          player1_reported_winner, player2_reported_winner, is_dispute, admin_steam_id
+                          player1_reported_winner, player2_reported_winner, is_dispute, admin_steam_id,
+                          player1_ready, player2_ready,
+                          to_char(ready_deadline, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as ready_deadline
             """)
             lobby = cur.fetchone()
             conn.commit()
+
+        # Проверить дедлайн готовности — если прошёл, дать техническую победу готовому игроку
+        if lobby and lobby['ready_deadline'] and lobby['status'] == 'waiting' and lobby['player1_steam_id'] and lobby['player2_steam_id']:
+            from datetime import datetime, timezone
+            deadline_str = lobby['ready_deadline'].replace('+00:00', '')
+            deadline = datetime.fromisoformat(deadline_str).replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
+            if now > deadline:
+                p1r = lobby['player1_ready']
+                p2r = lobby['player2_ready']
+                if not (p1r and p2r):
+                    # Определяем техническую победу
+                    if p1r and not p2r:
+                        tech_winner = lobby['player1_steam_id']
+                        tech_loser_slot = 'player2'
+                    elif p2r and not p1r:
+                        tech_winner = lobby['player2_steam_id']
+                        tech_loser_slot = 'player1'
+                    else:
+                        # Оба не готовы — победа player1 по умолчанию
+                        tech_winner = lobby['player1_steam_id']
+                        tech_loser_slot = 'player2'
+                    tw_esc = tech_winner.replace("'", "''")
+                    cur.execute(f"""
+                        UPDATE {SCHEMA}.match_lobbies
+                        SET winner_steam_id = '{tw_esc}', status = 'completed', updated_at = NOW()
+                        WHERE id = {lobby['id']}
+                    """)
+                    sys_msg = f'⏰ Время вышло. Техническая победа присвоена игроку, нажавшему "Готов".'
+                    cur.execute(f"""
+                        INSERT INTO {SCHEMA}.lobby_messages (lobby_id, steam_id, persona_name, message)
+                        VALUES ({lobby['id']}, 'system', 'Система', '{sys_msg}')
+                    """)
+                    conn.commit()
+                    advance_winner(cur, conn, tournament_id, int(round_index), int(match_index), tech_winner)
+                    # Перечитать лобби
+                    cur.execute(f"""
+                        SELECT id, player1_steam_id, player2_steam_id, winner_steam_id, status,
+                               player1_reported_winner, player2_reported_winner, is_dispute, admin_steam_id,
+                               player1_ready, player2_ready,
+                               to_char(ready_deadline, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as ready_deadline
+                        FROM {SCHEMA}.match_lobbies WHERE id = {lobby['id']}
+                    """)
+                    lobby = cur.fetchone()
 
         lobby_id = lobby['id']
 
@@ -329,7 +377,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(f"""
             SELECT id, player1_steam_id, player2_steam_id, status,
                    player1_reported_winner, player2_reported_winner, is_dispute,
-                   round_index, match_index
+                   round_index, match_index,
+                   player1_ready, player2_ready, ready_deadline
             FROM {SCHEMA}.match_lobbies
             WHERE tournament_id = {int(tournament_id)}
               AND round_index   = {int(round_index)}
@@ -341,6 +390,54 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Лобби не найдено'})}
 
         lobby_id = lobby['id']
+
+        # ── Нажать "Готов" ───────────────────────────────────────────────────
+        if action == 'set_ready':
+            p1_id = lobby['player1_steam_id']
+            p2_id = lobby['player2_steam_id']
+            if steam_id not in [p1_id, p2_id]:
+                conn.close()
+                return {'statusCode': 403, 'headers': HEADERS,
+                        'body': json.dumps({'error': 'Только участники матча могут нажать Готов'})}
+            if lobby['status'] == 'completed':
+                conn.close()
+                return {'statusCode': 400, 'headers': HEADERS,
+                        'body': json.dumps({'error': 'Матч уже завершён'})}
+
+            field = 'player1_ready' if steam_id == p1_id else 'player2_ready'
+
+            # Если дедлайн ещё не установлен — установить (первый нажавший запускает таймер)
+            if not lobby['ready_deadline']:
+                cur.execute(f"""
+                    UPDATE {SCHEMA}.match_lobbies
+                    SET {field} = TRUE, ready_deadline = NOW() + INTERVAL '10 minutes', updated_at = NOW()
+                    WHERE id = {lobby_id}
+                """)
+            else:
+                cur.execute(f"""
+                    UPDATE {SCHEMA}.match_lobbies
+                    SET {field} = TRUE, updated_at = NOW()
+                    WHERE id = {lobby_id}
+                """)
+            conn.commit()
+
+            # Перечитать
+            cur.execute(f"SELECT player1_ready, player2_ready FROM {SCHEMA}.match_lobbies WHERE id = {lobby_id}")
+            updated = cur.fetchone()
+
+            # Если оба готовы — системное сообщение и переводим в active
+            if updated['player1_ready'] and updated['player2_ready']:
+                cur.execute(f"""
+                    UPDATE {SCHEMA}.match_lobbies SET status = 'active', updated_at = NOW() WHERE id = {lobby_id}
+                """)
+                sys_msg = '✅ Оба игрока готовы! Матч начался.'
+                cur.execute(f"""
+                    INSERT INTO {SCHEMA}.lobby_messages (lobby_id, steam_id, persona_name, message)
+                    VALUES ({lobby_id}, 'system', 'Система', '{sys_msg}')
+                """)
+                conn.commit()
+            conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'result': 'ready_set'})}
 
         # ── Загрузить скриншот в S3 и отправить в чат ───────────────────────
         if action == 'upload_screenshot':

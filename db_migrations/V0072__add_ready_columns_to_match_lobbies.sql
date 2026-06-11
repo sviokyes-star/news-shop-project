@@ -1,0 +1,4 @@
+ALTER TABLE t_p15345778_news_shop_project.match_lobbies
+  ADD COLUMN player1_ready BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN player2_ready BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN ready_deadline TIMESTAMP NULL;
