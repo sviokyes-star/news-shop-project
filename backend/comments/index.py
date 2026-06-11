@@ -236,6 +236,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             comment_id = body_data.get('comment_id')
             steam_id = body_data.get('steam_id')
             ban_type = body_data.get('ban_type', 'delete_only')  # delete_only | ban_60 | ban_permanent
+            reason = (body_data.get('reason') or '').strip() or None
+            banned_by_name = (body_data.get('banned_by_name') or '').strip() or None
 
             if not comment_id:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'comment_id required'})}
@@ -263,14 +265,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if is_admin and ban_type in ('ban_60', 'ban_permanent') and comment_owner_steam_id:
                 if ban_type == 'ban_60':
                     cur.execute('''
-                        INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
-                        VALUES (%s, %s, NOW() + INTERVAL '60 minutes')
-                    ''', (comment_owner_steam_id, steam_id))
+                        INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, banned_by_name, reason, expires_at)
+                        VALUES (%s, %s, %s, %s, NOW() + INTERVAL '60 minutes')
+                    ''', (comment_owner_steam_id, steam_id, banned_by_name, reason))
                 elif ban_type == 'ban_permanent':
                     cur.execute('''
-                        INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
-                        VALUES (%s, %s, NULL)
-                    ''', (comment_owner_steam_id, steam_id))
+                        INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, banned_by_name, reason, expires_at)
+                        VALUES (%s, %s, %s, %s, NULL)
+                    ''', (comment_owner_steam_id, steam_id, banned_by_name, reason))
 
             conn.commit()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'ban_type': ban_type})}

@@ -81,10 +81,12 @@ def get_users(cursor) -> Dict[str, Any]:
                (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online,
                u.last_online,
                cb.id as chat_ban_id,
-               cb.expires_at as chat_ban_expires
+               cb.expires_at as chat_ban_expires,
+               cb.banned_by_name as banned_by_name,
+               cb.reason as ban_reason
         FROM t_p15345778_news_shop_project.users u
         LEFT JOIN LATERAL (
-            SELECT id, expires_at FROM t_p15345778_news_shop_project.chat_bans
+            SELECT id, expires_at, banned_by_name, reason FROM t_p15345778_news_shop_project.chat_bans
             WHERE steam_id = u.steam_id AND (expires_at IS NULL OR expires_at > NOW())
             LIMIT 1
         ) cb ON true
@@ -96,11 +98,22 @@ def get_users(cursor) -> Dict[str, Any]:
     users_list = []
     for user in users:
         chat_banned = user['chat_ban_id'] is not None
-        chat_ban_expires = user['chat_ban_expires'].isoformat() if user['chat_ban_expires'] else None
+        chat_ban_expires = user['chat_ban_expires']
         is_blocked = bool(user['is_blocked']) or chat_banned
         block_reason = user['block_reason']
         if chat_banned and not block_reason:
-            block_reason = 'Заблокирован через чат' + (f' до {chat_ban_expires}' if chat_ban_expires else ' навсегда')
+            by = user.get('banned_by_name') or 'администратором'
+            reason = user.get('ban_reason')
+            if chat_ban_expires:
+                from datetime import timezone
+                expires_local = chat_ban_expires
+                expires_str = expires_local.strftime('%H:%M %d.%m.%Y')
+                time_part = f' до {expires_str}'
+            else:
+                time_part = ' навсегда'
+            reason_part = f' по причине "{reason}"' if reason else ''
+            block_reason = f'Заблокирован {by} через чат{reason_part}{time_part}'
+        chat_ban_expires_iso = chat_ban_expires.isoformat() if chat_ban_expires else None
         users_list.append({
             'id': user['id'],
             'steamId': user['steam_id'],
@@ -117,7 +130,7 @@ def get_users(cursor) -> Dict[str, Any]:
             'updatedAt': user['updated_at'].isoformat() if user['updated_at'] else None,
             'isOnline': user['is_online'],
             'lastOnline': user['last_online'].isoformat() if user['last_online'] else None,
-            'chatBanExpires': chat_ban_expires,
+            'chatBanExpires': chat_ban_expires_iso,
         })
     
     return {

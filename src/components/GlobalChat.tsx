@@ -154,14 +154,14 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
     setBanDialog({ open: true, messageId });
   };
 
-  const handleBanConfirm = async (banType: BanType) => {
+  const handleBanConfirm = async (banType: BanType, reason: string) => {
     if (!user || !banDialog.messageId) return;
     setIsBanning(true);
     try {
       await fetch(func2url.chat, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Steam-Id': user.steamId },
-        body: JSON.stringify({ message_id: banDialog.messageId, ban_type: banType }),
+        body: JSON.stringify({ message_id: banDialog.messageId, ban_type: banType, reason, banned_by_name: userNickname || user.personaName }),
       });
       setBanDialog({ open: false, messageId: null });
       await loadMessages();

@@ -245,6 +245,8 @@ def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
     message_id = body_data.get('message_id') or params.get('message_id')
     ban_type = body_data.get('ban_type', 'delete_only')  # delete_only | ban_60 | ban_permanent
     target_steam_id = body_data.get('target_steam_id')
+    reason = (body_data.get('reason') or '').strip() or None
+    banned_by_name = (body_data.get('banned_by_name') or '').strip() or None
     
     if not message_id:
         cur.close()
@@ -263,14 +265,14 @@ def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
     if ban_type != 'delete_only' and target_steam_id:
         if ban_type == 'ban_60':
             cur.execute('''
-                INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
-                VALUES (%s, %s, NOW() + INTERVAL '60 minutes')
-            ''', (target_steam_id, admin_steam_id))
+                INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, banned_by_name, reason, expires_at)
+                VALUES (%s, %s, %s, %s, NOW() + INTERVAL '60 minutes')
+            ''', (target_steam_id, admin_steam_id, banned_by_name, reason))
         elif ban_type == 'ban_permanent':
             cur.execute('''
-                INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, expires_at)
-                VALUES (%s, %s, NULL)
-            ''', (target_steam_id, admin_steam_id))
+                INSERT INTO t_p15345778_news_shop_project.chat_bans (steam_id, banned_by, banned_by_name, reason, expires_at)
+                VALUES (%s, %s, %s, %s, NULL)
+            ''', (target_steam_id, admin_steam_id, banned_by_name, reason))
     
     conn.commit()
     cur.close()

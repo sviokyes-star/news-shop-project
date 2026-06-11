@@ -209,14 +209,14 @@ export default function Comments({ newsId }: CommentsProps) {
     setBanDialog({ open: true, commentId });
   };
 
-  const confirmDelete = async (banType: BanType) => {
+  const confirmDelete = async (banType: BanType, reason: string) => {
     if (!banDialog.commentId) return;
     setIsBanning(true);
     try {
       const response = await fetch(func2url.comments, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment_id: banDialog.commentId, steam_id: user?.steamId, ban_type: banType }),
+        body: JSON.stringify({ comment_id: banDialog.commentId, steam_id: user?.steamId, ban_type: banType, reason, banned_by_name: userNickname || user?.personaName }),
       });
       const data = await response.json();
       if (data.success) {

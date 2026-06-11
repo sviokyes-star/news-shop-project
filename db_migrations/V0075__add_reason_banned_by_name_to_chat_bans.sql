@@ -1,0 +1,3 @@
+ALTER TABLE t_p15345778_news_shop_project.chat_bans
+  ADD COLUMN IF NOT EXISTS reason VARCHAR(500) NULL,
+  ADD COLUMN IF NOT EXISTS banned_by_name VARCHAR(255) NULL;
