@@ -155,8 +155,8 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
     try {
       await fetch(func2url.chat, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'X-User-Steam-Id': user.steamId },
-        body: JSON.stringify({ message_id: messageId, ban_type: 'delete_only' }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_id: messageId, ban_type: 'delete_only', steam_id: user.steamId }),
       });
       await loadMessages();
     } catch (error) {

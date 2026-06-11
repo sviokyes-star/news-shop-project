@@ -226,20 +226,23 @@ def hide_message(event: Dict[str, Any]) -> Dict[str, Any]:
     HEADERS = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
     headers = event.get('headers', {})
     admin_steam_id = headers.get('x-admin-steam-id') or headers.get('X-Admin-Steam-Id')
-    user_steam_id = headers.get('x-user-steam-id') or headers.get('X-User-Steam-Id')
-    requester_id = admin_steam_id or user_steam_id
-
-    if not requester_id:
-        return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
 
     conn = get_db_connection()
     cur = conn.cursor()
+
+    body_data = json.loads(event.get('body') or '{}')
+    user_steam_id = body_data.get('steam_id')
+    requester_id = admin_steam_id or user_steam_id
+
+    if not requester_id:
+        cur.close()
+        conn.close()
+        return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
 
     cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (requester_id,))
     result = cur.fetchone()
     is_admin = bool(result and result[0])
     
-    body_data = json.loads(event.get('body') or '{}')
     params = event.get('queryStringParameters') or {}
     message_id = body_data.get('message_id') or params.get('message_id')
     ban_type = body_data.get('ban_type', 'delete_only')  # delete_only | ban_60 | ban_permanent
