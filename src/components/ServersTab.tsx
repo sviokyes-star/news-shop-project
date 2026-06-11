@@ -18,7 +18,7 @@ interface Server {
 
 const GAME_ICONS: Record<string, string> = {
   'Counter-Strike 2': 'https://cdn.poehali.dev/files/0ec16141-74ad-4adf-8da0-81c446eced42.png',
-  'Counter-Strike: Source': 'https://upload.wikimedia.org/wikipedia/ru/d/d7/Counter-Strike_Source_cover.jpg',
+  'Counter-Strike: Source': 'https://cdn.poehali.dev/projects/0cd5ea72-8c09-43b2-b92c-a0fdee84371e/files/f6baf602-271d-43a1-9f02-bdf68ef71a66.jpg',
 };
 
 const ServersTab = () => {
