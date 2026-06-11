@@ -163,10 +163,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Record transaction
         escaped_item_name = item_name.replace("'", "''")
+        escaped_item_amount = item_amount.replace("'", "''")
         cursor.execute(f"""
             INSERT INTO t_p15345778_news_shop_project.balance_transactions 
-            (steam_id, persona_name, amount, transaction_type, description)
-            VALUES ('{escaped_steam_id}', '{escaped_persona_name}', {int(-item_price)}, 'purchase', 'Purchased: {escaped_item_name}')
+            (steam_id, amount, transaction_type, description)
+            VALUES ('{escaped_steam_id}', {int(-item_price)}, 'purchase', '{escaped_item_name}{f" — {escaped_item_amount}" if escaped_item_amount else ""}')
         """)
         
         # Record purchase
