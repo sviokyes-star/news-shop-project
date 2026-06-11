@@ -258,7 +258,10 @@ def update_user(body_data: Dict[str, Any], cursor, conn) -> Dict[str, Any]:
                 (steam_id,)
             )
         else:
-            pass
+            cursor.execute(
+                "DELETE FROM t_p15345778_news_shop_project.chat_bans WHERE steam_id = %s",
+                (steam_id,)
+            )
         conn.commit()
 
     return {
