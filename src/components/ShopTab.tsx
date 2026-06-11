@@ -284,9 +284,21 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                                 onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
                                 className="w-32"
                               />
-                              <span className="text-xs font-semibold text-foreground whitespace-nowrap">
-                                {multiplier > 1 ? totalUnits : qty} {product.unit_name}
-                              </span>
+                              <input
+                                type="number"
+                                min={product.slider_min}
+                                max={product.slider_max}
+                                step={product.slider_step}
+                                value={multiplier > 1 ? totalUnits : qty}
+                                onChange={(e) => {
+                                  let raw = Number(e.target.value);
+                                  if (multiplier > 1) raw = Math.round(raw / multiplier);
+                                  const clamped = Math.max(product.slider_min, Math.min(product.slider_max, raw));
+                                  setSliderValues(prev => ({ ...prev, [product.id]: clamped }));
+                                }}
+                                className="w-20 text-xs font-semibold bg-background border border-border rounded px-2 py-1 text-center focus:outline-none focus:border-primary"
+                              />
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">{product.unit_name}</span>
                             </div>
                           )}
                         </div>
