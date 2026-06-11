@@ -8,6 +8,18 @@ import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import func2url from '../../backend/func2url.json';
 
+interface Transaction {
+  id: number;
+  amount: number;
+  type: string;
+  description: string;
+  created_at: string;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 interface Product {
   id: number;
   name: string;
@@ -43,6 +55,9 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
   const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [sliderValues, setSliderValues] = useState<Record<number, number>>({});
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<Transaction[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   useEffect(() => {
     if (user) loadBalance();
@@ -55,6 +70,20 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
     });
     setSliderValues(initial);
   }, [products]);
+
+  const loadHistory = async () => {
+    if (!user) return;
+    setIsLoadingHistory(true);
+    try {
+      const res = await fetch(`${func2url.balance}?steam_id=${user.steamId}&action=history`);
+      const data = await res.json();
+      setHistory(data.history || []);
+    } catch (e) {
+      console.error('Failed to load history', e);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   const loadBalance = async () => {
     if (!user) return;
@@ -191,6 +220,54 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Dialog open={isHistoryOpen} onOpenChange={(open) => { setIsHistoryOpen(open); if (open) loadHistory(); }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="lg" className="gap-2">
+                    <Icon name="ReceiptText" size={18} />
+                    История
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
+                  <DialogHeader>
+                    <DialogTitle>История операций</DialogTitle>
+                    <DialogDescription>Пополнения и расходы баланса</DialogDescription>
+                  </DialogHeader>
+                  <div className="overflow-y-auto flex-1 -mx-6 px-6">
+                    {isLoadingHistory ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        <Icon name="Loader2" size={28} className="animate-spin mx-auto mb-2" />
+                        Загрузка...
+                      </div>
+                    ) : history.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        <Icon name="ReceiptText" size={28} className="mx-auto mb-2" />
+                        Операций пока нет
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {history.map((tx) => {
+                          const isIncome = tx.amount > 0;
+                          return (
+                            <div key={tx.id} className="flex items-center gap-3 py-3">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isIncome ? 'bg-green-500/15' : 'bg-red-500/15'}`}>
+                                <Icon name={isIncome ? 'ArrowDownLeft' : 'ArrowUpRight'} size={14} className={isIncome ? 'text-green-500' : 'text-red-400'} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{tx.description || tx.type}</p>
+                                <p className="text-xs text-muted-foreground">{formatDate(tx.created_at)}</p>
+                              </div>
+                              <span className={`text-sm font-bold whitespace-nowrap ${isIncome ? 'text-green-500' : 'text-red-400'}`}>
+                                {isIncome ? '+' : ''}{tx.amount} ₽
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={isTopUpDialogOpen} onOpenChange={setIsTopUpDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="lg" className="gap-2" disabled={isCreatingPayment}>

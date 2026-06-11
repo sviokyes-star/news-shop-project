@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import ProfileHero from '@/components/profile/ProfileHero';
 import ProfileFriends from '@/components/profile/ProfileFriends';
 import ProfileTournaments from '@/components/profile/ProfileTournaments';
-import ProfileHistory from '@/components/profile/ProfileHistory';
+
 
 interface FriendRequest {
   steamId: string;
@@ -165,8 +165,6 @@ const Profile = () => {
         />
 
         <ProfileTournaments tournaments={profileData.tournaments} />
-
-        <ProfileHistory steamId={user.steamId} />
       </div>
     </main>
   );
