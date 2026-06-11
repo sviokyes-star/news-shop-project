@@ -46,6 +46,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [userNickname, setUserNickname] = useState<string | null>(null);
@@ -93,6 +94,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
       );
       const data = await response.json();
       setUserNickname(data.user.nickname || user.personaName);
+      setIsModerator(data.user.is_moderator || false);
     } catch (error) {
       setUserNickname(user.personaName);
     }
@@ -315,7 +317,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
             <Icon name="User" size={16} className="mr-2" />
             Войти для отправки
           </Button>
-        ) : isFrozen && !isAdmin ? (
+        ) : isFrozen && !isAdmin && !isModerator ? (
           <div className="w-full p-3 bg-muted/50 rounded-lg border border-border flex items-center gap-2">
             <Icon name="Lock" size={16} className="text-muted-foreground" />
             <p className="text-sm text-muted-foreground">

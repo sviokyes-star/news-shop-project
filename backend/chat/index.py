@@ -145,11 +145,12 @@ def post_message(event: Dict[str, Any]) -> Dict[str, Any]:
     is_frozen_row = cur.fetchone()
     is_frozen = is_frozen_row[0] if is_frozen_row else False
     
-    cur.execute('SELECT is_admin FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (steam_id,))
+    cur.execute('SELECT is_admin, is_moderator FROM t_p15345778_news_shop_project.users WHERE steam_id = %s', (steam_id,))
     result = cur.fetchone()
     is_admin = result[0] if result else False
-    
-    if is_frozen and not is_admin:
+    is_moderator = result[1] if result else False
+
+    if is_frozen and not is_admin and not is_moderator:
         cur.close()
         conn.close()
         return {
