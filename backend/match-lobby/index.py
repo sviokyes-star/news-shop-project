@@ -368,11 +368,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         lobby_id = lobby['id']
 
         cur.execute(f"""
-            SELECT id, steam_id, persona_name, avatar_url, message, image_url,
-                   to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as created_at
-            FROM {SCHEMA}.lobby_messages
-            WHERE lobby_id = {lobby_id}
-            ORDER BY created_at ASC
+            SELECT lm.id, lm.steam_id,
+                   CASE WHEN lm.steam_id = 'system' THEN lm.persona_name
+                        ELSE COALESCE(u.nickname, u.persona_name, lm.persona_name)
+                   END as persona_name,
+                   COALESCE(u.avatar_url, lm.avatar_url) as avatar_url,
+                   lm.message, lm.image_url,
+                   to_char(lm.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"+00:00"') as created_at
+            FROM {SCHEMA}.lobby_messages lm
+            LEFT JOIN {SCHEMA}.users u ON lm.steam_id = u.steam_id AND lm.steam_id != 'system'
+            WHERE lm.lobby_id = {lobby_id}
+            ORDER BY lm.created_at ASC
         """)
         messages = [dict(r) for r in cur.fetchall()]
 

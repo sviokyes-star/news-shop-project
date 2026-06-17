@@ -62,7 +62,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if leaderboard_game:
                 esc_game = leaderboard_game.lower().replace("'", "''")
                 cursor.execute(f"""
-                    SELECT pr.steam_id, pr.persona_name, pr.points, pr.wins, pr.losses,
+                    SELECT pr.steam_id, COALESCE(u.nickname, u.persona_name, pr.persona_name) as persona_name, pr.points, pr.wins, pr.losses,
                            COALESCE(u.avatar_url, '') as avatar_url,
                            ROW_NUMBER() OVER (ORDER BY pr.points DESC) as position
                     FROM {SCHEMA}.player_rankings pr
