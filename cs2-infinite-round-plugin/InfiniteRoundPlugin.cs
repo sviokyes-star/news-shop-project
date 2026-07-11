@@ -24,6 +24,12 @@ public class InfiniteRoundPlugin : BasePlugin
     {
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
 
+        // Главный механизм: перехватываем момент завершения раунда ДО того,
+        // как игра обработает его (Pre-hook), и блокируем событие целиком.
+        // Это работает независимо от причины завершения — истечение времени,
+        // взрыв бомбы, обезвреживание, уничтожение команды и т.д.
+        RegisterEventHandler<EventRoundEnd>(OnRoundEnd, HookMode.Pre);
+
         AddTimer(1.0f, ApplyInfiniteRound);
 
         // Периодически подтверждаем настройки — некоторые серверы/плагины
@@ -42,6 +48,17 @@ public class InfiniteRoundPlugin : BasePlugin
         if (_infiniteEnabled)
         {
             ApplyInfiniteRound();
+        }
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
+    {
+        if (_infiniteEnabled)
+        {
+            // Полностью блокируем завершение раунда — раунд продолжается.
+            return HookResult.Stop;
         }
 
         return HookResult.Continue;
