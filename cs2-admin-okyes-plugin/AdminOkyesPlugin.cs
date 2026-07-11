@@ -94,6 +94,11 @@ public class AdminOkyesPlugin : BasePlugin
             ShowServerMenu(controller);
         });
 
+        menu.AddMenuOption("Управление Таймером", (controller, option) =>
+        {
+            ShowTimerMenu(controller);
+        });
+
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
     }
 
@@ -181,6 +186,46 @@ public class AdminOkyesPlugin : BasePlugin
         menu.AddMenuOption("← Назад", (controller, option) =>
         {
             ShowServerMenu(controller);
+        });
+
+        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+    }
+
+    private void ShowTimerMenu(CCSPlayerController player)
+    {
+        var menu = new CenterHtmlMenu("Управление Таймером");
+
+        menu.AddMenuOption("Добавить старт", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для настройки таймера");
+                return;
+            }
+
+            if (controller.PlayerPawn.Value == null)
+                return;
+
+            Server.NextFrame(() => controller.ExecuteClientCommand("css_setstart"));
+        });
+
+        menu.AddMenuOption("Добавить финиш", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для настройки таймера");
+                return;
+            }
+
+            if (controller.PlayerPawn.Value == null)
+                return;
+
+            Server.NextFrame(() => controller.ExecuteClientCommand("css_setend"));
+        });
+
+        menu.AddMenuOption("← Назад", (controller, option) =>
+        {
+            ShowMainMenu(controller);
         });
 
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
