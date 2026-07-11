@@ -302,7 +302,7 @@ public class TimerPlugin : BasePlugin
                     
                     if (isInStart && !wasInStart)
                     {
-                        player.PrintToCenter("🟩 ЗОНА СТАРТА");
+                        player.PrintToCenterHtml("<br><br>🟩 ЗОНА СТАРТА");
                         StartTimer(player);
                     }
                     
@@ -316,7 +316,7 @@ public class TimerPlugin : BasePlugin
                     
                     if (isInEnd && !wasInEnd)
                     {
-                        player.PrintToCenter("🟥 ЗОНА ФИНИША");
+                        player.PrintToCenterHtml("<br><br>🟥 ЗОНА ФИНИША");
                         
                         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
                         {
@@ -334,7 +334,7 @@ public class TimerPlugin : BasePlugin
             bool inStart = _inStartZone.ContainsKey(userId) && _inStartZone[userId];
             bool inEnd = _inEndZone.ContainsKey(userId) && _inEndZone[userId];
             string hudText = BuildHudText(userId, mapName, inStart, inEnd);
-            player.PrintToCenter(hudText);
+            player.PrintToCenterHtml($"<br><br>{hudText}");
         }
     }
 
@@ -493,7 +493,7 @@ public class TimerPlugin : BasePlugin
             hudParts.Add($"{FormatTime(currentTime)}");
             hudParts.Add($"Личный рекорд: {personalRecord}");
             hudParts.Add($"Рекорд карты{mapRecordHolder}: {mapRecord}");
-            return string.Join("\n", hudParts);
+            return string.Join("<br>", hudParts);
         }
 
         // Если в зоне финиша
@@ -502,7 +502,7 @@ public class TimerPlugin : BasePlugin
             hudParts.Add($"Время: {FormatTime(_lastFinishTime[userId])}");
             hudParts.Add($"Личный рекорд: {personalRecord}");
             hudParts.Add($"Рекорд карты{mapRecordHolder}: {mapRecord}");
-            return string.Join("\n", hudParts);
+            return string.Join("<br>", hudParts);
         }
 
         // Обычный HUD (во время прохождения)
@@ -515,7 +515,7 @@ public class TimerPlugin : BasePlugin
         hudParts.Add($"Личный рекорд: {personalRecord}");
         hudParts.Add($"Рекорд карты{mapRecordHolder}: {mapRecord}");
 
-        string result = string.Join("\n", hudParts);
+        string result = string.Join("<br>", hudParts);
         
         // Логируем раз в секунду
         float now = GetCurrentTime();
