@@ -82,7 +82,7 @@ public class AdminOkyesPlugin : BasePlugin
 
     private void ShowMainMenu(CCSPlayerController player)
     {
-        var menu = new CenterHtmlMenu("Admin [Okyes]");
+        var menu = new ChatMenu("Admin [Okyes]");
 
         menu.AddMenuOption("Управление игроками", (controller, option) =>
         {
@@ -99,12 +99,12 @@ public class AdminOkyesPlugin : BasePlugin
             ShowTimerMenu(controller);
         });
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        MenuManager.OpenChatMenu(player, menu);
     }
 
     private void ShowPlayersMenu(CCSPlayerController player)
     {
-        var menu = new CenterHtmlMenu("Управление игроками");
+        var menu = new ChatMenu("Управление игроками");
 
         menu.AddMenuOption("Забанить", (controller, option) =>
         {
@@ -143,12 +143,12 @@ public class AdminOkyesPlugin : BasePlugin
             ShowMainMenu(controller);
         });
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        MenuManager.OpenChatMenu(player, menu);
     }
 
     private void ShowServerMenu(CCSPlayerController player)
     {
-        var menu = new CenterHtmlMenu("Управление сервером");
+        var menu = new ChatMenu("Управление сервером");
 
         menu.AddMenuOption("Сменить карту", (controller, option) =>
         {
@@ -167,12 +167,12 @@ public class AdminOkyesPlugin : BasePlugin
             ShowMainMenu(controller);
         });
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        MenuManager.OpenChatMenu(player, menu);
     }
 
     private void ShowMapSelectMenu(CCSPlayerController player)
     {
-        var menu = new CenterHtmlMenu("Выберите карту");
+        var menu = new ChatMenu("Выберите карту");
 
         foreach (var map in Maps)
         {
@@ -188,12 +188,12 @@ public class AdminOkyesPlugin : BasePlugin
             ShowServerMenu(controller);
         });
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        MenuManager.OpenChatMenu(player, menu);
     }
 
     private void ShowTimerMenu(CCSPlayerController player)
     {
-        var menu = new CenterHtmlMenu("Управление Таймером");
+        var menu = new ChatMenu("Управление Таймером");
 
         menu.AddMenuOption("Добавить старт", (controller, option) =>
         {
@@ -228,12 +228,12 @@ public class AdminOkyesPlugin : BasePlugin
             ShowMainMenu(controller);
         });
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        MenuManager.OpenChatMenu(player, menu);
     }
 
     private void ShowPlayerSelectMenu(CCSPlayerController caller, string title, Action<CCSPlayerController> onSelect)
     {
-        var menu = new CenterHtmlMenu(title);
+        var menu = new ChatMenu(title);
 
         var players = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot).ToList();
 
@@ -256,7 +256,7 @@ public class AdminOkyesPlugin : BasePlugin
             ShowPlayersMenu(controller);
         });
 
-        MenuManager.OpenCenterHtmlMenu(this, caller, menu);
+        MenuManager.OpenChatMenu(caller, menu);
     }
 
     [ConsoleCommand("css_okban", "Забанить игрока")]
