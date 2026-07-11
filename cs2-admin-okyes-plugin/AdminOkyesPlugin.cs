@@ -206,7 +206,7 @@ public class AdminOkyesPlugin : BasePlugin
             if (controller.PlayerPawn.Value == null)
                 return;
 
-            Server.NextFrame(() => controller.ExecuteClientCommand("css_setstart"));
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setstart"));
         });
 
         menu.AddMenuOption("Добавить финиш", (controller, option) =>
@@ -220,7 +220,7 @@ public class AdminOkyesPlugin : BasePlugin
             if (controller.PlayerPawn.Value == null)
                 return;
 
-            Server.NextFrame(() => controller.ExecuteClientCommand("css_setend"));
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setend"));
         });
 
         menu.AddMenuOption("← Назад", (controller, option) =>
