@@ -31,9 +31,11 @@ public class TimerPlugin : BasePlugin
     private CounterStrikeSharp.API.Modules.Timers.Timer? _beamTimer;
     private readonly List<CBeam> _zoneBeams = new();
 
-    // Отступ сверху для сдвига окна таймера ниже центра экрана.
-    // Каждый "<br>" примерно на одну строку опускает текст ниже.
-    private const string HudTopOffset = "<br><br><br><br><br><br><br><br>";
+    // Отступ сверху для сдвига текста таймера ниже центра экрана.
+    // Используем margin-top у обёртки вместо пустых <br>, чтобы текст
+    // не "убегал" за пределы видимой области окна.
+    private const string HudTopOffset = "<div style=\"margin-top: 60px;\">";
+    private const string HudTopOffsetClose = "</div>";
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
@@ -306,7 +308,7 @@ public class TimerPlugin : BasePlugin
                     
                     if (isInStart && !wasInStart)
                     {
-                        player.PrintToCenterHtml($"{HudTopOffset}🟩 ЗОНА СТАРТА");
+                        player.PrintToCenterHtml($"{HudTopOffset}🟩 ЗОНА СТАРТА{HudTopOffsetClose}");
                         StartTimer(player);
                     }
                     
@@ -320,7 +322,7 @@ public class TimerPlugin : BasePlugin
                     
                     if (isInEnd && !wasInEnd)
                     {
-                        player.PrintToCenterHtml($"{HudTopOffset}🟥 ЗОНА ФИНИША");
+                        player.PrintToCenterHtml($"{HudTopOffset}🟥 ЗОНА ФИНИША{HudTopOffsetClose}");
                         
                         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
                         {
@@ -338,7 +340,7 @@ public class TimerPlugin : BasePlugin
             bool inStart = _inStartZone.ContainsKey(userId) && _inStartZone[userId];
             bool inEnd = _inEndZone.ContainsKey(userId) && _inEndZone[userId];
             string hudText = BuildHudText(userId, mapName, inStart, inEnd);
-            player.PrintToCenterHtml($"{HudTopOffset}{hudText}");
+            player.PrintToCenterHtml($"{HudTopOffset}{hudText}{HudTopOffsetClose}");
         }
     }
 
