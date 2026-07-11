@@ -34,7 +34,7 @@ public class TimerPlugin : BasePlugin
     // Отступ сверху для сдвига текста таймера ниже центра экрана.
     // Используем margin-top у обёртки вместо пустых <br>, чтобы текст
     // не "убегал" за пределы видимой области окна.
-    private const string HudTopOffset = "<div style=\"margin-top: 60px;\">";
+    private const string HudTopOffset = "<div style=\"margin-top: 400px;\">";
     private const string HudTopOffsetClose = "</div>";
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
