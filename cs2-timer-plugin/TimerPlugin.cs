@@ -30,6 +30,10 @@ public class TimerPlugin : BasePlugin
     
     private CounterStrikeSharp.API.Modules.Timers.Timer? _beamTimer;
     private readonly List<CBeam> _zoneBeams = new();
+
+    // Отступ сверху для сдвига окна таймера ниже центра экрана.
+    // Каждый "<br>" примерно на одну строку опускает текст ниже.
+    private const string HudTopOffset = "<br><br><br><br><br><br><br><br>";
     
     private string ZonesFilePath => Path.Combine(ModuleDirectory, "zones.json");
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
@@ -302,7 +306,7 @@ public class TimerPlugin : BasePlugin
                     
                     if (isInStart && !wasInStart)
                     {
-                        player.PrintToCenterHtml("<br><br>🟩 ЗОНА СТАРТА");
+                        player.PrintToCenterHtml($"{HudTopOffset}🟩 ЗОНА СТАРТА");
                         StartTimer(player);
                     }
                     
@@ -316,7 +320,7 @@ public class TimerPlugin : BasePlugin
                     
                     if (isInEnd && !wasInEnd)
                     {
-                        player.PrintToCenterHtml("<br><br>🟥 ЗОНА ФИНИША");
+                        player.PrintToCenterHtml($"{HudTopOffset}🟥 ЗОНА ФИНИША");
                         
                         if (_playerTimers.ContainsKey(userId) && _playerTimers[userId].IsRunning)
                         {
@@ -334,7 +338,7 @@ public class TimerPlugin : BasePlugin
             bool inStart = _inStartZone.ContainsKey(userId) && _inStartZone[userId];
             bool inEnd = _inEndZone.ContainsKey(userId) && _inEndZone[userId];
             string hudText = BuildHudText(userId, mapName, inStart, inEnd);
-            player.PrintToCenterHtml($"<br><br>{hudText}");
+            player.PrintToCenterHtml($"{HudTopOffset}{hudText}");
         }
     }
 
