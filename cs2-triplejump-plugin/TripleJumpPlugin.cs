@@ -16,9 +16,7 @@ public class TripleJumpPlugin : BasePlugin
     private readonly Dictionary<int, int> _jumpCount = new();
     private readonly Dictionary<int, bool> _wasOnGround = new();
     private readonly Dictionary<int, ulong> _lastJumpButton = new();
-    private readonly Dictionary<int, float> _lastAirJumpTime = new();
     private float _lastDebugTime = 0f;
-    private const float AirJumpCooldown = 0.25f;
 
     public override void Load(bool hotReload)
     {
@@ -70,19 +68,8 @@ public class TripleJumpPlugin : BasePlugin
             
             // Детектируем момент нажатия (переход от не нажата к нажата)
             bool justPressedJump = isJumping && !wasJumpPressed;
-
-            if (!_lastAirJumpTime.ContainsKey(userId))
-                _lastAirJumpTime[userId] = 0f;
-
-            float currentTime = Server.CurrentTime;
-
-            // Если клавиша прыжка удерживается (например банихоп) - разрешаем
-            // повторный воздушный прыжок по кулдауну, а не только по новому нажатию
-            bool canAirJumpByHold = isJumping && !isOnGround
-                && _jumpCount[userId] >= 1 && _jumpCount[userId] < 3
-                && (currentTime - _lastAirJumpTime[userId]) >= AirJumpCooldown;
-
-            if (justPressedJump || canAirJumpByHold)
+            
+            if (justPressedJump)
             {
                 float now = Server.CurrentTime;
                 if (now - _lastDebugTime > 0.5f)
@@ -92,7 +79,7 @@ public class TripleJumpPlugin : BasePlugin
                 }
                 
                 // Первый прыжок - если был на земле (переход с земли)
-                if (justPressedJump && (wasOnGround || _jumpCount[userId] == 0))
+                if (wasOnGround || _jumpCount[userId] == 0)
                 {
                     _jumpCount[userId] = 1;
                     Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} first jump (from ground, count -> 1)");
@@ -101,7 +88,6 @@ public class TripleJumpPlugin : BasePlugin
                 else if (_jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
                 {
                     _jumpCount[userId]++;
-                    _lastAirJumpTime[userId] = currentTime;
                     Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} air jump #{_jumpCount[userId]}");
                     
                     // Выполняем прыжок
@@ -115,7 +101,7 @@ public class TripleJumpPlugin : BasePlugin
                     }
                 }
                 // Если счетчик сломался (больше 3) - сбрасываем
-                else if (justPressedJump && _jumpCount[userId] >= 3)
+                else if (_jumpCount[userId] >= 3)
                 {
                     Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} reset (count was {_jumpCount[userId]})");
                     _jumpCount[userId] = 0;
@@ -152,7 +138,6 @@ public class TripleJumpPlugin : BasePlugin
         _jumpCount.Remove(userId);
         _wasOnGround.Remove(userId);
         _lastJumpButton.Remove(userId);
-        _lastAirJumpTime.Remove(userId);
 
         return HookResult.Continue;
     }
