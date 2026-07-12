@@ -25,11 +25,26 @@
 ### Требования
 - Counter-Strike 2 сервер
 - [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp) (v200+)
+- **[CS2MenuManager](https://github.com/schwarper/CS2MenuManager)** — обязательная библиотека, без неё меню не откроется
 - .NET 8.0 SDK (для компиляции)
 
 ### Шаги установки
 
-1. **Компиляция плагина:**
+1. **Установите CS2MenuManager на сервер (обязательно, до запуска плагина):**
+   ```
+   Скачайте архив последнего релиза:
+   https://github.com/schwarper/CS2MenuManager/releases
+
+   Распакуйте его содержимое в папку:
+   csgo/addons/counterstrikesharp/
+
+   После распаковки должна появиться папка:
+   csgo/addons/counterstrikesharp/shared/CS2MenuManager/
+
+   Перезапустите сервер.
+   ```
+
+2. **Компиляция плагина:**
    ```bash
    # Windows
    build.bat
@@ -39,13 +54,13 @@
    ./build.sh
    ```
 
-2. **Установка на сервер:**
+3. **Установка на сервер:**
    ```
    Скопируйте AdminOkyesPlugin.dll из bin/Release/net8.0/ в:
    csgo/addons/counterstrikesharp/plugins/AdminOkyesPlugin/AdminOkyesPlugin.dll
    ```
 
-3. **Настройка администраторов:**
+4. **Настройка администраторов:**
 
    Отредактируйте файл `csgo/addons/counterstrikesharp/configs/admins.json`:
 
@@ -60,10 +75,18 @@
    }
    ```
 
-4. **Перезагрузка плагина:**
+5. **Перезагрузка плагина:**
    ```
    В консоли сервера: css_plugins reload AdminOkyesPlugin
    ```
+
+## Управление меню
+
+После установки CS2MenuManager меню `!admin` открывается по центру экрана и управляется:
+- **W / S** — перемещение по пунктам вверх/вниз
+- **E** — выбрать пункт
+- **A** — назад (в предыдущее меню)
+- **R** — закрыть меню
 
 ## Список карт в меню смены карты
 
