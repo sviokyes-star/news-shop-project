@@ -99,6 +99,11 @@ public class AdminOkyesPlugin : BasePlugin
             ShowTimerMenu(controller);
         });
 
+        menu.AddItem("Управление спавнами", (controller, option) =>
+        {
+            ShowSpawnsMenu(controller);
+        });
+
         menu.Display(player, 0);
     }
 
@@ -217,6 +222,65 @@ public class AdminOkyesPlugin : BasePlugin
         menu.Display(player, 0);
     }
 
+    private void ShowSpawnsMenu(CCSPlayerController player)
+    {
+        var menu = new WasdMenu("Управление спавнами", this);
+
+        menu.AddItem("Добавить точку спавна CT", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                return;
+            }
+
+            if (controller.PlayerPawn.Value == null)
+                return;
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setctspawn"));
+        });
+
+        menu.AddItem("Добавить точку спавна T", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                return;
+            }
+
+            if (controller.PlayerPawn.Value == null)
+                return;
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_settspawn"));
+        });
+
+        menu.AddItem("Удалить все CT спавны", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                return;
+            }
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_clearctspawns"));
+        });
+
+        menu.AddItem("Удалить все T спавны", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                return;
+            }
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_cleartspawns"));
+        });
+
+        menu.PrevMenu = GetMainMenu();
+
+        menu.Display(player, 0);
+    }
+
     private void ShowPlayerSelectMenu(CCSPlayerController caller, string title, Action<CCSPlayerController> onSelect)
     {
         var menu = new WasdMenu(title, this);
@@ -257,6 +321,11 @@ public class AdminOkyesPlugin : BasePlugin
         menu.AddItem("Управление Таймером", (controller, option) =>
         {
             ShowTimerMenu(controller);
+        });
+
+        menu.AddItem("Управление спавнами", (controller, option) =>
+        {
+            ShowSpawnsMenu(controller);
         });
 
         return menu;
