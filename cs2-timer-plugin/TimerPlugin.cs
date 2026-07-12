@@ -108,7 +108,7 @@ public class TimerPlugin : BasePlugin
         
         if (!_playerTimers.ContainsKey(userId))
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Таймер не запущен");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Таймер не запущен");
             return;
         }
 
@@ -117,19 +117,19 @@ public class TimerPlugin : BasePlugin
         if (timer.IsRunning)
         {
             float currentTime = GetCurrentTime() - timer.StartTime;
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Текущее время: {ChatColors.Yellow}{FormatTime(currentTime)}");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Текущее время: {ChatColors.Yellow}{FormatTime(currentTime)}");
         }
         
         if (timer.BestTime != float.MaxValue)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Ваш лучший результат: {ChatColors.Gold}{FormatTime(timer.BestTime)}");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Ваш лучший результат: {ChatColors.Gold}{FormatTime(timer.BestTime)}");
         }
 
         string mapName = Server.MapName;
         if (_mapRecords.ContainsKey(mapName))
         {
             string recordHolder = _mapRecordHolders.ContainsKey(mapName) ? _mapRecordHolders[mapName] : "???";
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Рекорд карты ({recordHolder}): {ChatColors.Purple}{FormatTime(_mapRecords[mapName])}");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Рекорд карты ({recordHolder}): {ChatColors.Purple}{FormatTime(_mapRecords[mapName])}");
         }
     }
 
@@ -157,7 +157,7 @@ public class TimerPlugin : BasePlugin
         
         SaveZones();
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Зона старта установлена и сохранена!");
+        player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Зона старта установлена и сохранена!");
         player.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
     }
 
@@ -185,7 +185,7 @@ public class TimerPlugin : BasePlugin
         
         SaveZones();
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Зона финиша установлена и сохранена!");
+        player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Зона финиша установлена и сохранена!");
         player.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
     }
 
@@ -200,7 +200,7 @@ public class TimerPlugin : BasePlugin
         string mapName = Server.MapName;
         if (!_mapZones.ContainsKey(mapName))
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Зоны не настроены");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Зоны не настроены");
             return;
         }
 
@@ -208,24 +208,24 @@ public class TimerPlugin : BasePlugin
         
         if (zones.StartMin != null && zones.StartMax != null)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Зона старта:");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Зона старта:");
             player.PrintToChat($" Min: {zones.StartMin.X:F0}, {zones.StartMin.Y:F0}, {zones.StartMin.Z:F0}");
             player.PrintToChat($" Max: {zones.StartMax.X:F0}, {zones.StartMax.Y:F0}, {zones.StartMax.Z:F0}");
         }
         else
         {
-            player.PrintToChat($" {ChatColors.Red}[Okyes Timer] Зона старта не установлена");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer] Зона старта не установлена");
         }
 
         if (zones.EndMin != null && zones.EndMax != null)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Зона финиша:");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Зона финиша:");
             player.PrintToChat($" Min: {zones.EndMin.X:F0}, {zones.EndMin.Y:F0}, {zones.EndMin.Z:F0}");
             player.PrintToChat($" Max: {zones.EndMax.X:F0}, {zones.EndMax.Y:F0}, {zones.EndMax.Z:F0}");
         }
         else
         {
-            player.PrintToChat($" {ChatColors.Red}[Okyes Timer] Зона финиша не установлена");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer] Зона финиша не установлена");
         }
     }
 
@@ -239,7 +239,7 @@ public class TimerPlugin : BasePlugin
         if (!_mapRecords.ContainsKey(mapName))
         {
             if (player != null)
-                player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} На этой карте нет рекорда");
+                player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} На этой карте нет рекорда");
             return;
         }
 
@@ -248,7 +248,7 @@ public class TimerPlugin : BasePlugin
         SaveRecordHolders();
 
         if (player != null)
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Рекордсмен установлен: {holderName}");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Рекордсмен установлен: {holderName}");
         
         Console.WriteLine($"[TIMER] Record holder for {mapName} set to: {holderName}");
     }
@@ -268,11 +268,11 @@ public class TimerPlugin : BasePlugin
 
         if (sortedTimers.Count == 0)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Пока нет результатов");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Пока нет результатов");
             return;
         }
 
-        player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Топ-10 результатов:");
+        player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Топ-10 результатов:");
         for (int i = 0; i < sortedTimers.Count; i++)
         {
             var playerController = Utilities.GetPlayerFromUserid(sortedTimers[i].Key);
@@ -389,11 +389,11 @@ public class TimerPlugin : BasePlugin
             _playerRecords[steamId][mapName] = finalTime;
             SavePlayerRecords();
             
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Новый личный рекорд: {ChatColors.Gold}{FormatTime(finalTime)}!");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Новый личный рекорд: {ChatColors.Gold}{FormatTime(finalTime)}!");
         }
         else
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} Время прохождения: {ChatColors.Yellow}{FormatTime(finalTime)}");
+            player.PrintToChat($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} Время прохождения: {ChatColors.Yellow}{FormatTime(finalTime)}");
         }
 
         if (!_mapRecords.ContainsKey(mapName) || finalTime < _mapRecords[mapName])
@@ -403,7 +403,7 @@ public class TimerPlugin : BasePlugin
             SaveRecords();
             SaveRecordHolders();
             Console.WriteLine($"[TIMER DEBUG] New map record set for {mapName}: {FormatTime(finalTime)} by {player.PlayerName}");
-            Server.PrintToChatAll($" {ChatColors.Green}[Okyes Timer]{ChatColors.Default} {player.PlayerName} установил новый рекорд карты: {ChatColors.Purple}{FormatTime(finalTime)}!");
+            Server.PrintToChatAll($" {ChatColors.Orange}[Okyes Timer]{ChatColors.Default} {player.PlayerName} установил новый рекорд карты: {ChatColors.Purple}{FormatTime(finalTime)}!");
         }
     }
 
