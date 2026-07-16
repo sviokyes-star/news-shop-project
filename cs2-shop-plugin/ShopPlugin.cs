@@ -293,7 +293,7 @@ public class ShopPlugin : BasePlugin
     [CommandHelper(minArgs: 2, usage: "<userid> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
     public void OnGiveGoldCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        GiveCurrency(command, Currency.Gold);
+        ChangeCurrency(command, Currency.Gold, false);
     }
 
     [ConsoleCommand("css_givesilver", "Выдать серебро игроку")]
@@ -301,12 +301,28 @@ public class ShopPlugin : BasePlugin
     [CommandHelper(minArgs: 2, usage: "<userid> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
     public void OnGiveSilverCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        GiveCurrency(command, Currency.Silver);
+        ChangeCurrency(command, Currency.Silver, false);
     }
 
-    private void GiveCurrency(CommandInfo command, Currency currency)
+    [ConsoleCommand("css_takegold", "Забрать золото у игрока")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 2, usage: "<userid> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnTakeGoldCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        if (!int.TryParse(command.GetArg(1), out int userId) || !int.TryParse(command.GetArg(2), out int amount))
+        ChangeCurrency(command, Currency.Gold, true);
+    }
+
+    [ConsoleCommand("css_takesilver", "Забрать серебро у игрока")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 2, usage: "<userid> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnTakeSilverCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        ChangeCurrency(command, Currency.Silver, true);
+    }
+
+    private void ChangeCurrency(CommandInfo command, Currency currency, bool take)
+    {
+        if (!int.TryParse(command.GetArg(1), out int userId) || !int.TryParse(command.GetArg(2), out int amount) || amount < 0)
         {
             command.ReplyToCommand($" {ChatColors.Red}[Магазин] Некорректные аргументы");
             return;
@@ -320,20 +336,19 @@ public class ShopPlugin : BasePlugin
         }
 
         var data = GetData(target);
-        string currencyName;
+        string currencyName = currency == Currency.Gold ? "золота" : "серебра";
+
         if (currency == Currency.Gold)
-        {
-            data.Gold += amount;
-            currencyName = "золота";
-        }
+            data.Gold = take ? Math.Max(0, data.Gold - amount) : data.Gold + amount;
         else
-        {
-            data.Silver += amount;
-            currencyName = "серебра";
-        }
+            data.Silver = take ? Math.Max(0, data.Silver - amount) : data.Silver + amount;
 
         SaveData();
-        target.PrintToChat($" {ChatColors.Green}[Магазин] Вам выдано {amount} {currencyName}!");
+
+        if (take)
+            target.PrintToChat($" {ChatColors.Red}[Магазин] У вас забрали {amount} {currencyName}");
+        else
+            target.PrintToChat($" {ChatColors.Green}[Магазин] Вам выдано {amount} {currencyName}!");
     }
 
     private void LoadData()

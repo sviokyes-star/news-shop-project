@@ -104,6 +104,11 @@ public class AdminOkyesPlugin : BasePlugin
             ShowSpawnsMenu(controller);
         });
 
+        menu.AddItem("Управление магазином", (controller, option) =>
+        {
+            ShowShopMenu(controller);
+        });
+
         menu.Display(player, 0);
     }
 
@@ -328,7 +333,60 @@ public class AdminOkyesPlugin : BasePlugin
             ShowSpawnsMenu(controller);
         });
 
+        menu.AddItem("Управление магазином", (controller, option) =>
+        {
+            ShowShopMenu(controller);
+        });
+
         return menu;
+    }
+
+    private static readonly int[] ShopAmounts = { 10, 50, 100, 500, 1000 };
+
+    private void ShowShopMenu(CCSPlayerController player)
+    {
+        var menu = new WasdMenu("Управление магазином", this);
+
+        menu.AddItem("Выдать золото", (controller, option) =>
+            ShowShopActionMenu(controller, "css_givegold", "золото", "Выдать"));
+
+        menu.AddItem("Выдать серебро", (controller, option) =>
+            ShowShopActionMenu(controller, "css_givesilver", "серебро", "Выдать"));
+
+        menu.AddItem("Забрать золото", (controller, option) =>
+            ShowShopActionMenu(controller, "css_takegold", "золото", "Забрать"));
+
+        menu.AddItem("Забрать серебро", (controller, option) =>
+            ShowShopActionMenu(controller, "css_takesilver", "серебро", "Забрать"));
+
+        menu.PrevMenu = GetMainMenu();
+        menu.Display(player, 0);
+    }
+
+    private void ShowShopActionMenu(CCSPlayerController player, string command, string currencyName, string actionName)
+    {
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления магазином");
+            return;
+        }
+
+        ShowPlayerSelectMenu(player, $"{actionName} {currencyName} кому?", target =>
+        {
+            var amountMenu = new WasdMenu($"Сколько {currencyName}?", this);
+
+            foreach (int amount in ShopAmounts)
+            {
+                int value = amount;
+                amountMenu.AddItem(value.ToString(), (controller, option) =>
+                {
+                    Server.ExecuteCommand($"{command} {target.UserId} {value}");
+                    controller.PrintToChat($" {ChatColors.Green}[Admin Okyes] {actionName}: {value} {currencyName} — {target.PlayerName}");
+                });
+            }
+
+            amountMenu.Display(player, 0);
+        });
     }
 
     [ConsoleCommand("css_okban", "Забанить игрока")]
