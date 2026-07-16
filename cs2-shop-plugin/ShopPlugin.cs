@@ -429,32 +429,6 @@ public class ShopPlugin : BasePlugin
             ShowPurchasesMenu(controller);
         });
 
-        if (AdminManager.PlayerHasPermissions(player, "@css/root"))
-        {
-            menu.AddItem("Управление магазином", (controller, option) =>
-            {
-                ShowAdminMenu(controller);
-            });
-        }
-
-        menu.Display(player, 0);
-    }
-
-    private void ShowAdminMenu(CCSPlayerController player)
-    {
-        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            return;
-
-        var menu = new WasdMenu("Управление магазином", this);
-
-        menu.AddItem("Перезагрузить товары", (controller, option) =>
-        {
-            InitializeItems();
-            controller.PrintToChat($" {ChatColors.Green}[Магазин] Товары перезагружены. Категорий: {_categories.Count}");
-            MenuManager.CloseActiveMenu(controller);
-        });
-
-        menu.PrevMenu = GetMainMenu(player);
         menu.Display(player, 0);
     }
 
