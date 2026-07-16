@@ -32,6 +32,7 @@ public class ShopPlugin : BasePlugin
         public string ItemName { get; set; } = "";
         public string Category { get; set; } = "";
         public DateTime ExpiresAt { get; set; }
+        public bool Enabled { get; set; } = true;
     }
 
     public class PlayerData
@@ -146,7 +147,8 @@ public class ShopPlugin : BasePlugin
             {
                 var current = purchase;
                 int daysLeft = Math.Max(0, (int)Math.Ceiling((current.ExpiresAt - DateTime.UtcNow).TotalDays));
-                menu.AddItem($"{current.ItemName} — осталось {daysLeft} дн.", (controller, option) =>
+                string status = current.Enabled ? "[Вкл]" : "[Выкл]";
+                menu.AddItem($"{status} {current.ItemName} — осталось {daysLeft} дн.", (controller, option) =>
                 {
                     ShowPurchaseMenu(controller, current);
                 });
@@ -164,15 +166,28 @@ public class ShopPlugin : BasePlugin
 
         menu.AddItem($"Категория: {purchase.Category}", (_, _) => { }, DisableOption.DisableShowNumber);
         menu.AddItem($"Осталось: {daysLeft} дней", (_, _) => { }, DisableOption.DisableShowNumber);
+        menu.AddItem($"Статус: {(purchase.Enabled ? "Включён" : "Отключён")}", (_, _) => { }, DisableOption.DisableShowNumber);
 
-        menu.AddItem("Отключить", (controller, option) =>
+        string actionText = purchase.Enabled ? "Отключить" : "Включить";
+        menu.AddItem(actionText, (controller, option) =>
         {
             var data = GetData(controller);
-            data.Purchases.RemoveAll(p => p.ItemName == purchase.ItemName);
+            var target = data.Purchases.FirstOrDefault(p => p.ItemName == purchase.ItemName);
+            if (target == null)
+            {
+                ShowPurchasesMenu(controller);
+                return;
+            }
+
+            target.Enabled = !target.Enabled;
             SaveData();
 
-            controller.PrintToChat($" {ChatColors.Red}[Магазин] {purchase.ItemName} отключён");
-            ShowPurchasesMenu(controller);
+            if (target.Enabled)
+                controller.PrintToChat($" {ChatColors.Green}[Магазин] {target.ItemName} включён");
+            else
+                controller.PrintToChat($" {ChatColors.Red}[Магазин] {target.ItemName} отключён");
+
+            ShowPurchaseMenu(controller, target);
         });
 
         menu.PrevMenu = GetPurchasesMenu(player);
@@ -194,7 +209,8 @@ public class ShopPlugin : BasePlugin
             {
                 var current = purchase;
                 int daysLeft = Math.Max(0, (int)Math.Ceiling((current.ExpiresAt - DateTime.UtcNow).TotalDays));
-                menu.AddItem($"{current.ItemName} — осталось {daysLeft} дн.", (controller, option) =>
+                string status = current.Enabled ? "[Вкл]" : "[Выкл]";
+                menu.AddItem($"{status} {current.ItemName} — осталось {daysLeft} дн.", (controller, option) =>
                 {
                     ShowPurchaseMenu(controller, current);
                 });
