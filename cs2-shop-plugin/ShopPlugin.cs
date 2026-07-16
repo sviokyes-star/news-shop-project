@@ -246,6 +246,17 @@ public class ShopPlugin : BasePlugin
         menu.Display(player, 0);
     }
 
+    private bool IsOwned(CCSPlayerController player, ShopItem item)
+    {
+        var data = GetData(player);
+        return data.Purchases.Any(p => p.ItemName == item.Name && p.ExpiresAt > DateTime.UtcNow);
+    }
+
+    private string ItemLabel(CCSPlayerController player, ShopItem item)
+    {
+        return IsOwned(player, item) ? $"{item.Name} (куплено)" : item.Name;
+    }
+
     private void ShowItemsMenu(CCSPlayerController player, string categoryName)
     {
         var menu = new WasdMenu(categoryName, this);
@@ -255,7 +266,7 @@ public class ShopPlugin : BasePlugin
             foreach (var item in items)
             {
                 var shopItem = item;
-                menu.AddItem(shopItem.Name, (controller, option) =>
+                menu.AddItem(ItemLabel(player, shopItem), (controller, option) =>
                 {
                     ShowItemMenu(controller, categoryName, shopItem);
                 });
@@ -271,10 +282,15 @@ public class ShopPlugin : BasePlugin
         string currencyName = item.Currency == Currency.Gold ? "золота" : "серебра";
         var menu = new WasdMenu(item.Name, this);
 
+        bool owned = IsOwned(player, item);
+
         menu.AddItem($"Цена: {item.Price} {currencyName}", (_, _) => { }, DisableOption.DisableShowNumber);
         menu.AddItem($"Длительность: {item.DurationDays} дней", (_, _) => { }, DisableOption.DisableShowNumber);
 
-        menu.AddItem("Купить", (controller, option) =>
+        if (owned)
+            menu.AddItem("Уже куплено", (_, _) => { }, DisableOption.DisableShowNumber);
+
+        menu.AddItem(owned ? "Продлить" : "Купить", (controller, option) =>
         {
             BuyItem(controller, categoryName, item);
         });
@@ -349,7 +365,7 @@ public class ShopPlugin : BasePlugin
             foreach (var item in items)
             {
                 var shopItem = item;
-                menu.AddItem(shopItem.Name, (controller, option) => ShowItemMenu(controller, categoryName, shopItem));
+                menu.AddItem(ItemLabel(player, shopItem), (controller, option) => ShowItemMenu(controller, categoryName, shopItem));
             }
         }
         menu.PrevMenu = GetCategoriesMenu(player);
