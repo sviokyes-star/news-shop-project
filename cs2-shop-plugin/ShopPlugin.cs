@@ -42,9 +42,18 @@ public class ShopPlugin : BasePlugin
         public List<Purchase> Purchases { get; set; } = new();
     }
 
+    public class ConfigItem
+    {
+        public string Name { get; set; } = "";
+        public string Currency { get; set; } = "Gold";
+        public int Price { get; set; }
+        public int DurationDays { get; set; }
+    }
+
     private readonly Dictionary<string, List<ShopItem>> _categories = new();
     private readonly Dictionary<ulong, PlayerData> _playerData = new();
     private string DataFilePath => Path.Combine(ModuleDirectory, "players.json");
+    private string ItemsFilePath => Path.Combine(ModuleDirectory, "items.json");
 
     public override void Load(bool hotReload)
     {
@@ -54,6 +63,7 @@ public class ShopPlugin : BasePlugin
         AddCommand("css_shop", "Открыть магазин", OnShopCommand);
         AddCommandListener("say", OnPlayerSay);
         AddCommandListener("say_team", OnPlayerSay);
+        AddCommand("css_shop_reload", "Перезагрузить товары из items.json", OnReloadCommand);
 
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
@@ -66,18 +76,83 @@ public class ShopPlugin : BasePlugin
 
     private void InitializeItems()
     {
-        _categories["Скины"] = new List<ShopItem>
+        _categories.Clear();
+
+        if (!File.Exists(ItemsFilePath))
         {
-            new ShopItem { Name = "AK-47 | Neon", Currency = Currency.Gold, Price = 10, DurationDays = 10 },
-            new ShopItem { Name = "AWP | Dragon", Currency = Currency.Gold, Price = 25, DurationDays = 30 },
-            new ShopItem { Name = "M4A1 | Silver", Currency = Currency.Silver, Price = 100, DurationDays = 7 },
+            CreateDefaultItemsConfig();
+        }
+
+        try
+        {
+            string json = File.ReadAllText(ItemsFilePath);
+            var config = JsonSerializer.Deserialize<Dictionary<string, List<ConfigItem>>>(json);
+
+            if (config == null)
+            {
+                Console.WriteLine($"[{ModuleName}] Файл items.json пустой или некорректный");
+                return;
+            }
+
+            foreach (var category in config)
+            {
+                var items = new List<ShopItem>();
+                foreach (var configItem in category.Value)
+                {
+                    var currency = configItem.Currency.Equals("Silver", StringComparison.OrdinalIgnoreCase)
+                        ? Currency.Silver
+                        : Currency.Gold;
+
+                    items.Add(new ShopItem
+                    {
+                        Name = configItem.Name,
+                        Currency = currency,
+                        Price = configItem.Price,
+                        DurationDays = configItem.DurationDays
+                    });
+                }
+                _categories[category.Key] = items;
+            }
+
+            Console.WriteLine($"[{ModuleName}] Загружено категорий: {_categories.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки items.json: {ex.Message}");
+        }
+    }
+
+    private void CreateDefaultItemsConfig()
+    {
+        var defaultConfig = new Dictionary<string, List<ConfigItem>>
+        {
+            ["Скины"] = new List<ConfigItem>
+            {
+                new ConfigItem { Name = "AK-47 | Neon", Currency = "Gold", Price = 10, DurationDays = 10 },
+                new ConfigItem { Name = "AWP | Dragon", Currency = "Gold", Price = 25, DurationDays = 30 },
+                new ConfigItem { Name = "M4A1 | Silver", Currency = "Silver", Price = 100, DurationDays = 7 },
+            },
+            ["Трейлы"] = new List<ConfigItem>
+            {
+                new ConfigItem { Name = "Огненный трейл", Currency = "Gold", Price = 15, DurationDays = 10 },
+                new ConfigItem { Name = "Ледяной трейл", Currency = "Silver", Price = 150, DurationDays = 14 },
+            }
         };
 
-        _categories["Трейлы"] = new List<ShopItem>
+        try
         {
-            new ShopItem { Name = "Огненный трейл", Currency = Currency.Gold, Price = 15, DurationDays = 10 },
-            new ShopItem { Name = "Ледяной трейл", Currency = Currency.Silver, Price = 150, DurationDays = 14 },
-        };
+            string json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+            File.WriteAllText(ItemsFilePath, json);
+            Console.WriteLine($"[{ModuleName}] Создан файл конфигурации items.json");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка создания items.json: {ex.Message}");
+        }
     }
 
     private PlayerData GetData(CCSPlayerController player)
@@ -110,6 +185,18 @@ public class ShopPlugin : BasePlugin
             return;
 
         ShowMainMenu(caller);
+    }
+
+    [RequiresPermissions("@css/root")]
+    public void OnReloadCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        InitializeItems();
+
+        string message = $" {ChatColors.Green}[Магазин] Товары перезагружены. Категорий: {_categories.Count}";
+        if (caller != null && caller.IsValid)
+            caller.PrintToChat(message);
+        else
+            command.ReplyToCommand(message);
     }
 
     private void ShowMainMenu(CCSPlayerController player)
