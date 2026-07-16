@@ -374,6 +374,17 @@ public class AdminOkyesPlugin : BasePlugin
             });
         });
 
+        menu.AddItem("Перезагрузить товары", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления магазином");
+                return;
+            }
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_shop_reload"));
+        });
+
         menu.PrevMenu = GetMainMenu();
         menu.Display(player, 0);
     }
