@@ -346,6 +346,7 @@ public class ShopPlugin : BasePlugin
                 new ConfigItem { Name = "Спецназовец", Currency = "Gold", Price = 10, DurationDays = 10, Model = "characters/models/ctm_sas/ctm_sas.vmdl" },
                 new ConfigItem { Name = "Пират", Currency = "Gold", Price = 25, DurationDays = 30, Model = "characters/models/tm_phoenix/tm_phoenix.vmdl" },
                 new ConfigItem { Name = "Профессионал", Currency = "Silver", Price = 100, DurationDays = 7, Model = "characters/models/ctm_fbi/ctm_fbi.vmdl" },
+                new ConfigItem { Name = "Спанч Боб", Currency = "Gold", Price = 50, DurationDays = 30, Model = "models/spongebob/spongebob_player_model.vmdl" },
             },
             ["Трейлы"] = new List<ConfigItem>
             {
