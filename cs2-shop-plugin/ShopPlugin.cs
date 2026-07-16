@@ -3,97 +3,79 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
-using CounterStrikeSharp.API.Modules.Admin;
-using System.Drawing;
+using CS2MenuManager.API.Enum;
+using CS2MenuManager.API.Menu;
 using System.Text.Json;
 
 namespace ShopPlugin;
 
 public class ShopPlugin : BasePlugin
 {
-    public override string ModuleName => "Shop";
-    public override string ModuleVersion => "1.2.4";
+    public override string ModuleName => "Shop [Okyes]";
+    public override string ModuleVersion => "2.0.0";
     public override string ModuleAuthor => "Okyes";
-    public override string ModuleDescription => "Магазин со скинами и валютой для CS2";
+    public override string ModuleDescription => "Магазин с меню, двумя валютами (Золото/Серебро) и товарами";
 
-    private readonly Dictionary<ulong, PlayerData> _playerData = new();
-    private readonly Dictionary<string, ShopItem> _shopItems = new();
-    private readonly Dictionary<ulong, string?> _previewSkins = new();
-    private readonly Dictionary<ulong, CounterStrikeSharp.API.Modules.Timers.Timer?> _previewTimers = new();
-    private readonly List<CBaseModelEntity> _giftBoxes = new();
-    private readonly Dictionary<ulong, HashSet<int>> _collectedGifts = new();
-    private readonly List<GiftData> _giftPositions = new();
-    private readonly List<CBaseModelEntity> _spawnMarkers = new();
-    private readonly List<SpawnData> _customSpawns = new();
-    private readonly Dictionary<ulong, string> _playerMenuContext = new();
-    private const float PreviewDuration = 30.0f;
-    private const int GiftSilverReward = 1000;
-    private string DataFilePath => Path.Combine(ModuleDirectory, "shop_data.json");
-    private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts_data.json");
-    private string SpawnsFilePath => Path.Combine(ModuleDirectory, "spawns_data.json");
+    public enum Currency { Gold, Silver }
 
-    private class PlayerData
+    public class ShopItem
+    {
+        public string Name { get; set; } = "";
+        public Currency Currency { get; set; }
+        public int Price { get; set; }
+        public int DurationDays { get; set; }
+    }
+
+    public class PlayerData
     {
         public int Gold { get; set; } = 0;
         public int Silver { get; set; } = 0;
-        public List<string> OwnedSkins { get; set; } = new();
-        public string? ActiveSkin { get; set; }
-        public string? PreviewSkin { get; set; }
-        public List<string> OwnedTrails { get; set; } = new();
-        public string? ActiveTrail { get; set; }
     }
 
-    private class ShopItem
-    {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public int GoldPrice { get; set; } = 0;
-        public int SilverPrice { get; set; } = 0;
-        public string Type { get; set; } = "skin";
-    }
-
-    private class GiftData
-    {
-        public float X { get; set; }
-        public float Y { get; set; }
-        public float Z { get; set; }
-        public int SilverAmount { get; set; }
-    }
-
-    private class SpawnData
-    {
-        public float X { get; set; }
-        public float Y { get; set; }
-        public float Z { get; set; }
-        public float AngleX { get; set; }
-        public float AngleY { get; set; }
-        public float AngleZ { get; set; }
-        public string Team { get; set; } = "CT";
-    }
+    private readonly Dictionary<string, List<ShopItem>> _categories = new();
+    private readonly Dictionary<ulong, PlayerData> _playerData = new();
+    private string DataFilePath => Path.Combine(ModuleDirectory, "players.json");
 
     public override void Load(bool hotReload)
     {
-        RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
-        RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
-        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
-        RegisterEventHandler<EventRoundStart>(OnRoundStart);
-        
+        InitializeItems();
+        LoadData();
+
+        AddCommand("css_shop", "Открыть магазин", OnShopCommand);
         AddCommandListener("say", OnPlayerSay);
         AddCommandListener("say_team", OnPlayerSay);
-        
-        LoadData();
-        LoadGiftsData();
-        LoadSpawns();
-        InitializeShopItems();
-        
-        Server.NextFrame(() => SpawnAllGifts());
-        
-        AddTimer(1.0f, CheckGiftPickups, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
-        
+
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
-        Console.WriteLine($"[{ModuleName}] Магазин содержит {_shopItems.Count} товаров");
-        Console.WriteLine($"[{ModuleName}] Загружено подарков: {_giftPositions.Count}");
-        Console.WriteLine($"[{ModuleName}] Загружено спавнов: {_customSpawns.Count}");
+    }
+
+    public override void Unload(bool hotReload)
+    {
+        SaveData();
+        Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
+    }
+
+    private void InitializeItems()
+    {
+        _categories["Скины"] = new List<ShopItem>
+        {
+            new ShopItem { Name = "AK-47 | Neon", Currency = Currency.Gold, Price = 10, DurationDays = 10 },
+            new ShopItem { Name = "AWP | Dragon", Currency = Currency.Gold, Price = 25, DurationDays = 30 },
+            new ShopItem { Name = "M4A1 | Silver", Currency = Currency.Silver, Price = 100, DurationDays = 7 },
+        };
+
+        _categories["Трейлы"] = new List<ShopItem>
+        {
+            new ShopItem { Name = "Огненный трейл", Currency = Currency.Gold, Price = 15, DurationDays = 10 },
+            new ShopItem { Name = "Ледяной трейл", Currency = Currency.Silver, Price = 150, DurationDays = 14 },
+        };
+    }
+
+    private PlayerData GetData(CCSPlayerController player)
+    {
+        ulong id = player.SteamID;
+        if (!_playerData.ContainsKey(id))
+            _playerData[id] = new PlayerData();
+        return _playerData[id];
     }
 
     private HookResult OnPlayerSay(CCSPlayerController? player, CommandInfo info)
@@ -105,1511 +87,191 @@ public class ShopPlugin : BasePlugin
 
         if (message.Equals("!shop", StringComparison.OrdinalIgnoreCase))
         {
-            ulong steamId = player.SteamID;
-            _playerMenuContext[steamId] = "shop_main";
-            ShowShopMenu(player);
+            ShowMainMenu(player);
             return HookResult.Handled;
-        }
-        else if (message.Equals("!balance", StringComparison.OrdinalIgnoreCase))
-        {
-            OnBalanceCommand(player, info);
-            return HookResult.Handled;
-        }
-        else if (message.StartsWith("!buy ", StringComparison.OrdinalIgnoreCase))
-        {
-            string itemId = message.Substring(5).Trim().ToLower();
-            if (!string.IsNullOrEmpty(itemId))
-            {
-                BuyItem(player, itemId);
-            }
-            return HookResult.Handled;
-        }
-        else if (message.StartsWith("!sell ", StringComparison.OrdinalIgnoreCase))
-        {
-            string itemId = message.Substring(6).Trim().ToLower();
-            if (!string.IsNullOrEmpty(itemId))
-            {
-                OnSellCommand(player, info);
-            }
-            return HookResult.Handled;
-        }
-        else if (message.StartsWith("!setskin ", StringComparison.OrdinalIgnoreCase))
-        {
-            string skinId = message.Substring(9).Trim().ToLower();
-            if (!string.IsNullOrEmpty(skinId))
-            {
-                OnSetSkinCommand(player, info);
-            }
-            return HookResult.Handled;
-        }
-        else if ((message.StartsWith("!s") || message.StartsWith("!")) && message.Length >= 2 && message.Length <= 3)
-        {
-            string numStr = message.StartsWith("!s") ? message.Substring(2) : message.Substring(1);
-            if (numStr.Length == 1 && char.IsDigit(numStr[0]))
-            {
-                int num = int.Parse(numStr);
-                Console.WriteLine($"[Shop] Player {player.PlayerName} использует !{num}");
-                HandleQuickShopCommand(player, num);
-                return HookResult.Handled;
-            }
-        }
-        else if (message.StartsWith("!preview ", StringComparison.OrdinalIgnoreCase))
-        {
-            string skinId = message.Substring(9).Trim().ToLower();
-            if (!string.IsNullOrEmpty(skinId))
-            {
-                OnPreviewCommand(player, info);
-            }
-            return HookResult.Handled;
-        }
-        else if (message.Equals("!stoppreview", StringComparison.OrdinalIgnoreCase))
-        {
-            OnStopPreviewCommand(player, info);
-            return HookResult.Handled;
-        }
-        else if (message.StartsWith("!addgift ", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            string amountStr = message.Substring(9).Trim();
-            if (!int.TryParse(amountStr, out int amount) || amount <= 0)
-            {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Используйте: !addgift <сумма>");
-                return HookResult.Handled;
-            }
-
-            var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
-            if (playerPos == null)
-            {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Не удалось получить позицию!");
-                return HookResult.Handled;
-            }
-
-            SpawnGiftBox(playerPos, amount);
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Подарок создан! Награда: {ChatColors.Silver}{amount} серебра");
-            return HookResult.Handled;
-        }
-        else if (message.StartsWith("!addspawn ", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            string team = message.Substring(10).Trim().ToUpper();
-            if (team != "CT" && team != "T")
-            {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Используйте: !addspawn <CT/T>");
-                return HookResult.Handled;
-            }
-
-            var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
-            var playerAng = player.PlayerPawn?.Value?.EyeAngles;
-            
-            if (playerPos == null || playerAng == null)
-            {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Не удалось получить позицию!");
-                return HookResult.Handled;
-            }
-
-            var spawnData = new SpawnData
-            {
-                X = playerPos.X,
-                Y = playerPos.Y,
-                Z = playerPos.Z,
-                AngleX = playerAng.X,
-                AngleY = playerAng.Y,
-                AngleZ = playerAng.Z,
-                Team = team
-            };
-
-            _customSpawns.Add(spawnData);
-            SaveSpawns();
-
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавн для {ChatColors.Yellow}{team}{ChatColors.Default} добавлен!");
-            return HookResult.Handled;
-        }
-        else if (message.Equals("!removegifts", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            int count = _giftBoxes.Count;
-            
-            foreach (var gift in _giftBoxes)
-            {
-                gift?.Remove();
-            }
-            
-            _giftBoxes.Clear();
-            _giftPositions.Clear();
-            SaveGifts();
-            
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Удалено подарков: {count}");
-            return HookResult.Handled;
-        }
-        else if (message.Equals("!listgifts", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            if (_giftPositions.Count == 0)
-            {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Подарков нет");
-                return HookResult.Handled;
-            }
-
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список подарков:");
-
-            for (int i = 0; i < _giftPositions.Count; i++)
-            {
-                var gift = _giftPositions[i];
-                player.PrintToChat($" {ChatColors.Yellow}#{i + 1}{ChatColors.Default} Позиция: ({gift.X:F1}, {gift.Y:F1}, {gift.Z:F1}) | Награда: {gift.SilverAmount}");
-            }
-            return HookResult.Handled;
-        }
-        else if (message.Equals("!removespawns", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            int count = _customSpawns.Count;
-            _customSpawns.Clear();
-            
-            foreach (var marker in _spawnMarkers)
-            {
-                marker?.Remove();
-            }
-            _spawnMarkers.Clear();
-            
-            SaveSpawns();
-            
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Удалено спавнов: {count}");
-            return HookResult.Handled;
-        }
-        else if (message.Equals("!listspawns", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            if (_customSpawns.Count == 0)
-            {
-                player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавнов нет");
-                return HookResult.Handled;
-            }
-
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список спавнов:");
-
-            for (int i = 0; i < _customSpawns.Count; i++)
-            {
-                var spawn = _customSpawns[i];
-                player.PrintToChat($" {ChatColors.Yellow}#{i + 1} [{spawn.Team}]{ChatColors.Default} Позиция: ({spawn.X:F1}, {spawn.Y:F1}, {spawn.Z:F1})");
-            }
-            return HookResult.Handled;
-        }
-        else if (message.Equals("!showspawns", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            foreach (var marker in _spawnMarkers)
-            {
-                marker?.Remove();
-            }
-            _spawnMarkers.Clear();
-
-            foreach (var spawn in _customSpawns)
-            {
-                var marker = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
-                if (marker == null)
-                    continue;
-
-                marker.SetModel("models/weapons/w_c4_planted.vmdl");
-                var position = new Vector(spawn.X, spawn.Y, spawn.Z);
-                marker.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
-                marker.DispatchSpawn();
-
-                if (spawn.Team == "CT")
-                {
-                    marker.Glow.GlowColorOverride = Color.FromArgb(255, 0, 150, 255);
-                }
-                else
-                {
-                    marker.Glow.GlowColorOverride = Color.FromArgb(255, 255, 50, 0);
-                }
-                
-                marker.Glow.GlowRange = 1000;
-                marker.Glow.GlowRangeMin = 0;
-                marker.Glow.GlowType = 3;
-                marker.Glow.GlowTeam = -1;
-
-                _spawnMarkers.Add(marker);
-            }
-
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Показано маркеров: {_spawnMarkers.Count}");
-            return HookResult.Handled;
-        }
-        else if (message.Equals("!hidespawns", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
-            {
-                player.PrintToChat($" {ChatColors.Red}[Okyes Shop] У вас нет прав!");
-                return HookResult.Handled;
-            }
-
-            foreach (var marker in _spawnMarkers)
-            {
-                marker?.Remove();
-            }
-            
-            int count = _spawnMarkers.Count;
-            _spawnMarkers.Clear();
-
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Скрыто маркеров: {count}");
-            return HookResult.Handled;
-        }
-        else if (message.StartsWith("!s", StringComparison.OrdinalIgnoreCase) && message.Length == 3 && char.IsDigit(message[2]))
-        {
-            int choice = int.Parse(message.Substring(2));
-            ulong steamId = player.SteamID;
-            
-            if (!_playerMenuContext.ContainsKey(steamId))
-                return HookResult.Continue;
-
-            string context = _playerMenuContext[steamId];
-
-            if (context == "shop_main")
-            {
-                HandleShopMainChoice(player, choice);
-                return HookResult.Handled;
-            }
-            else if (context == "shop_categories")
-            {
-                HandleCategoryChoice(player, choice);
-                return HookResult.Handled;
-            }
-            else if (context.StartsWith("shop_items_"))
-            {
-                HandleItemChoice(player, choice, context);
-                return HookResult.Handled;
-            }
-            else if (context == "shop_sell")
-            {
-                HandleSellChoice(player, choice);
-                return HookResult.Handled;
-            }
-            else if (context == "shop_inventory")
-            {
-                HandleInventoryChoice(player, choice);
-                return HookResult.Handled;
-            }
         }
 
         return HookResult.Continue;
     }
 
-    [ConsoleCommand("css_shop", "Открыть магазин")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnShopCommand(CCSPlayerController? player, CommandInfo command)
+    public void OnShopCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        if (player == null || !player.IsValid)
+        if (caller == null || !caller.IsValid)
             return;
 
-        ulong steamId = player.SteamID;
-        _playerMenuContext[steamId] = "shop_main";
-        ShowShopMenu(player);
+        ShowMainMenu(caller);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    [ConsoleCommand("css_balance", "Показать баланс")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnBalanceCommand(CCSPlayerController? player, CommandInfo command)
+    private void ShowMainMenu(CCSPlayerController player)
     {
-        if (player == null || !player.IsValid)
-            return;
+        var data = GetData(player);
+        var menu = new WasdMenu($"Золото: {data.Gold} | Серебро: {data.Silver}", this);
 
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Ваш баланс:");
-        player.PrintToChat($" {ChatColors.Gold}🪙 Золото: {data.Gold}");
-        player.PrintToChat($" {ChatColors.Silver}⚪ Серебро: {data.Silver}");
-    }
-
-
-
-    [ConsoleCommand("css_buy", "Купить товар")]
-    [CommandHelper(minArgs: 1, usage: "<id товара>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnBuyCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        string itemId = command.GetArg(1).ToLower();
-        
-        if (!_shopItems.ContainsKey(itemId))
+        menu.AddItem("Товары", (controller, option) =>
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Товар не найден! Используйте /shop");
-            return;
-        }
-
-        BuyItem(player, itemId);
-    }
-
-    [ConsoleCommand("css_preview", "Предпросмотр скина")]
-    [CommandHelper(minArgs: 1, usage: "<id скина>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnPreviewCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        string skinId = command.GetArg(1).ToLower();
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        if (!_shopItems.ContainsKey(skinId))
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Скин не найден!");
-            return;
-        }
-
-        if (data.OwnedSkins.Contains(skinId))
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас уже есть этот скин! Используйте !setskin {skinId}");
-            return;
-        }
-
-        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
-        {
-            _previewTimers[steamId]?.Kill();
-            _previewTimers.Remove(steamId);
-        }
-
-        _previewSkins[steamId] = skinId;
-        var item = _shopItems[skinId];
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр: {ChatColors.Yellow}{item.Name}{ChatColors.Default} ({PreviewDuration} сек)");
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Купить: !buy {skinId} | Отменить: !stoppreview");
-        
-        ApplySkin(player, skinId);
-
-        _previewTimers[steamId] = AddTimer(PreviewDuration, () => 
-        {
-            if (player.IsValid && _previewSkins.ContainsKey(steamId))
-            {
-                _previewSkins.Remove(steamId);
-                player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Время предпросмотра истекло");
-
-                if (data.ActiveSkin != null)
-                {
-                    ApplySkin(player, data.ActiveSkin);
-                }
-                else
-                {
-                    RemoveSkin(player);
-                }
-            }
-            _previewTimers.Remove(steamId);
+            ShowCategoriesMenu(controller);
         });
+
+        menu.Display(player, 0);
     }
 
-    [ConsoleCommand("css_stoppreview", "Остановить предпросмотр")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnStopPreviewCommand(CCSPlayerController? player, CommandInfo command)
+    private void ShowCategoriesMenu(CCSPlayerController player)
     {
-        if (player == null || !player.IsValid)
-            return;
+        var menu = new WasdMenu("Товары", this);
 
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        if (!_previewSkins.ContainsKey(steamId) || _previewSkins[steamId] == null)
+        foreach (var category in _categories.Keys)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр не активен");
-            return;
-        }
-
-        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
-        {
-            _previewTimers[steamId]?.Kill();
-            _previewTimers.Remove(steamId);
-        }
-
-        _previewSkins.Remove(steamId);
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Предпросмотр отменён");
-
-        if (data.ActiveSkin != null)
-        {
-            ApplySkin(player, data.ActiveSkin);
-        }
-        else
-        {
-            RemoveSkin(player);
-        }
-    }
-
-    [ConsoleCommand("css_setskin", "Надеть скин")]
-    [CommandHelper(minArgs: 1, usage: "<id скина>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnSetSkinCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        string skinId = command.GetArg(1).ToLower();
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        if (!data.OwnedSkins.Contains(skinId))
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет этого скина!");
-            return;
-        }
-
-        if (_previewSkins.ContainsKey(steamId))
-        {
-            _previewSkins.Remove(steamId);
-        }
-
-        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
-        {
-            _previewTimers[steamId]?.Kill();
-            _previewTimers.Remove(steamId);
-        }
-
-        data.ActiveSkin = skinId;
-        SaveData();
-
-        var item = _shopItems[skinId];
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Скин {ChatColors.Yellow}{item.Name}{ChatColors.Default} активирован!");
-        
-        ApplySkin(player, skinId);
-    }
-
-    [ConsoleCommand("css_sell", "Продать товар")]
-    [CommandHelper(minArgs: 1, usage: "<id товара>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnSellCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        string itemId = command.GetArg(1).ToLower();
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        bool hasItem = data.OwnedSkins.Contains(itemId) || data.OwnedTrails.Contains(itemId);
-        if (!hasItem)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет этого товара!");
-            return;
-        }
-
-        if (!_shopItems.ContainsKey(itemId))
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Товар не найден!");
-            return;
-        }
-
-        var item = _shopItems[itemId];
-        int sellPrice = item.GoldPrice > 0 ? item.GoldPrice / 2 : item.SilverPrice / 2;
-
-        if (data.ActiveSkin == itemId || data.ActiveTrail == itemId)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Нельзя продать активный товар!");
-            return;
-        }
-
-        if (item.Type == "skin")
-        {
-            data.OwnedSkins.Remove(itemId);
-        }
-        else if (item.Type == "trail")
-        {
-            data.OwnedTrails.Remove(itemId);
-        }
-        
-        if (item.GoldPrice > 0)
-        {
-            int refund = item.GoldPrice / 2;
-            data.Gold += refund;
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продано: {ChatColors.Yellow}{item.Name}{ChatColors.Default} за {ChatColors.Gold}{refund} 🪙");
-        }
-        else
-        {
-            data.Silver += sellPrice;
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продано: {ChatColors.Yellow}{item.Name}{ChatColors.Default} за {ChatColors.Silver}{sellPrice} ⚪");
-        }
-
-        SaveData();
-    }
-
-    [ConsoleCommand("css_addgold", "Добавить золото игроку")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(minArgs: 2, usage: "<имя игрока> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
-    public void OnAddGoldCommand(CCSPlayerController? caller, CommandInfo command)
-    {
-        string targetName = command.GetArg(1);
-        if (!int.TryParse(command.GetArg(2), out int amount))
-        {
-            if (caller != null)
-                caller.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Неверное количество");
-            return;
-        }
-
-        var players = Utilities.GetPlayers();
-        var target = players.FirstOrDefault(p => p?.PlayerName?.Contains(targetName, StringComparison.OrdinalIgnoreCase) == true);
-
-        if (target == null)
-        {
-            if (caller != null)
-                caller.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Игрок не найден");
-            return;
-        }
-
-        var data = GetPlayerData(target.SteamID);
-        data.Gold += amount;
-        SaveData();
-
-        target.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Вам начислено {ChatColors.Gold}{amount} золота");
-        
-        if (caller != null)
-            caller.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} {target.PlayerName} получил {amount} золота");
-        
-        Console.WriteLine($"[Shop] {target.PlayerName} получил {amount} золота");
-    }
-
-    [ConsoleCommand("css_addsilver", "Добавить серебро игроку")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(minArgs: 2, usage: "<имя игрока> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
-    public void OnAddSilverCommand(CCSPlayerController? caller, CommandInfo command)
-    {
-        string targetName = command.GetArg(1);
-        if (!int.TryParse(command.GetArg(2), out int amount))
-        {
-            if (caller != null)
-                caller.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Неверное количество");
-            return;
-        }
-
-        var players = Utilities.GetPlayers();
-        var target = players.FirstOrDefault(p => p?.PlayerName?.Contains(targetName, StringComparison.OrdinalIgnoreCase) == true);
-
-        if (target == null)
-        {
-            if (caller != null)
-                caller.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Игрок не найден");
-            return;
-        }
-
-        var data = GetPlayerData(target.SteamID);
-        data.Silver += amount;
-        SaveData();
-
-        target.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Вам начислено {ChatColors.Silver}{amount} серебра");
-        
-        if (caller != null)
-            caller.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} {target.PlayerName} получил {amount} серебра");
-        
-        Console.WriteLine($"[Shop] {target.PlayerName} получил {amount} серебра");
-    }
-
-    [ConsoleCommand("css_addgift", "Добавить подарок на карту")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(minArgs: 1, usage: "<сумма серебра>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnAddGiftCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        if (!int.TryParse(command.GetArg(1), out int silverAmount))
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Неверная сумма!");
-            return;
-        }
-
-        if (silverAmount <= 0)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Сумма должна быть больше 0!");
-            return;
-        }
-
-        var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
-        if (playerPos == null)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Не удалось получить позицию!");
-            return;
-        }
-
-        SpawnGiftBox(playerPos, silverAmount);
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Подарок создан! Награда: {ChatColors.Silver}{silverAmount} серебра");
-    }
-
-    [ConsoleCommand("css_removegifts", "Удалить все подарки")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
-    public void OnRemoveGiftsCommand(CCSPlayerController? caller, CommandInfo command)
-    {
-        int count = _giftBoxes.Count;
-        
-        foreach (var gift in _giftBoxes)
-        {
-            gift?.Remove();
-        }
-        
-        _giftBoxes.Clear();
-        _giftPositions.Clear();
-        SaveGifts();
-        
-        string msg = $" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Удалено подарков: {count}";
-        
-        if (caller != null)
-            caller.PrintToChat(msg);
-        else
-            Console.WriteLine($"[Shop] Удалено подарков: {count}");
-    }
-
-    [ConsoleCommand("css_listgifts", "Список всех подарков")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
-    public void OnListGiftsCommand(CCSPlayerController? caller, CommandInfo command)
-    {
-        if (_giftPositions.Count == 0)
-        {
-            if (caller != null)
-                caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Подарков нет");
-            else
-                Console.WriteLine("[Shop] Подарков нет");
-            return;
-        }
-
-        if (caller != null)
-            caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список подарков:");
-
-        for (int i = 0; i < _giftPositions.Count; i++)
-        {
-            var gift = _giftPositions[i];
-            string msg = $" {ChatColors.Yellow}#{i + 1}{ChatColors.Default} Позиция: ({gift.X:F1}, {gift.Y:F1}, {gift.Z:F1}) | Награда: {gift.SilverAmount}";
-            
-            if (caller != null)
-                caller.PrintToChat(msg);
-            else
-                Console.WriteLine($"[Shop] #{i + 1} Позиция: ({gift.X:F1}, {gift.Y:F1}, {gift.Z:F1}) | Награда: {gift.SilverAmount}");
-        }
-    }
-
-    [ConsoleCommand("css_addspawn", "Добавить спавн")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(minArgs: 1, usage: "<CT/T>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnAddSpawnCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        string team = command.GetArg(1).ToUpper();
-        if (team != "CT" && team != "T")
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Используйте: !addspawn <CT/T>");
-            return;
-        }
-
-        var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
-        var playerAng = player.PlayerPawn?.Value?.EyeAngles;
-        
-        if (playerPos == null || playerAng == null)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Не удалось получить позицию!");
-            return;
-        }
-
-        var spawnData = new SpawnData
-        {
-            X = playerPos.X,
-            Y = playerPos.Y,
-            Z = playerPos.Z,
-            AngleX = playerAng.X,
-            AngleY = playerAng.Y,
-            AngleZ = playerAng.Z,
-            Team = team
-        };
-
-        _customSpawns.Add(spawnData);
-        SaveSpawns();
-
-        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавн для {ChatColors.Yellow}{team}{ChatColors.Default} добавлен!");
-        Console.WriteLine($"[Shop] Спавн добавлен: {team} на ({playerPos.X:F1}, {playerPos.Y:F1}, {playerPos.Z:F1})");
-    }
-
-    [ConsoleCommand("css_removespawns", "Удалить все спавны")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
-    public void OnRemoveSpawnsCommand(CCSPlayerController? caller, CommandInfo command)
-    {
-        int count = _customSpawns.Count;
-        _customSpawns.Clear();
-        
-        foreach (var marker in _spawnMarkers)
-        {
-            marker?.Remove();
-        }
-        _spawnMarkers.Clear();
-        
-        SaveSpawns();
-        
-        string msg = $" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Удалено спавнов: {count}";
-        
-        if (caller != null)
-            caller.PrintToChat(msg);
-        else
-            Console.WriteLine($"[Shop] Удалено спавнов: {count}");
-    }
-
-    [ConsoleCommand("css_listspawns", "Список всех спавнов")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
-    public void OnListSpawnsCommand(CCSPlayerController? caller, CommandInfo command)
-    {
-        if (_customSpawns.Count == 0)
-        {
-            if (caller != null)
-                caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Спавнов нет");
-            else
-                Console.WriteLine("[Shop] Спавнов нет");
-            return;
-        }
-
-        if (caller != null)
-            caller.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} {ChatColors.Red}Список спавнов:");
-
-        for (int i = 0; i < _customSpawns.Count; i++)
-        {
-            var spawn = _customSpawns[i];
-            string msg = $" {ChatColors.Yellow}#{i + 1} [{spawn.Team}]{ChatColors.Default} Позиция: ({spawn.X:F1}, {spawn.Y:F1}, {spawn.Z:F1})";
-            
-            if (caller != null)
-                caller.PrintToChat(msg);
-            else
-                Console.WriteLine($"[Shop] #{i + 1} [{spawn.Team}] Позиция: ({spawn.X:F1}, {spawn.Y:F1}, {spawn.Z:F1})");
-        }
-    }
-
-    [ConsoleCommand("css_showspawns", "Показать маркеры спавнов")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnShowSpawnsCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        foreach (var marker in _spawnMarkers)
-        {
-            marker?.Remove();
-        }
-        _spawnMarkers.Clear();
-
-        foreach (var spawn in _customSpawns)
-        {
-            var marker = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
-            if (marker == null)
-                continue;
-
-            marker.SetModel("models/weapons/w_c4_planted.vmdl");
-            var position = new Vector(spawn.X, spawn.Y, spawn.Z);
-            marker.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
-            marker.DispatchSpawn();
-
-            if (spawn.Team == "CT")
+            string categoryName = category;
+            menu.AddItem(categoryName, (controller, option) =>
             {
-                marker.Glow.GlowColorOverride = Color.FromArgb(255, 0, 150, 255);
-            }
-            else
-            {
-                marker.Glow.GlowColorOverride = Color.FromArgb(255, 255, 50, 0);
-            }
-            
-            marker.Glow.GlowRange = 1000;
-            marker.Glow.GlowRangeMin = 0;
-            marker.Glow.GlowType = 3;
-            marker.Glow.GlowTeam = -1;
-
-            _spawnMarkers.Add(marker);
-        }
-
-        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Показано маркеров: {_spawnMarkers.Count}");
-    }
-
-    [ConsoleCommand("css_hidespawns", "Скрыть маркеры спавнов")]
-    [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnHideSpawnsCommand(CCSPlayerController? player, CommandInfo command)
-    {
-        if (player == null || !player.IsValid)
-            return;
-
-        foreach (var marker in _spawnMarkers)
-        {
-            marker?.Remove();
-        }
-        
-        int count = _spawnMarkers.Count;
-        _spawnMarkers.Clear();
-
-        player.PrintToChat($" {ChatColors.Green}[Okyes Admin]{ChatColors.Default} Скрыто маркеров: {count}");
-    }
-
-
-
-    private HookResult OnPlayerConnect(EventPlayerConnectFull @event, GameEventInfo info)
-    {
-        var player = @event.Userid;
-        
-        if (player == null || !player.IsValid || player.IsBot)
-            return HookResult.Continue;
-
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        if (data.ActiveSkin != null)
-        {
-            Server.NextFrame(() =>
-            {
-                if (player.IsValid && player.PlayerPawn?.Value != null)
-                {
-                    ApplySkin(player, data.ActiveSkin);
-                }
+                ShowItemsMenu(controller, categoryName);
             });
         }
 
-        return HookResult.Continue;
+        menu.PrevMenu = GetMainMenu(player);
+        menu.Display(player, 0);
     }
 
-    private HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+    private void ShowItemsMenu(CCSPlayerController player, string categoryName)
     {
-        var player = @event.Userid;
-        if (player != null && player.IsValid)
+        var menu = new WasdMenu(categoryName, this);
+
+        if (_categories.TryGetValue(categoryName, out var items))
         {
-            ulong steamId = player.SteamID;
-            if (_collectedGifts.ContainsKey(steamId))
+            foreach (var item in items)
             {
-                _collectedGifts.Remove(steamId);
-            }
-            if (_playerMenuContext.ContainsKey(steamId))
-            {
-                _playerMenuContext.Remove(steamId);
+                var shopItem = item;
+                menu.AddItem(shopItem.Name, (controller, option) =>
+                {
+                    ShowItemMenu(controller, categoryName, shopItem);
+                });
             }
         }
-        
-        SaveData();
-        return HookResult.Continue;
+
+        menu.PrevMenu = GetCategoriesMenu(player);
+        menu.Display(player, 0);
     }
 
-    private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
+    private void ShowItemMenu(CCSPlayerController player, string categoryName, ShopItem item)
     {
-        var player = @event.Userid;
-        if (player == null || !player.IsValid)
-            return HookResult.Continue;
+        string currencyName = item.Currency == Currency.Gold ? "золота" : "серебра";
+        var menu = new WasdMenu(item.Name, this);
 
-        ulong steamId = player.SteamID;
-        if (_collectedGifts.ContainsKey(steamId))
+        menu.AddItem($"Цена: {item.Price} {currencyName}", (_, _) => { }, DisableOption.DisableShowNumber);
+        menu.AddItem($"Длительность: {item.DurationDays} дней", (_, _) => { }, DisableOption.DisableShowNumber);
+
+        menu.AddItem("Купить", (controller, option) =>
         {
-            _collectedGifts[steamId].Clear();
-        }
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
-    {
-        Server.NextFrame(() =>
-        {
-            SpawnAllGifts();
+            BuyItem(controller, item);
         });
 
-        return HookResult.Continue;
+        menu.PrevMenu = GetItemsMenu(player, categoryName);
+        menu.Display(player, 0);
     }
 
-
-
-    private void HandleQuickShopCommand(CCSPlayerController player, int num)
+    private void BuyItem(CCSPlayerController player, ShopItem item)
     {
-        ulong steamId = player.SteamID;
-        string context = _playerMenuContext.ContainsKey(steamId) ? _playerMenuContext[steamId] : "shop_main";
-        
-        Console.WriteLine($"[Shop] HandleQuickShopCommand: player={player.PlayerName}, num={num}, context={context}");
+        var data = GetData(player);
+        int balance = item.Currency == Currency.Gold ? data.Gold : data.Silver;
+        string currencyName = item.Currency == Currency.Gold ? "золота" : "серебра";
 
-        if (context == "shop_main")
+        if (balance < item.Price)
         {
-            Console.WriteLine($"[Shop] Вызываем HandleShopMainChoice с choice={num}");
-            HandleShopMainChoice(player, num);
+            player.PrintToChat($" {ChatColors.Red}[Магазин] Недостаточно {currencyName}! Нужно: {item.Price}, у вас: {balance}");
+            return;
         }
-        else if (context == "shop_categories")
+
+        if (item.Currency == Currency.Gold)
+            data.Gold -= item.Price;
+        else
+            data.Silver -= item.Price;
+
+        SaveData();
+
+        player.PrintToChat($" {ChatColors.Green}[Магазин] Вы купили {ChatColors.Gold}{item.Name}{ChatColors.Green} на {item.DurationDays} дней!");
+    }
+
+    private WasdMenu GetMainMenu(CCSPlayerController player)
+    {
+        var data = GetData(player);
+        var menu = new WasdMenu($"Золото: {data.Gold} | Серебро: {data.Silver}", this);
+        menu.AddItem("Товары", (controller, option) => ShowCategoriesMenu(controller));
+        return menu;
+    }
+
+    private WasdMenu GetCategoriesMenu(CCSPlayerController player)
+    {
+        var menu = new WasdMenu("Товары", this);
+        foreach (var category in _categories.Keys)
         {
-            HandleCategoryChoice(player, num);
+            string categoryName = category;
+            menu.AddItem(categoryName, (controller, option) => ShowItemsMenu(controller, categoryName));
         }
-        else if (context.StartsWith("shop_items_"))
+        menu.PrevMenu = GetMainMenu(player);
+        return menu;
+    }
+
+    private WasdMenu GetItemsMenu(CCSPlayerController player, string categoryName)
+    {
+        var menu = new WasdMenu(categoryName, this);
+        if (_categories.TryGetValue(categoryName, out var items))
         {
-            HandleItemChoice(player, num, context);
-        }
-        else if (context == "shop_sell")
-        {
-            HandleSellChoice(player, num);
-        }
-        else if (context == "shop_inventory")
-        {
-            HandleInventoryChoice(player, num);
-        }
-        else if (context == "shop_empty_sell" || context == "shop_empty_inventory")
-        {
-            if (num == 1)
+            foreach (var item in items)
             {
-                ShowShopMenu(player);
+                var shopItem = item;
+                menu.AddItem(shopItem.Name, (controller, option) => ShowItemMenu(controller, categoryName, shopItem));
             }
         }
+        menu.PrevMenu = GetCategoriesMenu(player);
+        return menu;
     }
 
-    private void ShowShopMenu(CCSPlayerController player)
+    [ConsoleCommand("css_givegold", "Выдать золото игроку")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 2, usage: "<userid> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnGiveGoldCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        int ownedItems = data.OwnedSkins.Count + data.OwnedTrails.Count;
-        int totalItems = _shopItems.Count;
-        int availableItems = totalItems - ownedItems;
-
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Серебро: {ChatColors.Silver}{data.Silver}{ChatColors.Default} | Золото: {ChatColors.Gold}{data.Gold}");
-        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Купить товары [{availableItems}/{totalItems}]");
-        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Продать товары [{ownedItems}]");
-        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Мой инвентарь [{ownedItems}]");
-        
-        _playerMenuContext[steamId] = "shop_main";
+        GiveCurrency(command, Currency.Gold);
     }
 
-    private void HandleShopMainChoice(CCSPlayerController player, int choice)
+    [ConsoleCommand("css_givesilver", "Выдать серебро игроку")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 2, usage: "<userid> <количество>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnGiveSilverCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        ulong steamId = player.SteamID;
-        
-        Console.WriteLine($"[Shop] HandleShopMainChoice: choice={choice}");
-        
-        switch (choice)
+        GiveCurrency(command, Currency.Silver);
+    }
+
+    private void GiveCurrency(CommandInfo command, Currency currency)
+    {
+        if (!int.TryParse(command.GetArg(1), out int userId) || !int.TryParse(command.GetArg(2), out int amount))
         {
-            case 1:
-                Console.WriteLine($"[Shop] Открываем категории магазина");
-                ShowShopCategories(player);
-                break;
-            case 2:
-                Console.WriteLine($"[Shop] Открываем меню продажи");
-                ShowSellMenu(player);
-                break;
-            case 3:
-                Console.WriteLine($"[Shop] Открываем инвентарь");
-                ShowInventory(player);
-                break;
-        }
-    }
-
-    private void ShowShopCategories(CCSPlayerController player)
-    {
-        ulong steamId = player.SteamID;
-        
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Категории товаров:");
-        player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Скины игроков");
-        player.PrintToChat($" {ChatColors.Yellow}!2{ChatColors.Default} - Следы за игроком");
-        player.PrintToChat($" {ChatColors.Yellow}!3{ChatColors.Default} - Назад в главное меню");
-        
-        _playerMenuContext[steamId] = "shop_categories";
-    }
-
-    private void HandleCategoryChoice(CCSPlayerController player, int choice)
-    {
-        ulong steamId = player.SteamID;
-        
-        switch (choice)
-        {
-            case 1:
-                ShowShopItems(player, "skin");
-                break;
-            case 2:
-                ShowShopItems(player, "trail");
-                break;
-            case 3:
-                ShowShopMenu(player);
-                break;
-        }
-    }
-
-    private void ShowShopItems(CCSPlayerController player, string category)
-    {
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-        var items = _shopItems.Where(i => i.Value.Type == category).Take(8).ToList();
-
-        string categoryName = category == "skin" ? "Скины" : "Следы";
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {categoryName}:");
-
-        for (int i = 0; i < items.Count; i++)
-        {
-            var item = items[i].Value;
-            string price = item.GoldPrice > 0 
-                ? $"{item.GoldPrice:N0} золота".Replace(",", " ")
-                : $"{item.SilverPrice:N0} серебра".Replace(",", " ");
-            
-            string owned = (category == "skin" ? data.OwnedSkins : data.OwnedTrails).Contains(item.Id) 
-                ? $" {ChatColors.Green}[КУПЛЕНО]" 
-                : "";
-            
-            player.PrintToChat($" {ChatColors.Yellow}!{i + 1}{ChatColors.Default} - {item.Name} ({price}){owned}");
-        }
-        
-        player.PrintToChat($" {ChatColors.Yellow}!9{ChatColors.Default} - Назад");
-        
-        _playerMenuContext[steamId] = $"shop_items_{category}";
-    }
-
-    private void HandleItemChoice(CCSPlayerController player, int choice, string context)
-    {
-        if (choice == 9)
-        {
-            ShowShopCategories(player);
+            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Некорректные аргументы");
             return;
         }
 
-        string category = context.Replace("shop_items_", "");
-        var items = _shopItems.Where(i => i.Value.Type == category).Take(8).ToList();
-
-        if (choice < 1 || choice > items.Count)
+        var target = Utilities.GetPlayers().FirstOrDefault(p => p.IsValid && p.UserId == userId);
+        if (target == null)
         {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Неверный выбор!");
+            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Игрок не найден");
             return;
         }
 
-        var item = items[choice - 1];
-        BuyItem(player, item.Key);
-    }
-
-    private void HandleSellChoice(CCSPlayerController player, int choice)
-    {
-        if (choice == 9)
+        var data = GetData(target);
+        string currencyName;
+        if (currency == Currency.Gold)
         {
-            ShowShopMenu(player);
-            return;
-        }
-
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-        var allItems = data.OwnedSkins.Concat(data.OwnedTrails).ToList();
-
-        if (choice < 1 || choice > allItems.Count)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Неверный выбор!");
-            return;
-        }
-
-        string itemId = allItems[choice - 1];
-        
-        if (!_shopItems.ContainsKey(itemId))
-            return;
-
-        var item = _shopItems[itemId];
-        int sellPrice = item.GoldPrice > 0 ? item.GoldPrice / 2 : item.SilverPrice / 2;
-
-        if (data.ActiveSkin == itemId || data.ActiveTrail == itemId)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Нельзя продать активный товар!");
-            return;
-        }
-
-        if (item.Type == "skin")
-        {
-            data.OwnedSkins.Remove(itemId);
-        }
-        else if (item.Type == "trail")
-        {
-            data.OwnedTrails.Remove(itemId);
-        }
-        
-        if (item.GoldPrice > 0)
-        {
-            int refund = item.GoldPrice / 2;
-            data.Gold += refund;
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продано: {ChatColors.Yellow}{item.Name}{ChatColors.Default} за {ChatColors.Gold}{refund} 🪙");
+            data.Gold += amount;
+            currencyName = "золота";
         }
         else
         {
-            data.Silver += sellPrice;
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продано: {ChatColors.Yellow}{item.Name}{ChatColors.Default} за {ChatColors.Silver}{sellPrice} ⚪");
+            data.Silver += amount;
+            currencyName = "серебра";
         }
 
         SaveData();
-    }
-
-    private void HandleInventoryChoice(CCSPlayerController player, int choice)
-    {
-        if (choice == 9)
-        {
-            ShowShopMenu(player);
-            return;
-        }
-
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-        var allItems = data.OwnedSkins.Concat(data.OwnedTrails).ToList();
-
-        if (choice < 1 || choice > allItems.Count)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Неверный выбор!");
-            return;
-        }
-
-        string itemId = allItems[choice - 1];
-        
-        if (data.OwnedSkins.Contains(itemId))
-        {
-            if (_previewSkins.ContainsKey(steamId))
-            {
-                _previewSkins.Remove(steamId);
-            }
-
-            if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
-            {
-                _previewTimers[steamId]?.Kill();
-                _previewTimers.Remove(steamId);
-            }
-
-            data.ActiveSkin = itemId;
-            SaveData();
-
-            var item = _shopItems[itemId];
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Скин {ChatColors.Yellow}{item.Name}{ChatColors.Default} активирован!");
-            
-            ApplySkin(player, itemId);
-        }
-    }
-
-
-
-    private void ShowSellMenu(CCSPlayerController player)
-    {
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        int totalItems = data.OwnedSkins.Count + data.OwnedTrails.Count;
-        if (totalItems == 0)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас нет товаров для продажи");
-            player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Назад в главное меню");
-            _playerMenuContext[steamId] = "shop_empty_sell";
-            return;
-        }
-
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Продать товар:");
-
-        int index = 1;
-        foreach (var skinId in data.OwnedSkins.Take(4))
-        {
-            if (_shopItems.ContainsKey(skinId))
-            {
-                var item = _shopItems[skinId];
-                int sellPrice = item.GoldPrice > 0 ? item.GoldPrice / 2 : item.SilverPrice / 2;
-                string currency = item.GoldPrice > 0 ? $"{ChatColors.Gold}🪙" : $"{ChatColors.Silver}⚪";
-                string active = skinId == data.ActiveSkin ? $" {ChatColors.Green}[АКТИВЕН]" : "";
-                
-                player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name} (продать за {sellPrice} {currency}){active}");
-                index++;
-            }
-        }
-
-        foreach (var trailId in data.OwnedTrails.Take(8 - index + 1))
-        {
-            if (_shopItems.ContainsKey(trailId))
-            {
-                var item = _shopItems[trailId];
-                int sellPrice = item.GoldPrice > 0 ? item.GoldPrice / 2 : item.SilverPrice / 2;
-                string currency = item.GoldPrice > 0 ? $"{ChatColors.Gold}🪙" : $"{ChatColors.Silver}⚪";
-                string active = trailId == data.ActiveTrail ? $" {ChatColors.Green}[АКТИВЕН]" : "";
-                
-                player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name} (продать за {sellPrice} {currency}){active}");
-                index++;
-            }
-        }
-
-        player.PrintToChat($" {ChatColors.Yellow}!9{ChatColors.Default} - Назад");
-        _playerMenuContext[steamId] = "shop_sell";
-    }
-
-    private void ShowInventory(CCSPlayerController player)
-    {
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-
-        int totalItems = data.OwnedSkins.Count + data.OwnedTrails.Count;
-        if (totalItems == 0)
-        {
-            player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} У вас пока нет товаров");
-            player.PrintToChat($" {ChatColors.Yellow}!1{ChatColors.Default} - Назад в главное меню");
-            _playerMenuContext[steamId] = "shop_empty_inventory";
-            return;
-        }
-
-        player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Ваш инвентарь:");
-        
-        int index = 1;
-        if (data.OwnedSkins.Count > 0)
-        {
-            player.PrintToChat($" {ChatColors.Green}Скины:");
-            foreach (var skinId in data.OwnedSkins.Take(4))
-            {
-                if (_shopItems.ContainsKey(skinId))
-                {
-                    var item = _shopItems[skinId];
-                    string active = skinId == data.ActiveSkin ? $" {ChatColors.Green}[АКТИВЕН]" : "";
-                    player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name}{active}");
-                    index++;
-                }
-            }
-        }
-
-        if (data.OwnedTrails.Count > 0)
-        {
-            player.PrintToChat($" {ChatColors.Green}Следы:");
-            foreach (var trailId in data.OwnedTrails.Take(8 - index + 1))
-            {
-                if (_shopItems.ContainsKey(trailId))
-                {
-                    var item = _shopItems[trailId];
-                    string active = trailId == data.ActiveTrail ? $" {ChatColors.Green}[АКТИВЕН]" : "";
-                    player.PrintToChat($" {ChatColors.Yellow}!{index}{ChatColors.Default} - {item.Name}{active}");
-                    index++;
-                }
-            }
-        }
-
-        player.PrintToChat($" {ChatColors.Yellow}!9{ChatColors.Default} - Назад");
-        _playerMenuContext[steamId] = "shop_inventory";
-    }
-
-
-
-    private void BuyItem(CCSPlayerController player, string itemId)
-    {
-        ulong steamId = player.SteamID;
-        var data = GetPlayerData(steamId);
-        var item = _shopItems[itemId];
-
-        var ownedList = item.Type == "skin" ? data.OwnedSkins : data.OwnedTrails;
-        
-        if (ownedList.Contains(itemId))
-        {
-            player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} У вас уже есть этот товар!");
-            return;
-        }
-
-        if (_previewSkins.ContainsKey(steamId))
-        {
-            _previewSkins.Remove(steamId);
-        }
-
-        if (_previewTimers.ContainsKey(steamId) && _previewTimers[steamId] != null)
-        {
-            _previewTimers[steamId]?.Kill();
-            _previewTimers.Remove(steamId);
-        }
-
-        if (item.GoldPrice > 0)
-        {
-            if (data.Gold < item.GoldPrice)
-            {
-                player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Недостаточно золота! Нужно: {ChatColors.Gold}{item.GoldPrice}");
-                return;
-            }
-            data.Gold -= item.GoldPrice;
-        }
-        else
-        {
-            if (data.Silver < item.SilverPrice)
-            {
-                player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Недостаточно серебра! Нужно: {ChatColors.Silver}{item.SilverPrice}");
-                return;
-            }
-            data.Silver -= item.SilverPrice;
-        }
-
-        if (item.Type == "skin")
-        {
-            data.OwnedSkins.Add(itemId);
-        }
-        else if (item.Type == "trail")
-        {
-            data.OwnedTrails.Add(itemId);
-        }
-        SaveData();
-
-        player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Куплено: {ChatColors.Yellow}{item.Name}");
-        player.PrintToChat($" {ChatColors.Green}[Магазин]{ChatColors.Default} Используйте /setskin {itemId} чтобы надеть");
-        
-        Server.PrintToChatAll($" {ChatColors.Green}[Магазин]{ChatColors.Default} {player.PlayerName} купил {ChatColors.Yellow}{item.Name}!");
-    }
-
-    private void ApplySkin(CCSPlayerController player, string skinId)
-    {
-        if (!_shopItems.ContainsKey(skinId))
-            return;
-
-        var item = _shopItems[skinId];
-        
-        Console.WriteLine($"[Shop] Применение скина {item.Name} для игрока {player.PlayerName}");
-    }
-
-    private void RemoveSkin(CCSPlayerController player)
-    {
-        Console.WriteLine($"[Shop] Снятие скина для игрока {player.PlayerName}");
-    }
-
-    private void SpawnGiftBox(Vector position, int silverAmount)
-    {
-        var gift = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
-        if (gift == null)
-            return;
-
-        gift.SetModel("models/weapons/w_c4_planted.vmdl");
-        gift.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
-        gift.DispatchSpawn();
-
-        gift.Glow.GlowColorOverride = Color.FromArgb(255, 255, 215, 0);
-        gift.Glow.GlowRange = 2000;
-        gift.Glow.GlowRangeMin = 0;
-        gift.Glow.GlowType = 3;
-        gift.Glow.GlowTeam = -1;
-
-        _giftBoxes.Add(gift);
-        _giftPositions.Add(new GiftData 
-        { 
-            X = position.X, 
-            Y = position.Y, 
-            Z = position.Z, 
-            SilverAmount = silverAmount 
-        });
-        
-        SaveGifts();
-        
-        Console.WriteLine($"[Shop] Подарок создан на позиции {position.X}, {position.Y}, {position.Z} | Награда: {silverAmount} серебра");
-    }
-
-    private void CheckGiftPickups()
-    {
-        var players = Utilities.GetPlayers().Where(p => p?.IsValid == true && p.PawnIsAlive).ToList();
-        
-        foreach (var player in players)
-        {
-            var playerPos = player.PlayerPawn?.Value?.AbsOrigin;
-            if (playerPos == null)
-                continue;
-
-            for (int i = _giftBoxes.Count - 1; i >= 0; i--)
-            {
-                var gift = _giftBoxes[i];
-                if (gift == null || !gift.IsValid)
-                {
-                    _giftBoxes.RemoveAt(i);
-                    continue;
-                }
-
-                var giftPos = gift.AbsOrigin;
-                if (giftPos == null)
-                    continue;
-
-                float distance = CalculateDistance(playerPos, giftPos);
-                
-                if (distance < 100.0f)
-                {
-                    ulong steamId = player.SteamID;
-                    
-                    if (!_collectedGifts.ContainsKey(steamId))
-                    {
-                        _collectedGifts[steamId] = new HashSet<int>();
-                    }
-
-                    if (_collectedGifts[steamId].Contains(i))
-                        continue;
-
-                    _collectedGifts[steamId].Add(i);
-
-                    var data = GetPlayerData(steamId);
-                    data.Silver += GiftSilverReward;
-                    SaveData();
-
-                    player.PrintToChat($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} Вы подобрали подарок! +{ChatColors.Silver}{GiftSilverReward} серебра");
-                    Server.PrintToChatAll($" {ChatColors.Green}[Okyes Shop]{ChatColors.Default} {player.PlayerName} подобрал подарок!");
-                }
-            }
-        }
-    }
-
-    private float CalculateDistance(Vector pos1, Vector pos2)
-    {
-        float dx = pos1.X - pos2.X;
-        float dy = pos1.Y - pos2.Y;
-        float dz = pos1.Z - pos2.Z;
-        return (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    private PlayerData GetPlayerData(ulong steamId)
-    {
-        if (!_playerData.ContainsKey(steamId))
-        {
-            _playerData[steamId] = new PlayerData();
-        }
-        return _playerData[steamId];
-    }
-
-    private void InitializeShopItems()
-    {
-        _shopItems["skin1"] = new ShopItem
-        {
-            Id = "skin1",
-            Name = "Джокер",
-            GoldPrice = 0,
-            SilverPrice = 100000,
-            Type = "skin"
-        };
-
-        _shopItems["trail1"] = new ShopItem
-        {
-            Id = "trail1",
-            Name = "Мяч",
-            GoldPrice = 0,
-            SilverPrice = 100000,
-            Type = "trail"
-        };
+        target.PrintToChat($" {ChatColors.Green}[Магазин] Вам выдано {amount} {currencyName}!");
     }
 
     private void LoadData()
@@ -1626,9 +288,7 @@ public class ShopPlugin : BasePlugin
                 return;
 
             foreach (var kvp in data)
-            {
                 _playerData[kvp.Key] = kvp.Value;
-            }
 
             Console.WriteLine($"[{ModuleName}] Загружено данных: {_playerData.Count} игроков");
         }
@@ -1649,137 +309,5 @@ public class ShopPlugin : BasePlugin
         {
             Console.WriteLine($"[{ModuleName}] Ошибка сохранения данных: {ex.Message}");
         }
-    }
-
-    private void LoadGiftsData()
-    {
-        try
-        {
-            Console.WriteLine($"[{ModuleName}] Путь к файлу подарков: {GiftsFilePath}");
-            
-            if (!File.Exists(GiftsFilePath))
-            {
-                Console.WriteLine($"[{ModuleName}] Файл подарков не найден");
-                return;
-            }
-
-            string json = File.ReadAllText(GiftsFilePath);
-            Console.WriteLine($"[{ModuleName}] Содержимое файла подарков: {json}");
-            
-            var gifts = JsonSerializer.Deserialize<List<GiftData>>(json);
-
-            if (gifts == null)
-            {
-                Console.WriteLine($"[{ModuleName}] Десериализация вернула null");
-                return;
-            }
-
-            _giftPositions.Clear();
-            _giftPositions.AddRange(gifts);
-
-            Console.WriteLine($"[{ModuleName}] Загружено данных подарков: {_giftPositions.Count}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[{ModuleName}] Ошибка загрузки подарков: {ex.Message}");
-        }
-    }
-
-    private void SpawnAllGifts()
-    {
-        Console.WriteLine($"[{ModuleName}] SpawnAllGifts вызван. В _giftPositions: {_giftPositions.Count} подарков");
-        
-        foreach (var gift in _giftBoxes)
-        {
-            gift?.Remove();
-        }
-        _giftBoxes.Clear();
-
-        foreach (var giftData in _giftPositions)
-        {
-            Console.WriteLine($"[{ModuleName}] Спавн подарка: ({giftData.X:F1}, {giftData.Y:F1}, {giftData.Z:F1}) - {giftData.SilverAmount} серебра");
-            var position = new Vector(giftData.X, giftData.Y, giftData.Z);
-            SpawnGiftBoxFromData(position, giftData.SilverAmount);
-        }
-
-        Console.WriteLine($"[{ModuleName}] Заспавнено подарков: {_giftBoxes.Count}");
-    }
-
-    private void SaveGifts()
-    {
-        try
-        {
-            string json = JsonSerializer.Serialize(_giftPositions, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(GiftsFilePath, json);
-            Console.WriteLine($"[{ModuleName}] Подарки сохранены: {_giftPositions.Count} штук в {GiftsFilePath}");
-            Console.WriteLine($"[{ModuleName}] JSON: {json}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[{ModuleName}] Ошибка сохранения подарков: {ex.Message}");
-        }
-    }
-
-    private void SpawnGiftBoxFromData(Vector position, int silverAmount)
-    {
-        var gift = Utilities.CreateEntityByName<CBaseModelEntity>("prop_dynamic");
-        if (gift == null)
-            return;
-
-        gift.SetModel("models/weapons/w_c4_planted.vmdl");
-        gift.Teleport(position, new QAngle(0, 0, 0), new Vector(0, 0, 0));
-        gift.DispatchSpawn();
-
-        gift.Glow.GlowColorOverride = Color.FromArgb(255, 255, 215, 0);
-        gift.Glow.GlowRange = 2000;
-        gift.Glow.GlowRangeMin = 0;
-        gift.Glow.GlowType = 3;
-        gift.Glow.GlowTeam = -1;
-
-        _giftBoxes.Add(gift);
-    }
-
-    private void LoadSpawns()
-    {
-        try
-        {
-            if (!File.Exists(SpawnsFilePath))
-                return;
-
-            string json = File.ReadAllText(SpawnsFilePath);
-            var spawns = JsonSerializer.Deserialize<List<SpawnData>>(json);
-
-            if (spawns == null)
-                return;
-
-            _customSpawns.AddRange(spawns);
-
-            Console.WriteLine($"[{ModuleName}] Загружено спавнов: {_customSpawns.Count}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[{ModuleName}] Ошибка загрузки спавнов: {ex.Message}");
-        }
-    }
-
-    private void SaveSpawns()
-    {
-        try
-        {
-            string json = JsonSerializer.Serialize(_customSpawns, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(SpawnsFilePath, json);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[{ModuleName}] Ошибка сохранения спавнов: {ex.Message}");
-        }
-    }
-
-    public override void Unload(bool hotReload)
-    {
-        SaveData();
-        SaveGifts();
-        SaveSpawns();
-        Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 }
