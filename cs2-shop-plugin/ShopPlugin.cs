@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
+using CS2MenuManager.API.Class;
 using CS2MenuManager.API.Enum;
 using CS2MenuManager.API.Menu;
 using System.Drawing;
@@ -112,7 +113,9 @@ public class ShopPlugin : BasePlugin
 
             var origin = new Vector(pawn.AbsOrigin.X, pawn.AbsOrigin.Y, pawn.AbsOrigin.Z + 5);
 
-            if (_lastTrailPos.TryGetValue(slot, out var lastPos))
+            bool menuOpen = MenuManager.GetActiveMenu(player) != null;
+
+            if (!menuOpen && _lastTrailPos.TryGetValue(slot, out var lastPos))
             {
                 DrawTrailSegment(lastPos, origin, color.Value);
             }
