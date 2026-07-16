@@ -180,6 +180,16 @@ public class ShopPlugin : BasePlugin
             }
 
             target.Enabled = !target.Enabled;
+
+            if (target.Enabled && target.Category == "Трейлы")
+            {
+                foreach (var other in data.Purchases)
+                {
+                    if (other.Category == "Трейлы" && other.ItemName != target.ItemName)
+                        other.Enabled = false;
+                }
+            }
+
             SaveData();
 
             if (target.Enabled)
