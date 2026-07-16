@@ -144,13 +144,65 @@ public class ShopPlugin : BasePlugin
         {
             foreach (var purchase in data.Purchases)
             {
-                int daysLeft = Math.Max(0, (int)Math.Ceiling((purchase.ExpiresAt - DateTime.UtcNow).TotalDays));
-                menu.AddItem($"{purchase.ItemName} — осталось {daysLeft} дн.", (_, _) => { }, DisableOption.DisableShowNumber);
+                var current = purchase;
+                int daysLeft = Math.Max(0, (int)Math.Ceiling((current.ExpiresAt - DateTime.UtcNow).TotalDays));
+                menu.AddItem($"{current.ItemName} — осталось {daysLeft} дн.", (controller, option) =>
+                {
+                    ShowPurchaseMenu(controller, current);
+                });
             }
         }
 
         menu.PrevMenu = GetMainMenu(player);
         menu.Display(player, 0);
+    }
+
+    private void ShowPurchaseMenu(CCSPlayerController player, Purchase purchase)
+    {
+        int daysLeft = Math.Max(0, (int)Math.Ceiling((purchase.ExpiresAt - DateTime.UtcNow).TotalDays));
+        var menu = new WasdMenu(purchase.ItemName, this);
+
+        menu.AddItem($"Категория: {purchase.Category}", (_, _) => { }, DisableOption.DisableShowNumber);
+        menu.AddItem($"Осталось: {daysLeft} дней", (_, _) => { }, DisableOption.DisableShowNumber);
+
+        menu.AddItem("Отключить", (controller, option) =>
+        {
+            var data = GetData(controller);
+            data.Purchases.RemoveAll(p => p.ItemName == purchase.ItemName);
+            SaveData();
+
+            controller.PrintToChat($" {ChatColors.Red}[Магазин] {purchase.ItemName} отключён");
+            ShowPurchasesMenu(controller);
+        });
+
+        menu.PrevMenu = GetPurchasesMenu(player);
+        menu.Display(player, 0);
+    }
+
+    private WasdMenu GetPurchasesMenu(CCSPlayerController player)
+    {
+        var data = GetData(player);
+        var menu = new WasdMenu("Мои покупки", this);
+
+        if (data.Purchases.Count == 0)
+        {
+            menu.AddItem("Нет активных покупок", (_, _) => { }, DisableOption.DisableShowNumber);
+        }
+        else
+        {
+            foreach (var purchase in data.Purchases)
+            {
+                var current = purchase;
+                int daysLeft = Math.Max(0, (int)Math.Ceiling((current.ExpiresAt - DateTime.UtcNow).TotalDays));
+                menu.AddItem($"{current.ItemName} — осталось {daysLeft} дн.", (controller, option) =>
+                {
+                    ShowPurchaseMenu(controller, current);
+                });
+            }
+        }
+
+        menu.PrevMenu = GetMainMenu(player);
+        return menu;
     }
 
     private void CleanupExpired(PlayerData data)
