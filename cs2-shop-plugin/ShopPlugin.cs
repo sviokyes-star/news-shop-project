@@ -25,6 +25,7 @@ public class ShopPlugin : BasePlugin
         public Currency Currency { get; set; }
         public int Price { get; set; }
         public int DurationDays { get; set; }
+        public string Model { get; set; } = "";
     }
 
     public class Purchase
@@ -48,6 +49,7 @@ public class ShopPlugin : BasePlugin
         public string Currency { get; set; } = "Gold";
         public int Price { get; set; }
         public int DurationDays { get; set; }
+        public string Model { get; set; } = "";
     }
 
     private readonly Dictionary<string, List<ShopItem>> _categories = new();
@@ -108,7 +110,8 @@ public class ShopPlugin : BasePlugin
                         Name = configItem.Name,
                         Currency = currency,
                         Price = configItem.Price,
-                        DurationDays = configItem.DurationDays
+                        DurationDays = configItem.DurationDays,
+                        Model = configItem.Model
                     });
                 }
                 _categories[category.Key] = items;
@@ -128,14 +131,14 @@ public class ShopPlugin : BasePlugin
         {
             ["Скины"] = new List<ConfigItem>
             {
-                new ConfigItem { Name = "AK-47 | Neon", Currency = "Gold", Price = 10, DurationDays = 10 },
-                new ConfigItem { Name = "AWP | Dragon", Currency = "Gold", Price = 25, DurationDays = 30 },
-                new ConfigItem { Name = "M4A1 | Silver", Currency = "Silver", Price = 100, DurationDays = 7 },
+                new ConfigItem { Name = "Спецназовец", Currency = "Gold", Price = 10, DurationDays = 10, Model = "characters/models/ctm_sas/ctm_sas.vmdl" },
+                new ConfigItem { Name = "Пират", Currency = "Gold", Price = 25, DurationDays = 30, Model = "characters/models/tm_phoenix/tm_phoenix.vmdl" },
+                new ConfigItem { Name = "Профессионал", Currency = "Silver", Price = 100, DurationDays = 7, Model = "characters/models/ctm_fbi/ctm_fbi.vmdl" },
             },
             ["Трейлы"] = new List<ConfigItem>
             {
-                new ConfigItem { Name = "Огненный трейл", Currency = "Gold", Price = 15, DurationDays = 10 },
-                new ConfigItem { Name = "Ледяной трейл", Currency = "Silver", Price = 150, DurationDays = 14 },
+                new ConfigItem { Name = "Огненный трейл", Currency = "Gold", Price = 15, DurationDays = 10, Model = "" },
+                new ConfigItem { Name = "Ледяной трейл", Currency = "Silver", Price = 150, DurationDays = 14, Model = "" },
             }
         };
 
