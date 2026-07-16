@@ -26,10 +26,18 @@ public class ShopPlugin : BasePlugin
         public int DurationDays { get; set; }
     }
 
+    public class Purchase
+    {
+        public string ItemName { get; set; } = "";
+        public string Category { get; set; } = "";
+        public DateTime ExpiresAt { get; set; }
+    }
+
     public class PlayerData
     {
         public int Gold { get; set; } = 0;
         public int Silver { get; set; } = 0;
+        public List<Purchase> Purchases { get; set; } = new();
     }
 
     private readonly Dictionary<string, List<ShopItem>> _categories = new();
@@ -112,7 +120,44 @@ public class ShopPlugin : BasePlugin
             ShowCategoriesMenu(controller);
         });
 
+        menu.AddItem("Мои покупки", (controller, option) =>
+        {
+            ShowPurchasesMenu(controller);
+        });
+
         menu.Display(player, 0);
+    }
+
+    private void ShowPurchasesMenu(CCSPlayerController player)
+    {
+        var data = GetData(player);
+        CleanupExpired(data);
+
+        var menu = new WasdMenu("Мои покупки", this);
+
+        if (data.Purchases.Count == 0)
+        {
+            menu.AddItem("Нет активных покупок", (_, _) => { }, DisableOption.DisableShowNumber);
+        }
+        else
+        {
+            foreach (var purchase in data.Purchases)
+            {
+                int daysLeft = Math.Max(0, (int)Math.Ceiling((purchase.ExpiresAt - DateTime.UtcNow).TotalDays));
+                menu.AddItem($"{purchase.ItemName} — осталось {daysLeft} дн.", (_, _) => { }, DisableOption.DisableShowNumber);
+            }
+        }
+
+        menu.PrevMenu = GetMainMenu(player);
+        menu.Display(player, 0);
+    }
+
+    private void CleanupExpired(PlayerData data)
+    {
+        int before = data.Purchases.Count;
+        data.Purchases.RemoveAll(p => p.ExpiresAt <= DateTime.UtcNow);
+        if (data.Purchases.Count != before)
+            SaveData();
     }
 
     private void ShowCategoriesMenu(CCSPlayerController player)
@@ -162,14 +207,14 @@ public class ShopPlugin : BasePlugin
 
         menu.AddItem("Купить", (controller, option) =>
         {
-            BuyItem(controller, item);
+            BuyItem(controller, categoryName, item);
         });
 
         menu.PrevMenu = GetItemsMenu(player, categoryName);
         menu.Display(player, 0);
     }
 
-    private void BuyItem(CCSPlayerController player, ShopItem item)
+    private void BuyItem(CCSPlayerController player, string categoryName, ShopItem item)
     {
         var data = GetData(player);
         int balance = item.Currency == Currency.Gold ? data.Gold : data.Silver;
@@ -179,6 +224,21 @@ public class ShopPlugin : BasePlugin
         {
             player.PrintToChat($" {ChatColors.Red}[Магазин] Недостаточно {currencyName}! Нужно: {item.Price}, у вас: {balance}");
             return;
+        }
+
+        var existing = data.Purchases.FirstOrDefault(p => p.ItemName == item.Name);
+        if (existing != null)
+        {
+            existing.ExpiresAt = existing.ExpiresAt.AddDays(item.DurationDays);
+        }
+        else
+        {
+            data.Purchases.Add(new Purchase
+            {
+                ItemName = item.Name,
+                Category = categoryName,
+                ExpiresAt = DateTime.UtcNow.AddDays(item.DurationDays)
+            });
         }
 
         if (item.Currency == Currency.Gold)
@@ -196,6 +256,7 @@ public class ShopPlugin : BasePlugin
         var data = GetData(player);
         var menu = new WasdMenu($"Золото: {data.Gold} | Серебро: {data.Silver}", this);
         menu.AddItem("Товары", (controller, option) => ShowCategoriesMenu(controller));
+        menu.AddItem("Мои покупки", (controller, option) => ShowPurchasesMenu(controller));
         return menu;
     }
 
