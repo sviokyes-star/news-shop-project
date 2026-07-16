@@ -127,6 +127,27 @@ public class ShopPlugin : BasePlugin
         return item?.Model ?? "";
     }
 
+    private void ApplyActiveSkin(CCSPlayerController player)
+    {
+        if (player == null || !player.IsValid || player.IsBot)
+            return;
+
+        string skinModel = GetActiveSkinModel(player);
+
+        Server.NextFrame(() =>
+        {
+            if (!player.IsValid)
+                return;
+
+            var pawn = player.PlayerPawn.Value;
+            if (pawn == null || !pawn.IsValid || pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE)
+                return;
+
+            if (!string.IsNullOrEmpty(skinModel))
+                pawn.SetModel(skinModel);
+        });
+    }
+
     public override void Unload(bool hotReload)
     {
         SaveData();
@@ -338,6 +359,9 @@ public class ShopPlugin : BasePlugin
             }
 
             SaveData();
+
+            if (target.Category == "Скины")
+                ApplyActiveSkin(controller);
 
             if (target.Enabled)
                 controller.PrintToChat($" {ChatColors.Green}[Магазин] {target.ItemName} включён");
