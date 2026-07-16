@@ -320,6 +320,33 @@ public class ShopPlugin : BasePlugin
         ChangeCurrency(command, Currency.Silver, true);
     }
 
+    [ConsoleCommand("css_balance", "Показать баланс игрока")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 1, usage: "<userid>", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnBalanceCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (!int.TryParse(command.GetArg(1), out int userId))
+        {
+            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Некорректные аргументы");
+            return;
+        }
+
+        var target = Utilities.GetPlayers().FirstOrDefault(p => p.IsValid && p.UserId == userId);
+        if (target == null)
+        {
+            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Игрок не найден");
+            return;
+        }
+
+        var data = GetData(target);
+        string message = $" {ChatColors.Green}[Магазин] Баланс {target.PlayerName}: {ChatColors.Gold}Золото: {data.Gold}{ChatColors.Green} | {ChatColors.Silver}Серебро: {data.Silver}";
+
+        if (caller != null && caller.IsValid)
+            caller.PrintToChat(message);
+        else
+            command.ReplyToCommand(message);
+    }
+
     private void ChangeCurrency(CommandInfo command, Currency currency, bool take)
     {
         if (!int.TryParse(command.GetArg(1), out int userId) || !int.TryParse(command.GetArg(2), out int amount) || amount < 0)

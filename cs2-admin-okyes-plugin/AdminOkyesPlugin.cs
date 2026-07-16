@@ -359,6 +359,21 @@ public class AdminOkyesPlugin : BasePlugin
         menu.AddItem("Забрать серебро", (controller, option) =>
             ShowShopActionMenu(controller, "css_takesilver", "серебро", "Забрать"));
 
+        menu.AddItem("Посмотреть баланс игрока", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления магазином");
+                return;
+            }
+
+            ShowPlayerSelectMenu(controller, "Чей баланс посмотреть?", target =>
+            {
+                int targetUserId = target.UserId ?? 0;
+                Server.NextFrame(() => controller.ExecuteClientCommandFromServer($"css_balance {targetUserId}"));
+            });
+        });
+
         menu.PrevMenu = GetMainMenu();
         menu.Display(player, 0);
     }
