@@ -6,6 +6,7 @@ using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using CS2MenuManager.API.Enum;
 using CS2MenuManager.API.Menu;
+using System.Drawing;
 using System.Text.Json;
 
 namespace ShopPlugin;
@@ -26,6 +27,7 @@ public class ShopPlugin : BasePlugin
         public int Price { get; set; }
         public int DurationDays { get; set; }
         public string Model { get; set; } = "";
+        public string Color { get; set; } = "";
     }
 
     public class Purchase
@@ -50,10 +52,12 @@ public class ShopPlugin : BasePlugin
         public int Price { get; set; }
         public int DurationDays { get; set; }
         public string Model { get; set; } = "";
+        public string Color { get; set; } = "";
     }
 
     private readonly Dictionary<string, List<ShopItem>> _categories = new();
     private readonly Dictionary<ulong, PlayerData> _playerData = new();
+    private readonly Dictionary<int, Vector> _lastTrailPos = new();
     private string DataFilePath => Path.Combine(ModuleDirectory, "players.json");
     private string ItemsFilePath => Path.Combine(ModuleDirectory, "items.json");
 
@@ -68,9 +72,133 @@ public class ShopPlugin : BasePlugin
         AddCommand("css_shop_reload", "Перезагрузить товары из items.json", OnReloadCommand);
 
         RegisterListener<Listeners.OnServerPrecacheResources>(OnPrecacheResources);
+        RegisterListener<Listeners.OnTick>(OnTick);
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
+        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
+        RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
 
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
+    }
+
+    private int _trailTickCounter = 0;
+
+    private void OnTick()
+    {
+        _trailTickCounter++;
+        if (_trailTickCounter < 4)
+            return;
+        _trailTickCounter = 0;
+
+        foreach (var player in Utilities.GetPlayers())
+        {
+            if (player == null || !player.IsValid || player.IsBot)
+                continue;
+
+            int slot = player.Slot;
+            var pawn = player.PlayerPawn.Value;
+
+            if (pawn == null || !pawn.IsValid || pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE || pawn.AbsOrigin == null)
+            {
+                RemoveTrail(slot);
+                continue;
+            }
+
+            var color = GetActiveTrailColor(player);
+            if (color == null)
+            {
+                RemoveTrail(slot);
+                continue;
+            }
+
+            var origin = new Vector(pawn.AbsOrigin.X, pawn.AbsOrigin.Y, pawn.AbsOrigin.Z + 5);
+
+            if (_lastTrailPos.TryGetValue(slot, out var lastPos))
+            {
+                DrawTrailSegment(lastPos, origin, color.Value);
+            }
+
+            _lastTrailPos[slot] = origin;
+        }
+    }
+
+    private void DrawTrailSegment(Vector start, Vector end, Color color)
+    {
+        var beam = Utilities.CreateEntityByName<CBeam>("beam");
+        if (beam == null)
+            return;
+
+        beam.Render = color;
+        beam.Width = 2.0f;
+
+        beam.Teleport(start, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+        beam.EndPos.X = end.X;
+        beam.EndPos.Y = end.Y;
+        beam.EndPos.Z = end.Z;
+
+        beam.DispatchSpawn();
+
+        AddTimer(1.5f, () =>
+        {
+            if (beam.IsValid)
+                beam.Remove();
+        });
+    }
+
+    private Color? GetActiveTrailColor(CCSPlayerController player)
+    {
+        var data = GetData(player);
+
+        var activeTrail = data.Purchases.FirstOrDefault(p =>
+            p.Category == "Трейлы" && p.Enabled && p.ExpiresAt > DateTime.UtcNow);
+
+        if (activeTrail == null)
+            return null;
+
+        if (!_categories.TryGetValue("Трейлы", out var trails))
+            return null;
+
+        var item = trails.FirstOrDefault(t => t.Name == activeTrail.ItemName);
+        return ParseColor(item?.Color);
+    }
+
+    private Color? ParseColor(string? colorString)
+    {
+        if (string.IsNullOrEmpty(colorString))
+            return null;
+
+        var parts = colorString.Split(',');
+        if (parts.Length != 3)
+            return null;
+
+        if (int.TryParse(parts[0].Trim(), out int r) &&
+            int.TryParse(parts[1].Trim(), out int g) &&
+            int.TryParse(parts[2].Trim(), out int b))
+        {
+            return Color.FromArgb(255, r, g, b);
+        }
+
+        return null;
+    }
+
+    private void RemoveTrail(int slot)
+    {
+        _lastTrailPos.Remove(slot);
+    }
+
+    private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player != null && player.IsValid)
+            RemoveTrail(player.Slot);
+        return HookResult.Continue;
+    }
+
+    private HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player != null && player.IsValid)
+            RemoveTrail(player.Slot);
+        return HookResult.Continue;
     }
 
     private void OnPrecacheResources(ResourceManifest manifest)
@@ -90,6 +218,8 @@ public class ShopPlugin : BasePlugin
         var player = @event.Userid;
         if (player == null || !player.IsValid || player.IsBot)
             return HookResult.Continue;
+
+        RemoveTrail(player.Slot);
 
         var skinModel = GetActiveSkinModel(player);
         if (string.IsNullOrEmpty(skinModel))
@@ -189,7 +319,8 @@ public class ShopPlugin : BasePlugin
                         Currency = currency,
                         Price = configItem.Price,
                         DurationDays = configItem.DurationDays,
-                        Model = configItem.Model
+                        Model = configItem.Model,
+                        Color = configItem.Color
                     });
                 }
                 _categories[category.Key] = items;
@@ -215,8 +346,8 @@ public class ShopPlugin : BasePlugin
             },
             ["Трейлы"] = new List<ConfigItem>
             {
-                new ConfigItem { Name = "Огненный трейл", Currency = "Gold", Price = 15, DurationDays = 10, Model = "" },
-                new ConfigItem { Name = "Ледяной трейл", Currency = "Silver", Price = 150, DurationDays = 14, Model = "" },
+                new ConfigItem { Name = "Огненный трейл", Currency = "Gold", Price = 15, DurationDays = 10, Model = "", Color = "255,80,0" },
+                new ConfigItem { Name = "Ледяной трейл", Currency = "Silver", Price = 150, DurationDays = 14, Model = "", Color = "0,180,255" },
             }
         };
 
