@@ -67,7 +67,64 @@ public class ShopPlugin : BasePlugin
         AddCommandListener("say_team", OnPlayerSay);
         AddCommand("css_shop_reload", "Перезагрузить товары из items.json", OnReloadCommand);
 
+        RegisterListener<Listeners.OnServerPrecacheResources>(OnPrecacheResources);
+        RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
+
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
+    }
+
+    private void OnPrecacheResources(ResourceManifest manifest)
+    {
+        foreach (var category in _categories.Values)
+        {
+            foreach (var item in category)
+            {
+                if (!string.IsNullOrEmpty(item.Model))
+                    manifest.AddResource(item.Model);
+            }
+        }
+    }
+
+    private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player == null || !player.IsValid || player.IsBot)
+            return HookResult.Continue;
+
+        var skinModel = GetActiveSkinModel(player);
+        if (string.IsNullOrEmpty(skinModel))
+            return HookResult.Continue;
+
+        Server.NextFrame(() =>
+        {
+            if (!player.IsValid)
+                return;
+
+            var pawn = player.PlayerPawn.Value;
+            if (pawn == null || !pawn.IsValid || pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE)
+                return;
+
+            pawn.SetModel(skinModel);
+        });
+
+        return HookResult.Continue;
+    }
+
+    private string GetActiveSkinModel(CCSPlayerController player)
+    {
+        var data = GetData(player);
+
+        var activeSkin = data.Purchases.FirstOrDefault(p =>
+            p.Category == "Скины" && p.Enabled && p.ExpiresAt > DateTime.UtcNow);
+
+        if (activeSkin == null)
+            return "";
+
+        if (!_categories.TryGetValue("Скины", out var skins))
+            return "";
+
+        var item = skins.FirstOrDefault(s => s.Name == activeSkin.ItemName);
+        return item?.Model ?? "";
     }
 
     public override void Unload(bool hotReload)
