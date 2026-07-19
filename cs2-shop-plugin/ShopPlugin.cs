@@ -69,14 +69,13 @@ public class ShopPlugin : BasePlugin
     private readonly Dictionary<ulong, PlayerData> _playerData = new();
     private readonly Dictionary<int, Vector> _lastTrailPos = new();
     private readonly List<Gift> _gifts = new();
-    private readonly Dictionary<string, DateTime> _giftCooldown = new();
+    private readonly Dictionary<int, HashSet<int>> _giftTakenThisLife = new();
     private readonly Dictionary<int, CDynamicProp> _giftProps = new();
     private string DataFilePath => Path.Combine(ModuleDirectory, "players.json");
     private string ItemsFilePath => Path.Combine(ModuleDirectory, "items.json");
     private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts.json");
 
     private const float GiftTouchRadius = 40.0f;
-    private const int GiftCooldownSeconds = 30;
     private const string GiftModel = "models/props/de_nuke/hr_nuke/nuke_ammo_can/nuke_ammo_can_01.vmdl";
     private float _giftSpinAngle = 0f;
 
@@ -107,7 +106,7 @@ public class ShopPlugin : BasePlugin
     private void OnMapStart(string mapName)
     {
         _giftProps.Clear();
-        _giftCooldown.Clear();
+        _giftTakenThisLife.Clear();
         AddTimer(2.0f, SpawnAllGiftProps);
     }
 
@@ -290,6 +289,7 @@ public class ShopPlugin : BasePlugin
             return HookResult.Continue;
 
         RemoveTrail(player.Slot);
+        _giftTakenThisLife.Remove(player.Slot);
 
         var skinModel = GetActiveSkinModel(player);
         if (string.IsNullOrEmpty(skinModel))
@@ -886,12 +886,16 @@ public class ShopPlugin : BasePlugin
             if (distSq > GiftTouchRadius * GiftTouchRadius)
                 continue;
 
-            string key = $"{player.SteamID}_{i}";
-            if (_giftCooldown.TryGetValue(key, out var last) &&
-                (DateTime.UtcNow - last).TotalSeconds < GiftCooldownSeconds)
+            if (!_giftTakenThisLife.TryGetValue(player.Slot, out var taken))
+            {
+                taken = new HashSet<int>();
+                _giftTakenThisLife[player.Slot] = taken;
+            }
+
+            if (taken.Contains(i))
                 continue;
 
-            _giftCooldown[key] = DateTime.UtcNow;
+            taken.Add(i);
 
             var data = GetData(player);
             bool isGold = gift.Currency.Equals("Gold", StringComparison.OrdinalIgnoreCase);
@@ -1004,7 +1008,7 @@ public class ShopPlugin : BasePlugin
     {
         int count = _gifts.Count;
         _gifts.Clear();
-        _giftCooldown.Clear();
+        _giftTakenThisLife.Clear();
         SaveGifts();
         SpawnAllGiftProps();
         command.ReplyToCommand($" {ChatColors.Green}[Подарок] Удалено подарков: {count}");
