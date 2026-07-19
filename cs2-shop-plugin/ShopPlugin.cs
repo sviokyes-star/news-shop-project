@@ -46,6 +46,15 @@ public class ShopPlugin : BasePlugin
         public List<Purchase> Purchases { get; set; } = new();
     }
 
+    public class Gift
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+        public string Currency { get; set; } = "Gold";
+        public int Amount { get; set; } = 1;
+    }
+
     public class ConfigItem
     {
         public string Name { get; set; } = "";
@@ -59,13 +68,20 @@ public class ShopPlugin : BasePlugin
     private readonly Dictionary<string, List<ShopItem>> _categories = new();
     private readonly Dictionary<ulong, PlayerData> _playerData = new();
     private readonly Dictionary<int, Vector> _lastTrailPos = new();
+    private readonly List<Gift> _gifts = new();
+    private readonly Dictionary<string, DateTime> _giftCooldown = new();
     private string DataFilePath => Path.Combine(ModuleDirectory, "players.json");
     private string ItemsFilePath => Path.Combine(ModuleDirectory, "items.json");
+    private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts.json");
+
+    private const float GiftTouchRadius = 40.0f;
+    private const int GiftCooldownSeconds = 30;
 
     public override void Load(bool hotReload)
     {
         InitializeItems();
         LoadData();
+        LoadGifts();
 
         AddCommand("css_shop", "Открыть магазин", OnShopCommand);
         AddCommandListener("say", OnPlayerSay);
@@ -103,6 +119,8 @@ public class ShopPlugin : BasePlugin
                 RemoveTrail(slot);
                 continue;
             }
+
+            CheckGiftPickup(player, pawn.AbsOrigin);
 
             var color = GetActiveTrailColor(player);
             if (color == null)
@@ -776,6 +794,178 @@ public class ShopPlugin : BasePlugin
             target.PrintToChat($" {ChatColors.Red}[Магазин] У вас забрали {amount} {currencyName}");
         else
             target.PrintToChat($" {ChatColors.Green}[Магазин] Вам выдано {amount} {currencyName}!");
+    }
+
+    private void CheckGiftPickup(CCSPlayerController player, Vector origin)
+    {
+        if (_gifts.Count == 0)
+            return;
+
+        for (int i = 0; i < _gifts.Count; i++)
+        {
+            var gift = _gifts[i];
+            float dx = origin.X - gift.X;
+            float dy = origin.Y - gift.Y;
+            float dz = origin.Z - gift.Z;
+            float distSq = dx * dx + dy * dy + dz * dz;
+
+            if (distSq > GiftTouchRadius * GiftTouchRadius)
+                continue;
+
+            string key = $"{player.SteamID}_{i}";
+            if (_giftCooldown.TryGetValue(key, out var last) &&
+                (DateTime.UtcNow - last).TotalSeconds < GiftCooldownSeconds)
+                continue;
+
+            _giftCooldown[key] = DateTime.UtcNow;
+
+            var data = GetData(player);
+            bool isGold = gift.Currency.Equals("Gold", StringComparison.OrdinalIgnoreCase);
+            if (isGold)
+                data.Gold += gift.Amount;
+            else
+                data.Silver += gift.Amount;
+
+            SaveData();
+
+            string currencyName = isGold ? "золота" : "серебра";
+            player.PrintToChat($" {ChatColors.Green}[Подарок] {ChatColors.Gold}Вы нашли подарок: +{gift.Amount} {currencyName}!");
+        }
+    }
+
+    [ConsoleCommand("css_gift", "Поставить подарок на месте, где вы стоите")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 2, usage: "<gold|silver> <количество>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnGiftCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (caller == null || !caller.IsValid)
+            return;
+
+        var pawn = caller.PlayerPawn.Value;
+        if (pawn == null || !pawn.IsValid || pawn.AbsOrigin == null)
+        {
+            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Вы должны быть живы, чтобы поставить подарок");
+            return;
+        }
+
+        string currencyArg = command.GetArg(1).ToLower();
+        if (currencyArg != "gold" && currencyArg != "silver")
+        {
+            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Укажите валюту: gold или silver");
+            return;
+        }
+
+        if (!int.TryParse(command.GetArg(2), out int amount) || amount <= 0)
+        {
+            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Укажите положительное количество");
+            return;
+        }
+
+        var gift = new Gift
+        {
+            X = pawn.AbsOrigin.X,
+            Y = pawn.AbsOrigin.Y,
+            Z = pawn.AbsOrigin.Z,
+            Currency = currencyArg == "gold" ? "Gold" : "Silver",
+            Amount = amount
+        };
+
+        _gifts.Add(gift);
+        SaveGifts();
+
+        string currencyName = currencyArg == "gold" ? "золота" : "серебра";
+        command.ReplyToCommand($" {ChatColors.Green}[Подарок] Подарок установлен: +{amount} {currencyName}. Всего подарков: {_gifts.Count}");
+    }
+
+    [ConsoleCommand("css_gift_remove", "Удалить ближайший подарок")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnGiftRemoveCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (caller == null || !caller.IsValid)
+            return;
+
+        var pawn = caller.PlayerPawn.Value;
+        if (pawn == null || !pawn.IsValid || pawn.AbsOrigin == null)
+            return;
+
+        if (_gifts.Count == 0)
+        {
+            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Нет установленных подарков");
+            return;
+        }
+
+        int nearest = -1;
+        float bestDistSq = float.MaxValue;
+        for (int i = 0; i < _gifts.Count; i++)
+        {
+            float dx = pawn.AbsOrigin.X - _gifts[i].X;
+            float dy = pawn.AbsOrigin.Y - _gifts[i].Y;
+            float dz = pawn.AbsOrigin.Z - _gifts[i].Z;
+            float distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < bestDistSq)
+            {
+                bestDistSq = distSq;
+                nearest = i;
+            }
+        }
+
+        if (nearest >= 0 && bestDistSq <= 200f * 200f)
+        {
+            _gifts.RemoveAt(nearest);
+            SaveGifts();
+            command.ReplyToCommand($" {ChatColors.Green}[Подарок] Ближайший подарок удалён. Осталось: {_gifts.Count}");
+        }
+        else
+        {
+            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Рядом нет подарков (подойдите ближе)");
+        }
+    }
+
+    [ConsoleCommand("css_gift_clear", "Удалить все подарки на карте")]
+    [RequiresPermissions("@css/root")]
+    public void OnGiftClearCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        int count = _gifts.Count;
+        _gifts.Clear();
+        _giftCooldown.Clear();
+        SaveGifts();
+        command.ReplyToCommand($" {ChatColors.Green}[Подарок] Удалено подарков: {count}");
+    }
+
+    private void LoadGifts()
+    {
+        try
+        {
+            if (!File.Exists(GiftsFilePath))
+                return;
+
+            string json = File.ReadAllText(GiftsFilePath);
+            var gifts = JsonSerializer.Deserialize<List<Gift>>(json);
+            if (gifts == null)
+                return;
+
+            _gifts.Clear();
+            _gifts.AddRange(gifts);
+            Console.WriteLine($"[{ModuleName}] Загружено подарков: {_gifts.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки подарков: {ex.Message}");
+        }
+    }
+
+    private void SaveGifts()
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(_gifts, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(GiftsFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения подарков: {ex.Message}");
+        }
     }
 
     private void LoadData()
