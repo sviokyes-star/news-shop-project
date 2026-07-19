@@ -76,7 +76,7 @@ public class ShopPlugin : BasePlugin
     private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts.json");
 
     private const float GiftTouchRadius = 40.0f;
-    private const string GiftModel = "models/props/de_nuke/hr_nuke/nuke_ammo_can/nuke_ammo_can_01.vmdl";
+    private const string GiftModel = "models/gift_box/gift_box.vmdl";
     private float _giftSpinAngle = 0f;
 
     public override void Load(bool hotReload)
