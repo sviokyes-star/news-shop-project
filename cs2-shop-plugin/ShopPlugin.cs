@@ -70,12 +70,15 @@ public class ShopPlugin : BasePlugin
     private readonly Dictionary<int, Vector> _lastTrailPos = new();
     private readonly List<Gift> _gifts = new();
     private readonly Dictionary<string, DateTime> _giftCooldown = new();
+    private readonly Dictionary<int, CDynamicProp> _giftProps = new();
     private string DataFilePath => Path.Combine(ModuleDirectory, "players.json");
     private string ItemsFilePath => Path.Combine(ModuleDirectory, "items.json");
     private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts.json");
 
     private const float GiftTouchRadius = 40.0f;
     private const int GiftCooldownSeconds = 30;
+    private const string GiftModel = "models/props/de_nuke/hr_nuke/nuke_ammo_can/nuke_ammo_can_01.vmdl";
+    private float _giftSpinAngle = 0f;
 
     public override void Load(bool hotReload)
     {
@@ -90,17 +93,61 @@ public class ShopPlugin : BasePlugin
 
         RegisterListener<Listeners.OnServerPrecacheResources>(OnPrecacheResources);
         RegisterListener<Listeners.OnTick>(OnTick);
+        RegisterListener<Listeners.OnMapStart>(OnMapStart);
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
 
+        if (hotReload)
+            AddTimer(1.0f, SpawnAllGiftProps);
+
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
+    }
+
+    private void OnMapStart(string mapName)
+    {
+        _giftProps.Clear();
+        _giftCooldown.Clear();
+        AddTimer(2.0f, SpawnAllGiftProps);
+    }
+
+    private void SpawnAllGiftProps()
+    {
+        foreach (var prop in _giftProps.Values)
+        {
+            if (prop != null && prop.IsValid)
+                prop.Remove();
+        }
+        _giftProps.Clear();
+
+        for (int i = 0; i < _gifts.Count; i++)
+            SpawnGiftProp(i);
+    }
+
+    private void SpawnGiftProp(int index)
+    {
+        if (index < 0 || index >= _gifts.Count)
+            return;
+
+        var gift = _gifts[index];
+        var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
+        if (prop == null || !prop.IsValid)
+            return;
+
+        prop.SetModel(GiftModel);
+        var pos = new Vector(gift.X, gift.Y, gift.Z + 5);
+        prop.Teleport(pos, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+        prop.DispatchSpawn();
+
+        _giftProps[index] = prop;
     }
 
     private int _trailTickCounter = 0;
 
     private void OnTick()
     {
+        SpinGiftProps();
+
         _trailTickCounter++;
         if (_trailTickCounter < 4)
             return;
@@ -232,6 +279,8 @@ public class ShopPlugin : BasePlugin
                     manifest.AddResource(item.Model);
             }
         }
+
+        manifest.AddResource(GiftModel);
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
@@ -302,6 +351,12 @@ public class ShopPlugin : BasePlugin
     public override void Unload(bool hotReload)
     {
         SaveData();
+        foreach (var prop in _giftProps.Values)
+        {
+            if (prop != null && prop.IsValid)
+                prop.Remove();
+        }
+        _giftProps.Clear();
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 
@@ -796,6 +851,25 @@ public class ShopPlugin : BasePlugin
             target.PrintToChat($" {ChatColors.Green}[Магазин] Вам выдано {amount} {currencyName}!");
     }
 
+    private void SpinGiftProps()
+    {
+        if (_giftProps.Count == 0)
+            return;
+
+        _giftSpinAngle += 4f;
+        if (_giftSpinAngle >= 360f)
+            _giftSpinAngle -= 360f;
+
+        foreach (var kvp in _giftProps)
+        {
+            var prop = kvp.Value;
+            if (prop == null || !prop.IsValid || prop.AbsOrigin == null)
+                continue;
+
+            prop.Teleport(prop.AbsOrigin, new QAngle(0, _giftSpinAngle, 0), new Vector(0, 0, 0));
+        }
+    }
+
     private void CheckGiftPickup(CCSPlayerController player, Vector origin)
     {
         if (_gifts.Count == 0)
@@ -872,6 +946,7 @@ public class ShopPlugin : BasePlugin
 
         _gifts.Add(gift);
         SaveGifts();
+        SpawnGiftProp(_gifts.Count - 1);
 
         string currencyName = currencyArg == "gold" ? "золота" : "серебра";
         command.ReplyToCommand($" {ChatColors.Green}[Подарок] Подарок установлен: +{amount} {currencyName}. Всего подарков: {_gifts.Count}");
@@ -914,6 +989,7 @@ public class ShopPlugin : BasePlugin
         {
             _gifts.RemoveAt(nearest);
             SaveGifts();
+            SpawnAllGiftProps();
             command.ReplyToCommand($" {ChatColors.Green}[Подарок] Ближайший подарок удалён. Осталось: {_gifts.Count}");
         }
         else
@@ -930,6 +1006,7 @@ public class ShopPlugin : BasePlugin
         _gifts.Clear();
         _giftCooldown.Clear();
         SaveGifts();
+        SpawnAllGiftProps();
         command.ReplyToCommand($" {ChatColors.Green}[Подарок] Удалено подарков: {count}");
     }
 
