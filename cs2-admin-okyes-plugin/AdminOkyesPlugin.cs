@@ -109,6 +109,11 @@ public class AdminOkyesPlugin : BasePlugin
             ShowShopMenu(controller);
         });
 
+        menu.AddItem("Управление подарками", (controller, option) =>
+        {
+            ShowGiftsMenu(controller);
+        });
+
         menu.Display(player, 0);
     }
 
@@ -338,6 +343,11 @@ public class AdminOkyesPlugin : BasePlugin
             ShowShopMenu(controller);
         });
 
+        menu.AddItem("Управление подарками", (controller, option) =>
+        {
+            ShowGiftsMenu(controller);
+        });
+
         return menu;
     }
 
@@ -413,6 +423,67 @@ public class AdminOkyesPlugin : BasePlugin
 
             amountMenu.Display(player, 0);
         });
+    }
+
+    private static readonly int[] GiftAmounts = { 5, 10, 25, 50, 100 };
+
+    private void ShowGiftsMenu(CCSPlayerController player)
+    {
+        var menu = new WasdMenu("Управление подарками", this);
+
+        menu.AddItem("Поставить подарок (золото)", (controller, option) =>
+            ShowGiftAmountMenu(controller, "gold", "золота"));
+
+        menu.AddItem("Поставить подарок (серебро)", (controller, option) =>
+            ShowGiftAmountMenu(controller, "silver", "серебра"));
+
+        menu.AddItem("Убрать ближайший подарок", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления подарками");
+                return;
+            }
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_gift_remove"));
+        });
+
+        menu.AddItem("Убрать все подарки", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления подарками");
+                return;
+            }
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_gift_clear"));
+        });
+
+        menu.PrevMenu = GetMainMenu();
+        menu.Display(player, 0);
+    }
+
+    private void ShowGiftAmountMenu(CCSPlayerController player, string currencyArg, string currencyName)
+    {
+        if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
+        {
+            player.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления подарками");
+            return;
+        }
+
+        var menu = new WasdMenu($"Сколько {currencyName}?", this);
+
+        foreach (int amount in GiftAmounts)
+        {
+            int value = amount;
+            menu.AddItem(value.ToString(), (controller, option) =>
+            {
+                Server.NextFrame(() => controller.ExecuteClientCommandFromServer($"css_gift {currencyArg} {value}"));
+                controller.PrintToChat($" {ChatColors.Green}[Admin Okyes] Подарок установлен: +{value} {currencyName}");
+            });
+        }
+
+        menu.Display(player, 0);
     }
 
     [ConsoleCommand("css_okban", "Забанить игрока")]
