@@ -519,7 +519,7 @@ public class ShopPlugin : BasePlugin
     {
         InitializeItems();
 
-        string message = $" {ChatColors.Green}[Магазин] Товары перезагружены. Категорий: {_categories.Count}";
+        string message = $" {ChatColors.Gold}Okyes |{ChatColors.White} Товары перезагружены. Категорий: {_categories.Count}";
         if (caller != null && caller.IsValid)
             caller.PrintToChat(message);
         else
@@ -610,9 +610,9 @@ public class ShopPlugin : BasePlugin
                 ApplyActiveSkin(controller);
 
             if (target.Enabled)
-                controller.PrintToChat($" {ChatColors.Green}[Магазин] {target.ItemName} включён");
+                controller.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.White} {target.ItemName} включён");
             else
-                controller.PrintToChat($" {ChatColors.Red}[Магазин] {target.ItemName} отключён");
+                controller.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.White} {target.ItemName} отключён");
 
             ShowPurchaseMenu(controller, target);
         });
@@ -734,7 +734,7 @@ public class ShopPlugin : BasePlugin
 
         if (balance < item.Price)
         {
-            player.PrintToChat($" {ChatColors.Red}[Магазин] Недостаточно {currencyName}! Нужно: {item.Price}, у вас: {balance}");
+            player.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.Red} Недостаточно {currencyName}! Нужно: {item.Price}, у вас: {balance}");
             return;
         }
 
@@ -760,7 +760,7 @@ public class ShopPlugin : BasePlugin
 
         SaveData();
 
-        player.PrintToChat($" {ChatColors.Green}[Магазин] Вы купили {ChatColors.Gold}{item.Name}{ChatColors.Green} на {item.DurationDays} дней!");
+        player.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.White} Вы купили {ChatColors.Gold}{item.Name}{ChatColors.White} на {item.DurationDays} дней!");
     }
 
     private WasdMenu GetMainMenu(CCSPlayerController player)
@@ -838,19 +838,19 @@ public class ShopPlugin : BasePlugin
     {
         if (!int.TryParse(command.GetArg(1), out int userId))
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Некорректные аргументы");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Некорректные аргументы");
             return;
         }
 
         var target = Utilities.GetPlayers().FirstOrDefault(p => p.IsValid && p.UserId == userId);
         if (target == null)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Игрок не найден");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Игрок не найден");
             return;
         }
 
         var data = GetData(target);
-        string message = $" {ChatColors.Green}[Магазин] Баланс {target.PlayerName}: {ChatColors.Gold}Золото: {data.Gold}{ChatColors.Green} | {ChatColors.Silver}Серебро: {data.Silver}";
+        string message = $" {ChatColors.Gold}Okyes |{ChatColors.White} Баланс {target.PlayerName}: {ChatColors.Gold}Золото: {data.Gold}{ChatColors.White} | {ChatColors.Silver}Серебро: {data.Silver}";
 
         if (caller != null && caller.IsValid)
             caller.PrintToChat(message);
@@ -862,14 +862,14 @@ public class ShopPlugin : BasePlugin
     {
         if (!int.TryParse(command.GetArg(1), out int userId) || !int.TryParse(command.GetArg(2), out int amount) || amount < 0)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Некорректные аргументы");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Некорректные аргументы");
             return;
         }
 
         var target = Utilities.GetPlayers().FirstOrDefault(p => p.IsValid && p.UserId == userId);
         if (target == null)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Магазин] Игрок не найден");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Игрок не найден");
             return;
         }
 
@@ -884,9 +884,9 @@ public class ShopPlugin : BasePlugin
         SaveData();
 
         if (take)
-            target.PrintToChat($" {ChatColors.Red}[Магазин] У вас забрали {amount} {currencyName}");
+            target.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.White} У вас забрали {amount} {currencyName}");
         else
-            target.PrintToChat($" {ChatColors.Green}[Магазин] Вам выдано {amount} {currencyName}!");
+            target.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.White} Вам выдано {amount} {currencyName}!");
     }
 
     private void SpinGiftProps()
@@ -945,7 +945,7 @@ public class ShopPlugin : BasePlugin
             SaveData();
 
             string currencyName = isGold ? "золота" : "серебра";
-            player.PrintToChat($" {ChatColors.Green}[Подарок] {ChatColors.Gold}Вы нашли подарок: +{gift.Amount} {currencyName}!");
+            player.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.White} Вы нашли подарок: {ChatColors.Gold}+{gift.Amount} {currencyName}!");
         }
     }
 
@@ -960,20 +960,20 @@ public class ShopPlugin : BasePlugin
         var pawn = caller.PlayerPawn.Value;
         if (pawn == null || !pawn.IsValid || pawn.AbsOrigin == null)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Вы должны быть живы, чтобы поставить подарок");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Вы должны быть живы, чтобы поставить подарок");
             return;
         }
 
         string currencyArg = command.GetArg(1).ToLower();
         if (currencyArg != "gold" && currencyArg != "silver")
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Укажите валюту: gold или silver");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Укажите валюту: gold или silver");
             return;
         }
 
         if (!int.TryParse(command.GetArg(2), out int amount) || amount <= 0)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Укажите положительное количество");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Укажите положительное количество");
             return;
         }
 
@@ -991,7 +991,7 @@ public class ShopPlugin : BasePlugin
         SpawnGiftProp(_gifts.Count - 1);
 
         string currencyName = currencyArg == "gold" ? "золота" : "серебра";
-        command.ReplyToCommand($" {ChatColors.Green}[Подарок] Подарок установлен: +{amount} {currencyName}. Всего подарков: {_gifts.Count}");
+        command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.White} Подарок установлен: +{amount} {currencyName}. Всего подарков: {_gifts.Count}");
     }
 
     [ConsoleCommand("css_gift_remove", "Удалить ближайший подарок")]
@@ -1008,7 +1008,7 @@ public class ShopPlugin : BasePlugin
 
         if (_gifts.Count == 0)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Нет установленных подарков");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Нет установленных подарков");
             return;
         }
 
@@ -1032,11 +1032,11 @@ public class ShopPlugin : BasePlugin
             _gifts.RemoveAt(nearest);
             SaveGifts();
             SpawnAllGiftProps();
-            command.ReplyToCommand($" {ChatColors.Green}[Подарок] Ближайший подарок удалён. Осталось: {_gifts.Count}");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.White} Ближайший подарок удалён. Осталось: {_gifts.Count}");
         }
         else
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Подарок] Рядом нет подарков (подойдите ближе)");
+            command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.Red} Рядом нет подарков (подойдите ближе)");
         }
     }
 
@@ -1049,7 +1049,7 @@ public class ShopPlugin : BasePlugin
         _giftTakenThisLife.Clear();
         SaveGifts();
         SpawnAllGiftProps();
-        command.ReplyToCommand($" {ChatColors.Green}[Подарок] Удалено подарков: {count}");
+        command.ReplyToCommand($" {ChatColors.Gold}Okyes |{ChatColors.White} Удалено подарков: {count}");
     }
 
     private void LoadGifts()
