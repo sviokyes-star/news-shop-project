@@ -20,6 +20,7 @@ public class ChatTagsPlugin : BasePlugin
     {
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
+        RegisterEventHandler<EventRoundStart>(OnRoundStart);
         RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
 
         // При горячей перезагрузке проставляем теги уже подключённым.
@@ -51,7 +52,15 @@ public class ChatTagsPlugin : BasePlugin
         return HookResult.Continue;
     }
 
-    private void ApplyTag(CCSPlayerController? player)
+    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
+    {
+        // В начале раунда чат гарантированно перечитывает клан-тег.
+        foreach (var p in Utilities.GetPlayers())
+            ApplyTag(p, force: true);
+        return HookResult.Continue;
+    }
+
+    private void ApplyTag(CCSPlayerController? player, bool force = false)
     {
         if (player == null || !player.IsValid || player.IsBot || player.IsHLTV)
             return;
@@ -60,11 +69,19 @@ public class ChatTagsPlugin : BasePlugin
         if (string.IsNullOrEmpty(tag))
             return;
 
-        if (player.Clan == tag)
+        if (!force && player.Clan == tag)
             return;
 
         player.Clan = tag;
         Utilities.SetStateChanged(player, "CCSPlayerController", "m_szClan");
+
+        // Принудительно обновляем клан-тег в чате: движок кеширует его отдельно
+        // и подхватывает только после явного пересчёта scoreboard.
+        var pawn = player.PlayerPawn.Value;
+        if (pawn != null && pawn.IsValid)
+        {
+            Utilities.SetStateChanged(player, "CCSPlayerController", "m_iTeamNum");
+        }
     }
 
     // Возвращает тег в зависимости от прав игрока.
