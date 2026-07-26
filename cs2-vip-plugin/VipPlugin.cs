@@ -41,6 +41,11 @@ public class VipPlugin : BasePlugin
 
     private bool IsVip(CCSPlayerController player)
     {
+        // root обладает всеми правами (включая @css/vip), поэтому явно
+        // исключаем его: VIP — только у тех, кому выдан именно @css/vip.
+        if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            return false;
+
         return AdminManager.PlayerHasPermissions(player, VipFlag);
     }
 

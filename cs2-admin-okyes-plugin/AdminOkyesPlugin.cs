@@ -644,6 +644,10 @@ public class AdminOkyesPlugin : BasePlugin
         if (player == null || !player.IsValid || player.IsBot)
             return;
 
+        // root уже имеет все права — VIP ему не выдаём и не трогаем.
+        if (AdminManager.PlayerHasPermissions(player, "@css/root"))
+            return;
+
         ulong sid = player.SteamID;
 
         // Просроченную/удалённую запись подчищаем.
