@@ -4,7 +4,9 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Admin;
+using CounterStrikeSharp.API.Modules.Entities;
 using CS2MenuManager.API.Menu;
+using System.Text.Json;
 
 namespace AdminOkyesPlugin;
 
@@ -32,6 +34,15 @@ public class AdminOkyesPlugin : BasePlugin
         AddCommand("css_admin", "Открыть Admin [Okyes]", OnAdminMenuCommand);
         AddCommandListener("say", OnPlayerSay);
         AddCommandListener("say_team", OnPlayerSay);
+
+        LoadVips();
+        RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedVip);
+        // Раз в минуту снимаем VIP у тех, чей срок истёк.
+        AddTimer(60.0f, CheckExpiredVips, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
+
+        if (hotReload)
+            foreach (var p in Utilities.GetPlayers())
+                ApplyVipIfActive(p);
 
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
@@ -112,6 +123,11 @@ public class AdminOkyesPlugin : BasePlugin
         menu.AddItem("Управление подарками", (controller, option) =>
         {
             ShowGiftsMenu(controller);
+        });
+
+        menu.AddItem("Управление VIP", (controller, option) =>
+        {
+            ShowVipMenu(controller);
         });
 
         menu.Display(player, 0);
@@ -348,6 +364,11 @@ public class AdminOkyesPlugin : BasePlugin
             ShowGiftsMenu(controller);
         });
 
+        menu.AddItem("Управление VIP", (controller, option) =>
+        {
+            ShowVipMenu(controller);
+        });
+
         return menu;
     }
 
@@ -547,6 +568,195 @@ public class AdminOkyesPlugin : BasePlugin
         var players = Utilities.GetPlayers();
         return players.FirstOrDefault(p =>
             p.PlayerName.Contains(search, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // ============ Управление VIP ============
+
+    private const string VipFlag = "@css/vip";
+
+    // SteamID64 -> Unix-время окончания (0 = навсегда).
+    private readonly Dictionary<ulong, long> _vips = new();
+    private string VipFilePath => Path.Combine(ModuleDirectory, "vips.json");
+
+    private readonly (string Label, long Seconds)[] _vipDurations =
+    {
+        ("На 1 час", 3600),
+        ("На 1 день", 86400),
+        ("На 1 неделю", 604800),
+        ("На 1 месяц", 2592000),
+        ("Навсегда", 0),
+    };
+
+    private void LoadVips()
+    {
+        try
+        {
+            if (!File.Exists(VipFilePath))
+                return;
+
+            var json = File.ReadAllText(VipFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<string, long>>(json);
+            if (data == null)
+                return;
+
+            _vips.Clear();
+            foreach (var kv in data)
+                if (ulong.TryParse(kv.Key, out var sid))
+                    _vips[sid] = kv.Value;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки vips.json: {ex.Message}");
+        }
+    }
+
+    private void SaveVips()
+    {
+        try
+        {
+            var data = _vips.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value);
+            File.WriteAllText(VipFilePath, JsonSerializer.Serialize(data,
+                new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения vips.json: {ex.Message}");
+        }
+    }
+
+    private bool IsVipActive(ulong steamId)
+    {
+        if (!_vips.TryGetValue(steamId, out var expires))
+            return false;
+        if (expires == 0)
+            return true; // навсегда
+        return DateTimeOffset.UtcNow.ToUnixTimeSeconds() < expires;
+    }
+
+    private void OnClientAuthorizedVip(int slot, SteamID id)
+    {
+        var player = Utilities.GetPlayerFromSlot(slot);
+        AddTimer(2.0f, () => ApplyVipIfActive(player));
+    }
+
+    private void ApplyVipIfActive(CCSPlayerController? player)
+    {
+        if (player == null || !player.IsValid || player.IsBot)
+            return;
+
+        ulong sid = player.SteamID;
+        if (IsVipActive(sid))
+        {
+            if (!AdminManager.PlayerHasPermissions(player, VipFlag))
+                AdminManager.AddPlayerPermissions(player, VipFlag);
+        }
+        else if (_vips.ContainsKey(sid))
+        {
+            // Срок истёк — убираем запись и флаг.
+            _vips.Remove(sid);
+            SaveVips();
+            AdminManager.RemovePlayerPermissions(player, VipFlag);
+        }
+    }
+
+    private void CheckExpiredVips()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var expired = _vips.Where(kv => kv.Value != 0 && kv.Value <= now)
+                           .Select(kv => kv.Key).ToList();
+        if (expired.Count == 0)
+            return;
+
+        foreach (var sid in expired)
+        {
+            _vips.Remove(sid);
+            var online = Utilities.GetPlayers()
+                .FirstOrDefault(p => p.IsValid && !p.IsBot && p.SteamID == sid);
+            if (online != null)
+            {
+                AdminManager.RemovePlayerPermissions(online, VipFlag);
+                online.PrintToChat($" {ChatColors.Yellow}[Admin Okyes] Ваш VIP-статус истёк");
+            }
+        }
+        SaveVips();
+    }
+
+    private void GrantVip(CCSPlayerController target, long durationSeconds)
+    {
+        ulong sid = target.SteamID;
+        long expires = durationSeconds == 0
+            ? 0
+            : DateTimeOffset.UtcNow.ToUnixTimeSeconds() + durationSeconds;
+
+        _vips[sid] = expires;
+        SaveVips();
+
+        if (!AdminManager.PlayerHasPermissions(target, VipFlag))
+            AdminManager.AddPlayerPermissions(target, VipFlag);
+    }
+
+    private void RevokeVip(CCSPlayerController target)
+    {
+        ulong sid = target.SteamID;
+        _vips.Remove(sid);
+        SaveVips();
+        AdminManager.RemovePlayerPermissions(target, VipFlag);
+    }
+
+    private bool HasVipPermission(CCSPlayerController player)
+    {
+        return AdminManager.PlayerHasPermissions(player, "@css/root") ||
+               AdminManager.PlayerHasPermissions(player, "@css/ban");
+    }
+
+    private void ShowVipMenu(CCSPlayerController player)
+    {
+        if (!HasVipPermission(player))
+        {
+            player.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления VIP");
+            return;
+        }
+
+        var menu = new WasdMenu("Управление VIP", this);
+
+        menu.AddItem("Дать игроку VIP", (controller, option) =>
+        {
+            ShowVipDurationMenu(controller);
+        });
+
+        menu.AddItem("Забрать у игрока VIP", (controller, option) =>
+        {
+            ShowPlayerSelectMenu(controller, "У кого забрать VIP?", target =>
+            {
+                RevokeVip(target);
+                Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} забрал VIP у {target.PlayerName}");
+            });
+        });
+
+        menu.PrevMenu = GetMainMenu();
+        menu.Display(player, 0);
+    }
+
+    private void ShowVipDurationMenu(CCSPlayerController player)
+    {
+        var menu = new WasdMenu("На какой срок выдать VIP?", this);
+
+        foreach (var (label, seconds) in _vipDurations)
+        {
+            var capturedLabel = label;
+            var capturedSeconds = seconds;
+
+            menu.AddItem(capturedLabel, (controller, option) =>
+            {
+                ShowPlayerSelectMenu(controller, "Кому выдать VIP?", target =>
+                {
+                    GrantVip(target, capturedSeconds);
+                    Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} выдал VIP игроку {target.PlayerName} ({capturedLabel})");
+                });
+            });
+        }
+
+        menu.Display(player, 0);
     }
 
     public override void Unload(bool hotReload)
