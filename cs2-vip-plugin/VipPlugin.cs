@@ -41,12 +41,40 @@ public class VipPlugin : BasePlugin
 
     private bool IsVip(CCSPlayerController player)
     {
-        // root обладает всеми правами (включая @css/vip), поэтому явно
-        // исключаем его: VIP — только у тех, кому выдан именно @css/vip.
+        // Главный источник истины — активная запись в vips.json (выдача через
+        // меню). Работает и для root, которому выдали VIP через админку.
+        if (HasActiveVipRecord(player.SteamID))
+            return true;
+
+        // Запасной вариант — флаг @css/vip, но не для root
+        // (root обладает всеми правами, поэтому его исключаем).
         if (AdminManager.PlayerHasPermissions(player, "@css/root"))
             return false;
 
         return AdminManager.PlayerHasPermissions(player, VipFlag);
+    }
+
+    // Проверяет активную (не истёкшую) запись VIP в файле админ-плагина.
+    private bool HasActiveVipRecord(ulong steamId)
+    {
+        try
+        {
+            if (!File.Exists(VipFilePath))
+                return false;
+
+            var json = File.ReadAllText(VipFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<string, long>>(json);
+            if (data == null || !data.TryGetValue(steamId.ToString(), out var expires))
+                return false;
+
+            if (expires == 0)
+                return true; // навсегда
+            return DateTimeOffset.UtcNow.ToUnixTimeSeconds() < expires;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private HookResult OnPlayerSay(CCSPlayerController? player, CommandInfo info)
