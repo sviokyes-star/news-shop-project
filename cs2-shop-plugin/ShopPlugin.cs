@@ -1206,8 +1206,8 @@ public class ShopPlugin : BasePlugin
             var player = Utilities.GetPlayers().FirstOrDefault(p => p != null && p.IsValid && !p.IsBot && p.SteamID == sid);
             if (player != null && player.IsValid)
             {
-                string curName = d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase) ? "золота" : "серебра";
-                player.PrintToChat($" {ChatColors.Green}[Магазин] Вам начислено {d.amount} {curName} с сайта!");
+                string curName = d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase) ? "золото" : "серебро";
+                player.PrintToChat($" {ChatColors.Orange}Okyes |{ChatColors.White} Вы купили {d.amount} {curName} в магазине!");
             }
         }
 
