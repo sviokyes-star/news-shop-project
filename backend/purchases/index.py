@@ -78,7 +78,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         escaped_persona_name = persona_name.replace("'", "''")
         
         cursor.execute(f"""
-            SELECT name, amount, price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step, unit_multiplier
+            SELECT name, amount, price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step, unit_multiplier, category
             FROM t_p15345778_news_shop_project.shop_items 
             WHERE id = {int(shop_item_id)} AND is_active = true
         """)
@@ -98,7 +98,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        item_name, item_amount, item_price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step, unit_multiplier = item
+        item_name, item_amount, item_price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step, unit_multiplier, item_category = item
 
         # Для товаров с ползунком — считаем цену из quantity
         if is_slider:
@@ -198,7 +198,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 (steam_id, currency, amount, status, purchase_id)
                 VALUES ('{escaped_steam_id}', '{game_currency}', {int(game_amount)}, 'pending', {int(purchase_id)})
             """)
-        
+
+        # Выдача VIP-статуса на игровой сервер (доставка типа VIP).
+        # amount = длительность в секундах (0 = навсегда).
+        name_lower = (item_name or '').lower()
+        if 'vip' in name_lower and 'counter-strike 2' in (item_category or '').lower():
+            vip_seconds = _parse_duration_seconds(item_amount)
+            cursor.execute(f"""
+                INSERT INTO t_p15345778_news_shop_project.game_deliveries
+                (steam_id, currency, amount, status, purchase_id)
+                VALUES ('{escaped_steam_id}', 'VIP', {int(vip_seconds)}, 'pending', {int(purchase_id)})
+            """)
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -232,3 +243,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': f'Purchase failed: {str(e)}'}),
             'isBase64Encoded': False
         }
+
+
+def _parse_duration_seconds(text: str) -> int:
+    '''Парсит срок VIP из текста ("1 месяц", "1 неделя", "навсегда") в секунды. 0 = навсегда.'''
+    t = (text or '').lower().strip()
+    if not t or 'навсегда' in t or 'permanent' in t:
+        return 0
+
+    num = 1
+    for token in t.split():
+        if token.isdigit():
+            num = int(token)
+            break
+
+    if 'час' in t:
+        return num * 3600
+    if 'дн' in t or 'день' in t or 'сут' in t:
+        return num * 86400
+    if 'недел' in t:
+        return num * 604800
+    if 'месяц' in t or 'мес' in t:
+        return num * 2592000
+    if 'год' in t or 'лет' in t:
+        return num * 31536000
+
+    # По умолчанию — 1 месяц.
+    return 2592000

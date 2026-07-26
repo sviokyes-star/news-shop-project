@@ -1200,18 +1200,27 @@ public class ShopPlugin : BasePlugin
                 _playerData[sid] = new PlayerData();
 
             var pdata = _playerData[sid];
+            bool isVip = d.currency.Equals("VIP", StringComparison.OrdinalIgnoreCase);
+
             if (d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase))
                 pdata.Gold += d.amount;
             else if (d.currency.Equals("Silver", StringComparison.OrdinalIgnoreCase))
                 pdata.Silver += d.amount;
+            else if (isVip)
+                GrantVipFromDelivery(sid, d.amount); // amount = секунды (0 = навсегда)
 
             deliveredIds.Add(d.id);
 
             var player = Utilities.GetPlayers().FirstOrDefault(p => p != null && p.IsValid && !p.IsBot && p.SteamID == sid);
             if (player != null && player.IsValid)
             {
-                string curName = d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase) ? "золото" : "серебро";
-                player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Вы купили {d.amount} {curName} в магазине!");
+                if (isVip)
+                    player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Вы приобрели VIP-статус в магазине!");
+                else
+                {
+                    string curName = d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase) ? "золото" : "серебро";
+                    player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Вы купили {d.amount} {curName} в магазине!");
+                }
             }
         }
 
@@ -1219,6 +1228,72 @@ public class ShopPlugin : BasePlugin
 
         if (deliveredIds.Count > 0)
             ConfirmDelivery(deliveredIds, url, key);
+    }
+
+    // Путь к vips.json админ-плагина (соседняя папка в plugins/).
+    private string AdminVipFilePath()
+    {
+        var pluginsDir = Path.Combine(ModuleDirectory, "..");
+        string[] candidates = { "AdminOkyesPlugin", "cs2-admin-okyes-plugin" };
+        foreach (var name in candidates)
+        {
+            var path = Path.Combine(pluginsDir, name, "vips.json");
+            if (File.Exists(path))
+                return path;
+        }
+        return Path.Combine(pluginsDir, "AdminOkyesPlugin", "vips.json");
+    }
+
+    // Записывает/продлевает VIP в файле админ-плагина.
+    // durationSeconds: 0 = навсегда, иначе прибавляем к текущему сроку.
+    private void GrantVipFromDelivery(ulong steamId, int durationSeconds)
+    {
+        try
+        {
+            var path = AdminVipFilePath();
+            Dictionary<string, long> data = new();
+
+            if (File.Exists(path))
+            {
+                var json = File.ReadAllText(path);
+                data = JsonSerializer.Deserialize<Dictionary<string, long>>(json) ?? new();
+            }
+
+            string sid = steamId.ToString();
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            long newExpires;
+            if (durationSeconds <= 0)
+            {
+                newExpires = 0; // навсегда
+            }
+            else
+            {
+                // Если VIP уже активен — продлеваем от его окончания, иначе от текущего момента.
+                long baseTime = now;
+                if (data.TryGetValue(sid, out var cur))
+                {
+                    if (cur == 0)
+                        return; // уже навсегда — ничего не делаем
+                    if (cur > now)
+                        baseTime = cur;
+                }
+                newExpires = baseTime + durationSeconds;
+            }
+
+            data[sid] = newExpires;
+
+            var dir = Path.GetDirectoryName(path);
+            if (dir != null && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            File.WriteAllText(path, JsonSerializer.Serialize(data,
+                new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка выдачи VIP из доставки: {ex.Message}");
+        }
     }
 
     private void ConfirmDelivery(List<int> ids, string url, string key)
