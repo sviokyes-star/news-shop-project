@@ -78,8 +78,8 @@ public class VipPlugin : BasePlugin
 
         var menu = new WasdMenu("VIP-меню", this);
 
-        // Информационный пункт — некликабельный, только показывает бонус.
-        menu.AddItem($"Здоровье: {VipHealth}", (_, _) => { }, DisableOption.DisableShowNumber);
+        // Информационный пункт — полностью некликабельный, только показывает бонус.
+        menu.AddItem($"Здоровье: {VipHealth}", (_, _) => { }, DisableOption.DisableHideNumber);
 
         menu.Display(player, 0);
     }
