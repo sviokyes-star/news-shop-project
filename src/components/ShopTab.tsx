@@ -59,10 +59,38 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [history, setHistory] = useState<Transaction[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [delivering, setDelivering] = useState<{ purchaseId: number; productId: number }[]>([]);
 
   useEffect(() => {
     if (user) loadBalance();
   }, [user]);
+
+  useEffect(() => {
+    if (!user || delivering.length === 0) return;
+
+    const checkDelivery = async () => {
+      try {
+        const response = await fetch(`${func2url['game-sync']}?action=status&steam_id=${user.steamId}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const pendingPurchaseIds: number[] = (data.pending || []).map((p: { purchase_id: number }) => p.purchase_id);
+        setDelivering(prev => {
+          const stillPending = prev.filter(d => pendingPurchaseIds.includes(d.purchaseId));
+          const delivered = prev.filter(d => !pendingPurchaseIds.includes(d.purchaseId));
+          if (delivered.length > 0) {
+            toast({ title: 'Начислено в игре!', description: 'Загляни на сервер — золото/серебро уже у тебя.' });
+          }
+          return stillPending;
+        });
+      } catch (error) {
+        console.error('Delivery status check failed:', error);
+      }
+    };
+
+    checkDelivery();
+    const interval = setInterval(checkDelivery, 5000);
+    return () => clearInterval(interval);
+  }, [user, delivering.length]);
 
   useEffect(() => {
     const initial: Record<number, number> = {};
@@ -185,6 +213,11 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
       if (response.ok && data.success) {
         setBalance(data.new_balance);
         toast({ title: 'Успешно куплено!', description: `${data.item_name}${quantity ? ` × ${quantity}` : ''}` });
+        const unit = (product.unit_name || '').toLowerCase();
+        const isGameCurrency = unit.includes('золот') || unit.includes('серебр');
+        if (isGameCurrency && data.purchase_id) {
+          setDelivering(prev => [...prev, { purchaseId: data.purchase_id, productId: product.id }]);
+        }
       } else {
         toast({ title: 'Ошибка при покупке', description: data.error || 'Попробуйте ещё раз', variant: 'destructive' });
       }
@@ -430,18 +463,30 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
                               </p>
                             )}
                           </div>
-                          <Button
-                            size="sm"
-                            className="h-8 px-3 text-xs"
-                            onClick={() => handleBuy(product, product.is_slider ? qty : undefined)}
-                            disabled={!user || purchasingItemId === product.id}
-                          >
-                            {purchasingItemId === product.id ? (
-                              <Icon name="Loader2" size={14} className="animate-spin" />
-                            ) : (
-                              <><Icon name="ShoppingCart" size={14} className="mr-1" />Купить</>
-                            )}
-                          </Button>
+                          {delivering.some(d => d.productId === product.id) ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 px-3 text-xs cursor-default"
+                              disabled
+                            >
+                              <Icon name="Loader2" size={14} className="mr-1 animate-spin" />
+                              В процессе начисления
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="h-8 px-3 text-xs"
+                              onClick={() => handleBuy(product, product.is_slider ? qty : undefined)}
+                              disabled={!user || purchasingItemId === product.id}
+                            >
+                              {purchasingItemId === product.id ? (
+                                <Icon name="Loader2" size={14} className="animate-spin" />
+                              ) : (
+                                <><Icon name="ShoppingCart" size={14} className="mr-1" />Купить</>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </Card>

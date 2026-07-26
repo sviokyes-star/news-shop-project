@@ -21,6 +21,14 @@
       "method": "OPTIONS",
       "path": "/",
       "expectedStatus": 200
+    },
+    {
+      "name": "Публичный статус доставки игрока",
+      "method": "GET",
+      "path": "/?action=status&steam_id=76561198000000000",
+      "expectedStatus": 200,
+      "expectedBody": {"pending_count": 0},
+      "bodyMatcher": "partial"
     }
   ]
 }

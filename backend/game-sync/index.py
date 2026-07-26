@@ -28,15 +28,40 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': ''
         }
 
-    sync_key = os.environ.get('GAME_SYNC_KEY', '')
     params = event.get('queryStringParameters') or {}
     headers = event.get('headers') or {}
+    db_url = os.environ.get('DATABASE_URL')
+
+    # Публичная проверка статуса доставки для игрока (для сайта, без секретного ключа)
+    if method == 'GET' and params.get('action') == 'status':
+        steam_id = (params.get('steam_id') or '').strip()
+        if not steam_id:
+            return _resp(400, {'error': 'steam_id required'})
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+        try:
+            escaped = steam_id.replace("'", "''")
+            cur.execute(f"""
+                SELECT purchase_id, currency, amount
+                FROM {SCHEMA}.game_deliveries
+                WHERE steam_id = '{escaped}' AND status = 'pending'
+            """)
+            rows = cur.fetchall()
+            pending = [
+                {'purchase_id': r[0], 'currency': r[1], 'amount': r[2]}
+                for r in rows
+            ]
+            return _resp(200, {'pending': pending, 'pending_count': len(pending)})
+        finally:
+            cur.close()
+            conn.close()
+
+    sync_key = os.environ.get('GAME_SYNC_KEY', '')
     provided_key = params.get('key') or headers.get('X-Sync-Key') or headers.get('x-sync-key') or ''
 
     if not sync_key or provided_key != sync_key:
         return _resp(403, {'error': 'Forbidden'})
 
-    db_url = os.environ.get('DATABASE_URL')
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
 
