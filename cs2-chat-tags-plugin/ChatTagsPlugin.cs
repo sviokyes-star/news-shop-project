@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
+using System.Text.Json;
 
 namespace ChatTagsPlugin;
 
@@ -31,6 +32,14 @@ public class ChatTagsPlugin : BasePlugin
         // Перехват чата — для тега перед ником в сообщениях.
         AddCommandListener("say", OnSay);
         AddCommandListener("say_team", OnSayTeam);
+
+        // Периодически обновляем теги — чтобы VIP, выданный во время игры
+        // (через меню/сайт), появился в таблице без перезахода.
+        AddTimer(30.0f, () =>
+        {
+            foreach (var p in Utilities.GetPlayers())
+                ApplyClanTag(p);
+        }, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
 
         if (hotReload)
             foreach (var p in Utilities.GetPlayers())
@@ -150,7 +159,46 @@ public class ChatTagsPlugin : BasePlugin
         || AdminManager.PlayerHasPermissions(player, "@css/generic");
 
     private bool IsVip(CCSPlayerController player)
-        => AdminManager.PlayerHasPermissions(player, "@css/vip");
+        => HasActiveVipRecord(player.SteamID)
+        || AdminManager.PlayerHasPermissions(player, "@css/vip");
+
+    // Путь к vips.json админ-плагина (соседняя папка в plugins/).
+    private string VipFilePath()
+    {
+        var pluginsDir = Path.Combine(ModuleDirectory, "..");
+        string[] candidates = { "AdminOkyesPlugin", "cs2-admin-okyes-plugin" };
+        foreach (var name in candidates)
+        {
+            var path = Path.Combine(pluginsDir, name, "vips.json");
+            if (File.Exists(path))
+                return path;
+        }
+        return Path.Combine(pluginsDir, "AdminOkyesPlugin", "vips.json");
+    }
+
+    // Проверяет активную (не истёкшую) запись VIP в файле админ-плагина.
+    private bool HasActiveVipRecord(ulong steamId)
+    {
+        try
+        {
+            var path = VipFilePath();
+            if (!File.Exists(path))
+                return false;
+
+            var json = File.ReadAllText(path);
+            var data = JsonSerializer.Deserialize<Dictionary<string, long>>(json);
+            if (data == null || !data.TryGetValue(steamId.ToString(), out var expires))
+                return false;
+
+            if (expires == 0)
+                return true; // навсегда
+            return DateTimeOffset.UtcNow.ToUnixTimeSeconds() < expires;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     // Тег без цвета (для клан-тега в таблице).
     private string GetPlainTag(CCSPlayerController player)
