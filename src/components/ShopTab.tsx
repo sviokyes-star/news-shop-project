@@ -176,8 +176,10 @@ const ShopTab = ({ products, user }: ShopTabProps) => {
         setBalance(data.new_balance);
         toast({ title: 'Успешно куплено!', description: `${data.item_name}${quantity ? ` × ${quantity}` : ''}` });
         const unit = (product.unit_name || '').toLowerCase();
+        const name = (product.name || '').toLowerCase();
         const isGameCurrency = unit.includes('золот') || unit.includes('серебр');
-        if (isGameCurrency && data.purchase_id) {
+        const isVip = name.includes('vip');
+        if ((isGameCurrency || isVip) && data.purchase_id) {
           setDelivering(prev => [...prev, { purchaseId: data.purchase_id, productId: product.id }]);
         }
       } else {
