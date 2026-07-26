@@ -7,6 +7,7 @@ using CounterStrikeSharp.API.Modules.Utils;
 using CS2MenuManager.API.Class;
 using CS2MenuManager.API.Enum;
 using CS2MenuManager.API.Menu;
+using System.Text.Json;
 
 namespace VipPlugin;
 
@@ -78,10 +79,45 @@ public class VipPlugin : BasePlugin
 
         var menu = new WasdMenu("VIP-меню", this);
 
+        // Срок действия VIP (из файла админ-плагина).
+        string expiry = GetVipExpiryText(player.SteamID);
+        if (!string.IsNullOrEmpty(expiry))
+            menu.AddItem(expiry, (_, _) => { }, DisableOption.DisableHideNumber);
+
         // Информационный пункт — полностью некликабельный, только показывает бонус.
         menu.AddItem($"Здоровье: {VipHealth}", (_, _) => { }, DisableOption.DisableHideNumber);
 
         menu.Display(player, 0);
+    }
+
+    // Путь к файлу VIP админ-плагина (соседняя папка в plugins/).
+    private string VipFilePath => Path.Combine(
+        ModuleDirectory, "..", "cs2-admin-okyes-plugin", "vips.json");
+
+    // Возвращает строку "VIP до 27.07.2026 12:05" или "VIP: навсегда".
+    private string GetVipExpiryText(ulong steamId)
+    {
+        try
+        {
+            if (!File.Exists(VipFilePath))
+                return "";
+
+            var json = File.ReadAllText(VipFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<string, long>>(json);
+            if (data == null || !data.TryGetValue(steamId.ToString(), out var expires))
+                return "";
+
+            if (expires == 0)
+                return "VIP: навсегда";
+
+            // Московское время (UTC+3).
+            var msk = DateTimeOffset.FromUnixTimeSeconds(expires).ToOffset(TimeSpan.FromHours(3));
+            return $"VIP до {msk:dd.MM.yyyy HH:mm}";
+        }
+        catch
+        {
+            return "";
+        }
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
