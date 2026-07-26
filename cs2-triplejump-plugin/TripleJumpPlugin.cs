@@ -100,11 +100,12 @@ public class TripleJumpPlugin : BasePlugin
                         ));
                     }
                 }
-                // Если счетчик сломался (больше 3) - сбрасываем
-                else if (_jumpCount[userId] >= 3)
+                // Лимит исчерпан (3 прыжка) — больше не прыгаем в воздухе.
+                // НЕ сбрасываем счётчик здесь, иначе спам пробелом даст новую серию.
+                // Сброс произойдёт только при приземлении.
+                else
                 {
-                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} reset (count was {_jumpCount[userId]})");
-                    _jumpCount[userId] = 0;
+                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} jump ignored (limit reached, count {_jumpCount[userId]})");
                 }
             }
             
