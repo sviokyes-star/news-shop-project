@@ -123,8 +123,28 @@ public class VipPlugin : BasePlugin
     }
 
     // Путь к файлу VIP админ-плагина (соседняя папка в plugins/).
-    private string VipFilePath => Path.Combine(
-        ModuleDirectory, "..", "cs2-admin-okyes-plugin", "vips.json");
+    // На сервере папка админ-плагина называется "AdminOkyesPlugin".
+    private string VipFilePath
+    {
+        get
+        {
+            var pluginsDir = Path.Combine(ModuleDirectory, "..");
+            // Возможные имена папки админ-плагина.
+            string[] candidates =
+            {
+                "AdminOkyesPlugin",
+                "cs2-admin-okyes-plugin",
+            };
+            foreach (var name in candidates)
+            {
+                var path = Path.Combine(pluginsDir, name, "vips.json");
+                if (File.Exists(path))
+                    return path;
+            }
+            // По умолчанию — имя папки на сервере.
+            return Path.Combine(pluginsDir, "AdminOkyesPlugin", "vips.json");
+        }
+    }
 
     // Возвращает строку "VIP до 27.07.2026 12:05" или "VIP: навсегда".
     private string GetVipExpiryText(ulong steamId)
