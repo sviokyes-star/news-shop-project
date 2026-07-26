@@ -1207,7 +1207,7 @@ public class ShopPlugin : BasePlugin
             if (player != null && player.IsValid)
             {
                 string curName = d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase) ? "золото" : "серебро";
-                player.PrintToChat($" {ChatColors.Orange}Okyes |{ChatColors.White} Вы купили {d.amount} {curName} в магазине!");
+                player.PrintToChat($" {ChatColors.Gold}Okyes |{ChatColors.White} Вы купили {d.amount} {curName} в магазине!");
             }
         }
 
