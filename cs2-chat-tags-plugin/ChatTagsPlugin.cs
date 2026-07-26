@@ -1,7 +1,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Admin;
-using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace ChatTagsPlugin;
@@ -9,7 +8,7 @@ namespace ChatTagsPlugin;
 public class ChatTagsPlugin : BasePlugin
 {
     public override string ModuleName => "Chat Tags [Okyes]";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Префиксы [ADMIN] и [VIP] перед ником в чате";
 
@@ -19,61 +18,50 @@ public class ChatTagsPlugin : BasePlugin
 
     public override void Load(bool hotReload)
     {
-        AddCommandListener("say", OnSay);
-        AddCommandListener("say_team", OnSayTeam);
+        RegisterEventHandler<EventPlayerChat>(OnPlayerChat, HookMode.Post);
 
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
     }
 
-    private HookResult OnSay(CCSPlayerController? player, CommandInfo info)
+    private HookResult OnPlayerChat(EventPlayerChat @event, GameEventInfo info)
     {
-        return HandleChat(player, info, teamOnly: false);
-    }
+        // В EventPlayerChat userid приходит как slot/handle, а не UserId.
+        var player = Utilities.GetPlayerFromUserid(@event.Userid)
+            ?? Utilities.GetPlayers().FirstOrDefault(p =>
+                   p != null && p.IsValid && (int)p.Index - 1 == @event.Userid);
 
-    private HookResult OnSayTeam(CCSPlayerController? player, CommandInfo info)
-    {
-        return HandleChat(player, info, teamOnly: true);
-    }
-
-    private HookResult HandleChat(CCSPlayerController? player, CommandInfo info, bool teamOnly)
-    {
         if (player == null || !player.IsValid || player.IsBot || player.IsHLTV)
             return HookResult.Continue;
 
-        string message = info.GetArg(1).Trim();
+        string message = @event.Text?.Trim() ?? "";
 
-        // Пустые сообщения и команды (!, /) пропускаем без изменений.
+        // Пустые сообщения и команды (!, /) пропускаем.
         if (string.IsNullOrEmpty(message) || message.StartsWith("!") || message.StartsWith("/"))
             return HookResult.Continue;
 
         string tag = GetTag(player);
-
-        // Нет тега — оставляем стандартное сообщение движка.
         if (string.IsNullOrEmpty(tag))
             return HookResult.Continue;
 
+        bool teamOnly = @event.Teamonly;
         string teamPrefix = teamOnly ? $"{ChatColors.Grey}(Команда) " : "";
         string nameColor = TeamColor(player.Team);
 
         string formatted =
             $" {teamPrefix}{tag}{nameColor}{player.PlayerName}{ChatColors.Default}: {message}";
 
-        // Кому показывать сообщение.
         foreach (var target in Utilities.GetPlayers())
         {
             if (target == null || !target.IsValid || target.IsBot || target.IsHLTV)
                 continue;
 
-            // Командный чат виден только своей команде (и мёртвым видно мёртвых —
-            // упрощаем: команда должна совпадать).
             if (teamOnly && target.Team != player.Team)
                 continue;
 
             target.PrintToChat(formatted);
         }
 
-        // Гасим оригинальное сообщение, чтобы не было дубля.
-        return HookResult.Handled;
+        return HookResult.Continue;
     }
 
     // Возвращает цветной тег в зависимости от прав игрока.
