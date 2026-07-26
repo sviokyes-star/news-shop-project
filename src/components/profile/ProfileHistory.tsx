@@ -23,8 +23,12 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 function formatDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso);
+  const d = new Date(hasTz ? iso : iso + 'Z');
+  return d.toLocaleString('ru-RU', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow',
+  });
 }
 
 export default function ProfileHistory({ steamId }: ProfileHistoryProps) {
