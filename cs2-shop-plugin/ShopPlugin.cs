@@ -105,7 +105,7 @@ public class ShopPlugin : BasePlugin
     }
 
     private const float GiftTouchRadius = 40.0f;
-    private const string GiftModel = "models/props/de_dust/dust_soccerball.vmdl";
+    private const string GiftModel = "models/props/de_dust/dust_soccer_ball001.vmdl";
     private float _giftSpinAngle = 0f;
 
     public override void Load(bool hotReload)
