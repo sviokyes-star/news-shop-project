@@ -392,22 +392,27 @@ public class TimerPlugin : BasePlugin
             
             _playerRecords[steamId][mapName] = finalTime;
             SavePlayerRecords();
-            
-            player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Новый личный рекорд: {ChatColors.Gold}{FormatTime(finalTime)}!");
-        }
-        else
-        {
-            player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Время прохождения: {ChatColors.Yellow}{FormatTime(finalTime)}");
         }
 
-        if (!_mapRecords.ContainsKey(mapName) || finalTime < _mapRecords[mapName])
+        bool isMapRecord = !_mapRecords.ContainsKey(mapName) || finalTime < _mapRecords[mapName];
+
+        // Сообщаем всем игрокам о прохождении карты.
+        if (isMapRecord)
         {
             _mapRecords[mapName] = finalTime;
             _mapRecordHolders[mapName] = player.PlayerName;
             SaveRecords();
             SaveRecordHolders();
             Console.WriteLine($"[TIMER DEBUG] New map record set for {mapName}: {FormatTime(finalTime)} by {player.PlayerName}");
-            Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Default} {player.PlayerName} установил новый рекорд карты: {ChatColors.Purple}{FormatTime(finalTime)}!");
+            Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Default} {ChatColors.Gold}{player.PlayerName}{ChatColors.Default} прошёл карту за {ChatColors.Purple}{FormatTime(finalTime)}{ChatColors.Default} — {ChatColors.Red}новый рекорд карты!");
+        }
+        else if (isNewRecord)
+        {
+            Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Default} {ChatColors.Gold}{player.PlayerName}{ChatColors.Default} прошёл карту за {ChatColors.Yellow}{FormatTime(finalTime)}{ChatColors.Default} — {ChatColors.Green}личный рекорд!");
+        }
+        else
+        {
+            Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Default} {ChatColors.Gold}{player.PlayerName}{ChatColors.Default} прошёл карту за {ChatColors.Yellow}{FormatTime(finalTime)}");
         }
     }
 
