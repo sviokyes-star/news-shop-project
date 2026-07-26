@@ -27,6 +27,11 @@ const ProductCard = ({
   const qty = sliderValues[product.id] ?? product.slider_min;
   const totalPrice = product.is_slider ? qty * product.unit_price : product.price;
   const totalUnits = product.is_slider ? qty * multiplier : 0;
+
+  // Товар VIP для Counter-Strike: Source пока недоступен — кнопка неактивна.
+  const isComingSoon =
+    (product.name || '').toLowerCase().includes('vip') &&
+    (product.category || '').toLowerCase().includes('source');
   return (
     <Card
       key={product.id}
@@ -106,7 +111,17 @@ const ProductCard = ({
               </p>
             )}
           </div>
-          {delivering.some(d => d.productId === product.id) ? (
+          {isComingSoon ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-8 px-3 text-xs cursor-not-allowed"
+              disabled
+            >
+              <Icon name="Clock" size={14} className="mr-1" />
+              Скоро
+            </Button>
+          ) : delivering.some(d => d.productId === product.id) ? (
             <Button
               size="sm"
               variant="secondary"
