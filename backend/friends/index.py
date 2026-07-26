@@ -60,7 +60,7 @@ def handler(event: dict, context) -> dict:
         if action == 'pending':
             # Входящие заявки в друзья
             cur.execute(f"""
-                SELECT f.requester_steam_id, u.persona_name, u.avatar_url, f.created_at
+                SELECT f.requester_steam_id, COALESCE(NULLIF(u.nickname, ''), u.persona_name), u.avatar_url, f.created_at
                 FROM {SCHEMA}.friendships f
                 JOIN {SCHEMA}.users u ON u.steam_id = f.requester_steam_id
                 WHERE f.addressee_steam_id = %s AND f.status = 'pending'
@@ -76,7 +76,7 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"""
             SELECT
                 CASE WHEN f.requester_steam_id = %s THEN f.addressee_steam_id ELSE f.requester_steam_id END AS friend_id,
-                u.persona_name, u.avatar_url,
+                COALESCE(NULLIF(u.nickname, ''), u.persona_name), u.avatar_url,
                 (u.last_online IS NOT NULL AND u.last_online > NOW() - INTERVAL '5 minutes') AS is_online,
                 u.last_online
             FROM {SCHEMA}.friendships f
