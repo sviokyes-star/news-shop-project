@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import { Message, SteamUser, TournamentAdmin } from './types';
+import { formatShortDateTime } from '@/utils/dateFormat';
 
 interface LobbyChatProps {
   messages: Message[];
@@ -77,7 +78,7 @@ export default function LobbyChat({
                 )}
                 {msg.created_at && (
                   <span className={`text-[10px] text-muted-foreground px-1 ${isMine ? 'text-right' : ''}`}>
-                    {new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {formatShortDateTime(msg.created_at)}
                   </span>
                 )}
               </div>

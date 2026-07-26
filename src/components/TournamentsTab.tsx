@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import func2url from '../../backend/func2url.json';
+import { formatShortDateTime, parseDate } from '@/utils/dateFormat';
 
 interface Tournament {
   id: number;
@@ -70,18 +71,10 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
     return () => clearInterval(timer);
   }, []);
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}.${month}.${year} ${hours}:${minutes}`;
-  };
+  const formatDateTime = formatShortDateTime;
 
   const getTimeUntilStart = (dateString: string) => {
-    const start = new Date(dateString).getTime();
+    const start = parseDate(dateString).getTime();
     const now = Date.now();
     const diff = start - now;
 
@@ -99,7 +92,7 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
   };
 
   const isConfirmationActive = (dateString: string) => {
-    const start = new Date(dateString).getTime();
+    const start = parseDate(dateString).getTime();
     const now = Date.now();
     const oneHourBefore = start - (60 * 60 * 1000);
     
@@ -107,7 +100,7 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
   };
 
   const isRegistrationClosed = (dateString: string) => {
-    const start = new Date(dateString).getTime();
+    const start = parseDate(dateString).getTime();
     const now = Date.now();
     const oneHourBefore = start - (60 * 60 * 1000);
     
@@ -115,7 +108,7 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
   };
 
   const getTimeUntilConfirmation = (dateString: string) => {
-    const start = new Date(dateString).getTime();
+    const start = parseDate(dateString).getTime();
     const now = Date.now();
     const oneHourBefore = start - (60 * 60 * 1000);
     const diff = oneHourBefore - now;
@@ -250,7 +243,7 @@ const TournamentsTab = ({ tournaments, isLoading = false, user, isRegistering, o
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Icon name="DollarSign" size={14} />
-                    <span><strong className="text-foreground">{tournament.prize_pool.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })} ₽</strong></span>
+                    <span><strong className="text-foreground">{tournament.prize_pool.toLocaleString('ru-RU')} ₽</strong></span>
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Icon name="Users" size={14} />

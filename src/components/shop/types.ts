@@ -6,9 +6,7 @@ export interface Transaction {
   created_at: string;
 }
 
-export function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+export { formatShortDateTime as formatDate } from '@/utils/dateFormat';
 
 export interface Product {
   id: number;

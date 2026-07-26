@@ -48,7 +48,7 @@ const BalanceCard = ({
             {isLoadingBalance ? (
               <span className="text-3xl font-bold">...</span>
             ) : (
-              <span className="text-4xl font-bold">{balance.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}</span>
+              <span className="text-4xl font-bold">{balance.toLocaleString('ru-RU')}</span>
             )}
             <span className="text-2xl text-muted-foreground">₽</span>
           </div>

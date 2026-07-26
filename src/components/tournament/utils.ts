@@ -1,7 +1,8 @@
 import { Participant } from './types';
+import { parseDate } from '@/utils/dateFormat';
 
 export const getTimeUntilStart = (dateString: string) => {
-  const start = new Date(dateString).getTime();
+  const start = parseDate(dateString).getTime();
   const now = Date.now();
   const diff = start - now;
 
@@ -16,7 +17,7 @@ export const getTimeUntilStart = (dateString: string) => {
 };
 
 export const getConfirmationTimeLeft = (dateString: string) => {
-  const start = new Date(dateString).getTime();
+  const start = parseDate(dateString).getTime();
   const now = Date.now();
   const oneHourBefore = start - (60 * 60 * 1000);
   const diff = start - now;
@@ -30,7 +31,7 @@ export const getConfirmationTimeLeft = (dateString: string) => {
 };
 
 export const isConfirmationActive = (dateString: string) => {
-  const start = new Date(dateString).getTime();
+  const start = parseDate(dateString).getTime();
   const now = Date.now();
   const oneHourBefore = start - (60 * 60 * 1000);
   
@@ -38,7 +39,7 @@ export const isConfirmationActive = (dateString: string) => {
 };
 
 export const isRegistrationClosed = (dateString: string) => {
-  const start = new Date(dateString).getTime();
+  const start = parseDate(dateString).getTime();
   const now = Date.now();
   
   return now >= start;
@@ -125,7 +126,7 @@ export const findUserMatch = (
 };
 
 export const getTimeUntilConfirmation = (dateString: string) => {
-  const start = new Date(dateString).getTime();
+  const start = parseDate(dateString).getTime();
   const now = Date.now();
   const oneHourBefore = start - (60 * 60 * 1000);
   const diff = oneHourBefore - now;

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import func2url from '../../../backend/func2url.json';
-import { toLocalDateTimeInput, toUTCISOString } from '@/utils/dateFormat';
+import { toLocalDateTimeInput, toUTCISOString, formatShortDate, formatShortDateTime } from '@/utils/dateFormat';
 
 interface NewsItem {
   id: number;
@@ -332,7 +332,7 @@ export default function NewsManagement({ news, isLoading, onRefresh }: NewsManag
                         {item.badge && (
                           <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-500 rounded">{item.badge}</span>
                         )}
-                        <span>{new Date(item.date).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })}</span>
+                        <span>{formatShortDate(item.date)}</span>
                       </div>
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export default function NewsManagement({ news, isLoading, onRefresh }: NewsManag
                               </div>
                               <p className="text-sm text-muted-foreground">{comment.text}</p>
                               <span className="text-xs text-muted-foreground/60 mt-1 block">
-                                {new Date(comment.date).toLocaleString()}
+                                {formatShortDateTime(comment.date)}
                               </span>
                             </div>
                           ))}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import func2url from '../../backend/func2url.json';
+import { formatRelativeTime } from '@/utils/dateFormat';
 
 interface Notification {
   id: number;
@@ -87,15 +88,7 @@ export default function NotificationBell({ steamId }: NotificationBellProps) {
     if (n.link) navigate(n.link);
   };
 
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - d.getTime()) / 60000);
-    if (diff < 1) return 'только что';
-    if (diff < 60) return `${diff} мин. назад`;
-    if (diff < 1440) return `${Math.floor(diff / 60)} ч. назад`;
-    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-  };
+  const formatTime = formatRelativeTime;
 
   return (
     <div ref={ref} className="relative">

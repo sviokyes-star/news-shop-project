@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { TournamentDetail, SteamUser } from './types';
 import { isConfirmationActive, isRegistrationClosed, getConfirmationTimeLeft, getTimeUntilConfirmation } from './utils';
+import { parseDate } from '@/utils/dateFormat';
 
 interface TournamentActionsProps {
   tournament: TournamentDetail;
@@ -31,7 +32,7 @@ const TournamentActions = ({
 }: TournamentActionsProps) => {
   const userParticipant = tournament.participants.find(p => p.steam_id === user?.steamId);
   const tournamentStarted = ['active', 'ongoing', 'completed'].includes(tournament.status)
-    || new Date(tournament.start_date).getTime() <= Date.now();
+    || parseDate(tournament.start_date).getTime() <= Date.now();
 
   return (
     <Card className="p-6">

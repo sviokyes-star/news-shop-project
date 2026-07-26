@@ -80,7 +80,7 @@ const TournamentInfo = ({ tournament }: TournamentInfoProps) => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Призовой фонд</p>
-              <p className="text-xl font-bold">{tournament.prize_pool.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })} ₽</p>
+              <p className="text-xl font-bold">{tournament.prize_pool.toLocaleString('ru-RU')} ₽</p>
             </div>
           </div>
         </Card>

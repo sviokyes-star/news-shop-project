@@ -10,6 +10,7 @@ import TournamentUserMatch from '@/components/tournament/TournamentUserMatch';
 import TournamentTabs from '@/components/tournament/TournamentTabs';
 import { TournamentDetail as TournamentDetailType, SteamUser } from '@/components/tournament/types';
 import { getTimeUntilStart, findUserMatch } from '@/components/tournament/utils';
+import { parseDate } from '@/utils/dateFormat';
 import { useTournamentActions } from '@/components/tournament/useTournamentActions';
 import {
   AlertDialog,
@@ -111,7 +112,7 @@ const TournamentDetail = () => {
   const isRegistered = tournament.participants.some(p => p.steam_id === user?.steamId);
   const isFull = tournament.participants_count >= tournament.max_participants;
   const tournamentStarted = ['active', 'ongoing', 'completed'].includes(tournament.status)
-    || new Date(tournament.start_date).getTime() <= Date.now();
+    || parseDate(tournament.start_date).getTime() <= Date.now();
   const userMatch = (tournamentStarted && isRegistered && user)
     ? findUserMatch(tournament.participants, tournament.bracket_type || 'random', user.steamId, tournament.match_lobbies || [])
     : null;
