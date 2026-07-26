@@ -645,17 +645,25 @@ public class AdminOkyesPlugin : BasePlugin
             return;
 
         ulong sid = player.SteamID;
+
+        // Просроченную/удалённую запись подчищаем.
+        if (_vips.ContainsKey(sid) && !IsVipActive(sid))
+        {
+            _vips.Remove(sid);
+            SaveVips();
+        }
+
+        // Полная синхронизация флага с нашим файлом:
+        // активен в файле -> выдаём, иначе -> обязательно снимаем.
         if (IsVipActive(sid))
         {
             if (!AdminManager.PlayerHasPermissions(player, VipFlag))
                 AdminManager.AddPlayerPermissions(player, VipFlag);
         }
-        else if (_vips.ContainsKey(sid))
+        else
         {
-            // Срок истёк — убираем запись и флаг.
-            _vips.Remove(sid);
-            SaveVips();
-            AdminManager.RemovePlayerPermissions(player, VipFlag);
+            if (AdminManager.PlayerHasPermissions(player, VipFlag))
+                AdminManager.RemovePlayerPermissions(player, VipFlag);
         }
     }
 
@@ -701,6 +709,17 @@ public class AdminOkyesPlugin : BasePlugin
         _vips.Remove(sid);
         SaveVips();
         AdminManager.RemovePlayerPermissions(target, VipFlag);
+
+        // Повторное снятие с задержкой — на случай, если права
+        // перечитываются из кеша сразу после отзыва.
+        AddTimer(0.5f, () =>
+        {
+            if (target != null && target.IsValid
+                && AdminManager.PlayerHasPermissions(target, VipFlag))
+            {
+                AdminManager.RemovePlayerPermissions(target, VipFlag);
+            }
+        });
     }
 
     private bool HasVipPermission(CCSPlayerController player)
