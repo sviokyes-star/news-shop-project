@@ -9,6 +9,7 @@ using CS2MenuManager.API.Enum;
 using CS2MenuManager.API.Menu;
 using System.Drawing;
 using System.Text.Json;
+using System.Net.Http;
 
 namespace ShopPlugin;
 
@@ -74,6 +75,30 @@ public class ShopPlugin : BasePlugin
     private string DataFilePath => Path.Combine(ModuleDirectory, "players.json");
     private string ItemsFilePath => Path.Combine(ModuleDirectory, "items.json");
     private string GiftsFilePath => Path.Combine(ModuleDirectory, "gifts.json");
+    private string SyncConfigPath => Path.Combine(ModuleDirectory, "sync.json");
+
+    private SyncConfig _syncConfig = new();
+    private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(10) };
+
+    public class SyncConfig
+    {
+        public string ApiUrl { get; set; } = "";
+        public string SyncKey { get; set; } = "";
+        public int IntervalSeconds { get; set; } = 30;
+    }
+
+    public class Delivery
+    {
+        public int id { get; set; }
+        public string steam_id { get; set; } = "";
+        public string currency { get; set; } = "";
+        public int amount { get; set; }
+    }
+
+    public class DeliveriesResponse
+    {
+        public List<Delivery> deliveries { get; set; } = new();
+    }
 
     private const float GiftTouchRadius = 40.0f;
     private const string GiftModel = "models/gift_box/gift_box.vmdl";
@@ -84,6 +109,19 @@ public class ShopPlugin : BasePlugin
         InitializeItems();
         LoadData();
         LoadGifts();
+        LoadSyncConfig();
+
+        if (!string.IsNullOrEmpty(_syncConfig.ApiUrl) && !string.IsNullOrEmpty(_syncConfig.SyncKey))
+        {
+            int interval = _syncConfig.IntervalSeconds > 0 ? _syncConfig.IntervalSeconds : 30;
+            AddTimer(interval, SyncFromWebsite, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
+            AddTimer(5.0f, SyncFromWebsite);
+            Console.WriteLine($"[{ModuleName}] Синхронизация с сайтом включена (каждые {interval} сек)");
+        }
+        else
+        {
+            Console.WriteLine($"[{ModuleName}] Синхронизация с сайтом отключена (не заполнен sync.json)");
+        }
 
         AddCommand("css_shop", "Открыть магазин", OnShopCommand);
         AddCommandListener("say", OnPlayerSay);
@@ -1084,5 +1122,119 @@ public class ShopPlugin : BasePlugin
         {
             Console.WriteLine($"[{ModuleName}] Ошибка сохранения данных: {ex.Message}");
         }
+    }
+
+    private void LoadSyncConfig()
+    {
+        try
+        {
+            if (!File.Exists(SyncConfigPath))
+            {
+                var def = new SyncConfig();
+                File.WriteAllText(SyncConfigPath, JsonSerializer.Serialize(def, new JsonSerializerOptions { WriteIndented = true }));
+                _syncConfig = def;
+                return;
+            }
+
+            string json = File.ReadAllText(SyncConfigPath);
+            _syncConfig = JsonSerializer.Deserialize<SyncConfig>(json) ?? new SyncConfig();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки sync.json: {ex.Message}");
+            _syncConfig = new SyncConfig();
+        }
+    }
+
+    private void SyncFromWebsite()
+    {
+        string url = _syncConfig.ApiUrl;
+        string key = _syncConfig.SyncKey;
+        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(key))
+            return;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("X-Sync-Key", key);
+                var resp = await _http.SendAsync(request);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[{ModuleName}] Sync GET status {(int)resp.StatusCode}");
+                    return;
+                }
+
+                string body = await resp.Content.ReadAsStringAsync();
+                var data = JsonSerializer.Deserialize<DeliveriesResponse>(body);
+                if (data == null || data.deliveries.Count == 0)
+                    return;
+
+                Server.NextFrame(() => ApplyDeliveries(data.deliveries, url, key));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{ModuleName}] Ошибка синхронизации: {ex.Message}");
+            }
+        });
+    }
+
+    private void ApplyDeliveries(List<Delivery> deliveries, string url, string key)
+    {
+        var deliveredIds = new List<int>();
+
+        foreach (var d in deliveries)
+        {
+            if (!ulong.TryParse(d.steam_id, out ulong sid))
+            {
+                deliveredIds.Add(d.id);
+                continue;
+            }
+
+            if (!_playerData.ContainsKey(sid))
+                _playerData[sid] = new PlayerData();
+
+            var pdata = _playerData[sid];
+            if (d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase))
+                pdata.Gold += d.amount;
+            else if (d.currency.Equals("Silver", StringComparison.OrdinalIgnoreCase))
+                pdata.Silver += d.amount;
+
+            deliveredIds.Add(d.id);
+
+            var player = Utilities.GetPlayers().FirstOrDefault(p => p != null && p.IsValid && !p.IsBot && p.SteamID == sid);
+            if (player != null && player.IsValid)
+            {
+                string curName = d.currency.Equals("Gold", StringComparison.OrdinalIgnoreCase) ? "золота" : "серебра";
+                player.PrintToChat($" {ChatColors.Green}[Магазин] Вам начислено {d.amount} {curName} с сайта!");
+            }
+        }
+
+        SaveData();
+
+        if (deliveredIds.Count > 0)
+            ConfirmDelivery(deliveredIds, url, key);
+    }
+
+    private void ConfirmDelivery(List<int> ids, string url, string key)
+    {
+        Task.Run(async () =>
+        {
+            try
+            {
+                var payload = JsonSerializer.Serialize(new { delivered_ids = ids });
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
+                };
+                request.Headers.Add("X-Sync-Key", key);
+                await _http.SendAsync(request);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{ModuleName}] Ошибка подтверждения доставки: {ex.Message}");
+            }
+        });
     }
 }

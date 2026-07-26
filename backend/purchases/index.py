@@ -181,6 +181,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         purchase_id = cursor.fetchone()[0]
         
+        # Начисление игровой валюты (золото/серебро) в очередь доставки на сервер
+        game_currency = None
+        unit_lower = (unit_name or '').lower()
+        if 'золот' in unit_lower:
+            game_currency = 'Gold'
+        elif 'серебр' in unit_lower:
+            game_currency = 'Silver'
+        
+        if game_currency and is_slider:
+            game_amount = int(quantity)
+            cursor.execute(f"""
+                INSERT INTO t_p15345778_news_shop_project.game_deliveries
+                (steam_id, currency, amount, status, purchase_id)
+                VALUES ('{escaped_steam_id}', '{game_currency}', {int(game_amount)}, 'pending', {int(purchase_id)})
+            """)
+        
         conn.commit()
         cursor.close()
         conn.close()
