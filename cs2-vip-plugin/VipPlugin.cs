@@ -41,8 +41,7 @@ public class VipPlugin : BasePlugin
 
     private bool IsVip(CCSPlayerController player)
     {
-        return AdminManager.PlayerHasPermissions(player, VipFlag)
-            || AdminManager.PlayerHasPermissions(player, "@css/root");
+        return AdminManager.PlayerHasPermissions(player, VipFlag);
     }
 
     private HookResult OnPlayerSay(CCSPlayerController? player, CommandInfo info)
