@@ -5,6 +5,7 @@ using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using CS2MenuManager.API.Class;
+using CS2MenuManager.API.Enum;
 using CS2MenuManager.API.Menu;
 
 namespace VipPlugin;
@@ -77,28 +78,10 @@ public class VipPlugin : BasePlugin
 
         var menu = new WasdMenu("VIP-меню", this);
 
-        menu.AddItem($"Здоровье: {VipHealth}", (controller, option) =>
-        {
-            ApplyHealth(controller);
-        });
+        // Информационный пункт — некликабельный, только показывает бонус.
+        menu.AddItem($"Здоровье: {VipHealth}", (_, _) => { }, DisableOption.DisableShowNumber);
 
         menu.Display(player, 0);
-    }
-
-    private void ApplyHealth(CCSPlayerController player)
-    {
-        if (player == null || !player.IsValid || !IsVip(player))
-            return;
-
-        var pawn = player.PlayerPawn.Value;
-        if (pawn == null || !pawn.IsValid || pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE)
-        {
-            player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Здоровье применится после возрождения");
-            return;
-        }
-
-        SetHealth(pawn, VipHealth);
-        player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Здоровье установлено: {ChatColors.Green}{VipHealth}");
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
@@ -107,9 +90,20 @@ public class VipPlugin : BasePlugin
         if (player == null || !player.IsValid || !IsVip(player))
             return HookResult.Continue;
 
-        AddTimer(0.2f, () =>
+        // Несколько попыток — pawn после спавна готов не сразу,
+        // а другие плагины/режим могут выставить HP чуть позже.
+        ApplyHealthDelayed(player, 0.1f);
+        ApplyHealthDelayed(player, 0.5f);
+        ApplyHealthDelayed(player, 1.0f);
+
+        return HookResult.Continue;
+    }
+
+    private void ApplyHealthDelayed(CCSPlayerController player, float delay)
+    {
+        AddTimer(delay, () =>
         {
-            if (player == null || !player.IsValid)
+            if (player == null || !player.IsValid || !IsVip(player))
                 return;
 
             var pawn = player.PlayerPawn.Value;
@@ -118,8 +112,6 @@ public class VipPlugin : BasePlugin
 
             SetHealth(pawn, VipHealth);
         });
-
-        return HookResult.Continue;
     }
 
     private void SetHealth(CCSPlayerPawn pawn, int health)
