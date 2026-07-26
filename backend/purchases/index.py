@@ -78,7 +78,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         escaped_persona_name = persona_name.replace("'", "''")
         
         cursor.execute(f"""
-            SELECT name, amount, price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step
+            SELECT name, amount, price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step, unit_multiplier
             FROM t_p15345778_news_shop_project.shop_items 
             WHERE id = {int(shop_item_id)} AND is_active = true
         """)
@@ -98,7 +98,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        item_name, item_amount, item_price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step = item
+        item_name, item_amount, item_price, is_slider, unit_price, unit_name, slider_min, slider_max, slider_step, unit_multiplier = item
 
         # Для товаров с ползунком — считаем цену из quantity
         if is_slider:
@@ -122,7 +122,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             item_price = qty * unit_price
-            item_amount = f'{qty} {unit_name}'
+            display_qty = qty * (int(unit_multiplier) if unit_multiplier else 1)
+            item_amount = f'{display_qty} {unit_name}'
         
         # Get user balance
         cursor.execute(f"""
@@ -190,7 +191,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             game_currency = 'Silver'
         
         if game_currency and is_slider:
-            game_amount = int(quantity)
+            multiplier = int(unit_multiplier) if unit_multiplier else 1
+            game_amount = int(quantity) * multiplier
             cursor.execute(f"""
                 INSERT INTO t_p15345778_news_shop_project.game_deliveries
                 (steam_id, currency, amount, status, purchase_id)
