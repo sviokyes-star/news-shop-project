@@ -27,6 +27,7 @@ public class TimerPlugin : BasePlugin
     private readonly Dictionary<string, string> _mapRecordHolders = new();
     private readonly Dictionary<string, MapZones> _mapZones = new();
     private readonly Dictionary<ulong, Dictionary<string, float>> _playerRecords = new();
+    private readonly Dictionary<ulong, string> _playerNames = new();
     private readonly Dictionary<int, bool> _inStartZone = new();
     private readonly Dictionary<int, bool> _inEndZone = new();
     private readonly Dictionary<int, float> _lastFinishTime = new();
@@ -45,6 +46,7 @@ public class TimerPlugin : BasePlugin
     private string RecordsFilePath => Path.Combine(ModuleDirectory, "records.json");
     private string RecordHoldersFilePath => Path.Combine(ModuleDirectory, "record_holders.json");
     private string PlayerRecordsFilePath => Path.Combine(ModuleDirectory, "player_records.json");
+    private string PlayerNamesFilePath => Path.Combine(ModuleDirectory, "player_names.json");
 
     private class MapZones
     {
@@ -87,6 +89,7 @@ public class TimerPlugin : BasePlugin
         LoadRecords();
         LoadRecordHolders();
         LoadPlayerRecords();
+        LoadPlayerNames();
         
         _beamTimer = AddTimer(0.1f, DrawZoneBeams, TimerFlags.REPEAT);
         
@@ -264,24 +267,29 @@ public class TimerPlugin : BasePlugin
         if (player == null || !player.IsValid)
             return;
 
-        var sortedTimers = _playerTimers
-            .Where(t => t.Value.BestTime != float.MaxValue)
-            .OrderBy(t => t.Value.BestTime)
+        string mapName = Server.MapName;
+
+        var sortedRecords = _playerRecords
+            .Where(p => p.Value.ContainsKey(mapName))
+            .Select(p => new { SteamId = p.Key, Time = p.Value[mapName] })
+            .OrderBy(x => x.Time)
             .Take(10)
             .ToList();
 
-        if (sortedTimers.Count == 0)
+        if (sortedRecords.Count == 0)
         {
-            player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Пока нет результатов");
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Пока нет результатов на этой карте");
             return;
         }
 
-        player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Топ-10 результатов:");
-        for (int i = 0; i < sortedTimers.Count; i++)
+        player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Топ-10 на карте {ChatColors.Gold}{mapName}{ChatColors.Default}:");
+        for (int i = 0; i < sortedRecords.Count; i++)
         {
-            var playerController = Utilities.GetPlayerFromUserid(sortedTimers[i].Key);
-            string playerName = playerController?.PlayerName ?? "Unknown";
-            player.PrintToChat($" {i + 1}. {playerName}: {ChatColors.Yellow}{FormatTime(sortedTimers[i].Value.BestTime)}");
+            ulong sid = sortedRecords[i].SteamId;
+            string playerName = _playerNames.ContainsKey(sid)
+                ? _playerNames[sid]
+                : (Utilities.GetPlayers().FirstOrDefault(pl => pl.IsValid && pl.SteamID == sid)?.PlayerName ?? "Unknown");
+            player.PrintToChat($" {i + 1}. {playerName}: {ChatColors.Yellow}{FormatTime(sortedRecords[i].Time)}");
         }
     }
 
@@ -391,7 +399,9 @@ public class TimerPlugin : BasePlugin
                 _playerRecords[steamId] = new Dictionary<string, float>();
             
             _playerRecords[steamId][mapName] = finalTime;
+            _playerNames[steamId] = player.PlayerName;
             SavePlayerRecords();
+            SavePlayerNames();
         }
 
         bool isMapRecord = !_mapRecords.ContainsKey(mapName) || finalTime < _mapRecords[mapName];
@@ -813,6 +823,43 @@ public class TimerPlugin : BasePlugin
         catch (Exception ex)
         {
             Console.WriteLine($"[{ModuleName}] Ошибка сохранения личных рекордов: {ex.Message}");
+        }
+    }
+
+    private void LoadPlayerNames()
+    {
+        try
+        {
+            if (!File.Exists(PlayerNamesFilePath))
+                return;
+
+            string json = File.ReadAllText(PlayerNamesFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<ulong, string>>(json);
+
+            if (data == null)
+                return;
+
+            foreach (var kvp in data)
+                _playerNames[kvp.Key] = kvp.Value;
+
+            Console.WriteLine($"[{ModuleName}] Загружено имён игроков: {_playerNames.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка загрузки имён игроков: {ex.Message}");
+        }
+    }
+
+    private void SavePlayerNames()
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(_playerNames, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(PlayerNamesFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сохранения имён игроков: {ex.Message}");
         }
     }
 
