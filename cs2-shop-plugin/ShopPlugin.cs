@@ -1016,7 +1016,7 @@ public class ShopPlugin : BasePlugin
 
     [ConsoleCommand("css_gift", "Поставить подарок на месте, где вы стоите")]
     [RequiresPermissions("@css/root")]
-    [CommandHelper(minArgs: 2, usage: "<gold|silver> <количество>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnGiftCommand(CCSPlayerController? caller, CommandInfo command)
     {
         if (caller == null || !caller.IsValid)
