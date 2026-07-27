@@ -82,7 +82,6 @@ public class TimerPlugin : BasePlugin
     {
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
-        RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         
@@ -444,30 +443,6 @@ public class TimerPlugin : BasePlugin
         {
             _playerTimers[userId].BestTime = _playerRecords[steamId][mapName];
         }
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
-    {
-        var player = @event.Userid;
-        if (player == null || !player.IsValid || player.IsBot)
-            return HookResult.Continue;
-
-        int newTeam = @event.Team;
-        if (newTeam != (int)CsTeam.Terrorist && newTeam != (int)CsTeam.CounterTerrorist)
-            return HookResult.Continue;
-
-        Server.NextFrame(() =>
-        {
-            if (player == null || !player.IsValid)
-                return;
-
-            var pawn = player.PlayerPawn.Value;
-            bool isAlive = pawn != null && pawn.IsValid && pawn.LifeState == (byte)LifeState_t.LIFE_ALIVE;
-            if (!isAlive)
-                player.Respawn();
-        });
 
         return HookResult.Continue;
     }
