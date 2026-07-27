@@ -962,7 +962,6 @@ public class ShopPlugin : BasePlugin
     }
 
     [ConsoleCommand("css_gift_test", "Диагностика модели подарка")]
-    [RequiresPermissions("@css/root")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnGiftTestCommand(CCSPlayerController? caller, CommandInfo command)
     {
