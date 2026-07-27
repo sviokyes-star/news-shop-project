@@ -171,14 +171,22 @@ public class ShopPlugin : BasePlugin
             return;
 
         var gift = _gifts[index];
-        var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
+        // prop_dynamic_override корректнее работает с кастомными моделями из аддонов.
+        var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic_override");
         if (prop == null || !prop.IsValid)
             return;
 
-        prop.SetModel(GiftModel);
         var pos = new Vector(gift.X, gift.Y, gift.Z + 5);
         prop.Teleport(pos, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+
+        // Модель задаём и до, и после спавна — так кастомная модель гарантированно применяется.
+        prop.SetModel(GiftModel);
         prop.DispatchSpawn();
+        Server.NextFrame(() =>
+        {
+            if (prop != null && prop.IsValid)
+                prop.SetModel(GiftModel);
+        });
 
         _giftProps[index] = prop;
     }
