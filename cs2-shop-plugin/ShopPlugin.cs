@@ -961,6 +961,46 @@ public class ShopPlugin : BasePlugin
         }
     }
 
+    [ConsoleCommand("css_gift_test", "Диагностика модели подарка")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnGiftTestCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (caller == null || !caller.IsValid)
+            return;
+
+        var pawn = caller.PlayerPawn.Value;
+        if (pawn == null || !pawn.IsValid || pawn.AbsOrigin == null)
+        {
+            command.ReplyToCommand($" {Orange}Okyes |{ChatColors.Red} Нужно быть живым");
+            return;
+        }
+
+        var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic_override");
+        if (prop == null || !prop.IsValid)
+        {
+            command.ReplyToCommand($" {Orange}Okyes |{ChatColors.Red} Не удалось создать сущность");
+            return;
+        }
+
+        var pos = new Vector(pawn.AbsOrigin.X, pawn.AbsOrigin.Y, pawn.AbsOrigin.Z + 20);
+        prop.Teleport(pos, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+        prop.SetModel(GiftModel);
+        prop.DispatchSpawn();
+
+        command.ReplyToCommand($" {Orange}Okyes |{ChatColors.White} Модель: {ChatColors.Gold}{GiftModel}");
+        Server.NextFrame(() =>
+        {
+            if (prop == null || !prop.IsValid)
+            {
+                caller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Prop исчез после спавна (модель не найдена сервером)");
+                return;
+            }
+            string actual = prop.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.ModelName ?? "(пусто)";
+            caller.PrintToChat($" {Orange}Okyes |{ChatColors.White} Фактическая модель у prop: {ChatColors.Gold}{actual}");
+        });
+    }
+
     [ConsoleCommand("css_gift", "Поставить подарок на месте, где вы стоите")]
     [RequiresPermissions("@css/root")]
     [CommandHelper(minArgs: 2, usage: "<gold|silver> <количество>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
