@@ -962,6 +962,7 @@ public class ShopPlugin : BasePlugin
     }
 
     [ConsoleCommand("css_gift_test", "Диагностика модели подарка")]
+    [RequiresPermissions("@css/root")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnGiftTestCommand(CCSPlayerController? caller, CommandInfo command)
     {
@@ -998,25 +999,11 @@ public class ShopPlugin : BasePlugin
             string actual = prop.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.ModelName ?? "(пусто)";
             caller.PrintToChat($" {Orange}Okyes |{ChatColors.White} Фактическая модель у prop: {ChatColors.Gold}{actual}");
         });
-
-        // Эталон: стандартная модель ядра игры (есть у КАЖДОГО клиента без аддонов).
-        // Если этот куб виден, а подарок — нет, значит проблема в загрузке Workshop-item клиентом,
-        // а не в коде спавна, позиции или масштабе.
-        const string refModel = "models/props/de_dust/hr_dust/dust_crates/dust_crate_style_01_32x32x32.vmdl";
-        var refProp = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic_override");
-        if (refProp != null && refProp.IsValid)
-        {
-            var refPos = new Vector(pawn.AbsOrigin.X + 40, pawn.AbsOrigin.Y, pawn.AbsOrigin.Z + 20);
-            refProp.Teleport(refPos, new QAngle(0, 0, 0), new Vector(0, 0, 0));
-            refProp.SetModel(refModel);
-            refProp.DispatchSpawn();
-            caller.PrintToChat($" {Orange}Okyes |{ChatColors.White} Рядом (справа) эталонный ящик. Виден он, но не подарок → клиент не загрузил Workshop-модель.");
-        }
     }
 
     [ConsoleCommand("css_gift", "Поставить подарок на месте, где вы стоите")]
     [RequiresPermissions("@css/root")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    [CommandHelper(minArgs: 2, usage: "<gold|silver> <количество>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnGiftCommand(CCSPlayerController? caller, CommandInfo command)
     {
         if (caller == null || !caller.IsValid)
