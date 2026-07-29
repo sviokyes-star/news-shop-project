@@ -6,6 +6,8 @@ using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Entities;
 using CS2MenuManager.API.Menu;
+using CS2TraceRay.Class;
+using CS2TraceRay.Enum;
 using System.Text.Json;
 
 namespace AdminOkyesPlugin;
@@ -13,7 +15,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.3.1";
+    public override string ModuleVersion => "1.3.2";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -247,29 +249,20 @@ public class AdminOkyesPlugin : BasePlugin
         if (adminPawn == null || !adminPawn.IsValid || targetPawn == null || !targetPawn.IsValid)
             return false;
 
-        var eye = adminPawn.AbsOrigin;
-        if (eye == null)
+        // Трассировка луча из глаз админа до первого препятствия (стена/пол).
+        var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskShot, Contents.Solid, adminPawn);
+        if (trace == null)
             return false;
 
-        // Позиция глаз = позиция игрока + высота обзора.
-        var eyePos = new Vector(eye.X, eye.Y, eye.Z + 64f);
+        var hit = trace.Value.EndPos;
 
-        // Направление взгляда из углов камеры.
-        var angles = adminPawn.EyeAngles;
-        double pitch = angles.X * Math.PI / 180.0;
-        double yaw = angles.Y * Math.PI / 180.0;
-
-        var forward = new Vector(
-            (float)(Math.Cos(pitch) * Math.Cos(yaw)),
-            (float)(Math.Cos(pitch) * Math.Sin(yaw)),
-            (float)(-Math.Sin(pitch))
-        );
-
-        const float maxDistance = 8000f;
+        // Немного отступаем от поверхности по нормали и приподнимаем,
+        // чтобы игрок не застрял в стене/полу.
+        var normal = trace.Value.Normal;
         var dest = new Vector(
-            eyePos.X + forward.X * maxDistance,
-            eyePos.Y + forward.Y * maxDistance,
-            eyePos.Z + forward.Z * maxDistance + 10f
+            hit.X + normal.X * 16f,
+            hit.Y + normal.Y * 16f,
+            hit.Z + normal.Z * 16f + 10f
         );
 
         targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
