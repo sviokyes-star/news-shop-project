@@ -13,7 +13,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -169,9 +169,99 @@ public class AdminOkyesPlugin : BasePlugin
             });
         });
 
+        menu.AddItem("Режим полёта", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/slay") &&
+                !AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для режима полёта");
+                return;
+            }
+
+            ShowPlayerSelectMenu(controller, "Кому включить полёт?", target =>
+            {
+                bool enabled = ToggleNoclip(target);
+                if (enabled)
+                    Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} включил режим полёта для {target.PlayerName}");
+                else
+                    Server.PrintToChatAll($" {ChatColors.Yellow}[Admin Okyes] {controller.PlayerName} выключил режим полёта для {target.PlayerName}");
+            });
+        });
+
+        menu.AddItem("Телепорт к прицелу", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/slay") &&
+                !AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для телепорта");
+                return;
+            }
+
+            ShowPlayerSelectMenu(controller, "Кого телепортировать?", target =>
+            {
+                if (TeleportToCrosshair(controller, target))
+                    Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} телепортировал {target.PlayerName} к прицелу");
+                else
+                    controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Не удалось выполнить телепорт");
+            });
+        });
+
         menu.PrevMenu = GetMainMenu();
 
         menu.Display(player, 0);
+    }
+
+    // Включает/выключает режим полёта (noclip) у игрока. Возвращает true, если полёт включён.
+    private bool ToggleNoclip(CCSPlayerController target)
+    {
+        var pawn = target.PlayerPawn.Value;
+        if (pawn == null || !pawn.IsValid)
+            return false;
+
+        bool enable = pawn.MoveType != MoveType_t.MOVETYPE_NOCLIP;
+        var newType = enable ? MoveType_t.MOVETYPE_NOCLIP : MoveType_t.MOVETYPE_WALK;
+
+        pawn.MoveType = newType;
+        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+
+        return enable;
+    }
+
+    // Телепортирует игрока в точку, куда смотрит прицел админа.
+    private bool TeleportToCrosshair(CCSPlayerController admin, CCSPlayerController target)
+    {
+        var adminPawn = admin.PlayerPawn.Value;
+        var targetPawn = target.PlayerPawn.Value;
+        if (adminPawn == null || !adminPawn.IsValid || targetPawn == null || !targetPawn.IsValid)
+            return false;
+
+        var eye = adminPawn.AbsOrigin;
+        if (eye == null)
+            return false;
+
+        // Позиция глаз = позиция игрока + высота обзора.
+        var eyePos = new Vector(eye.X, eye.Y, eye.Z + 64f);
+
+        // Направление взгляда из углов камеры.
+        var angles = adminPawn.EyeAngles;
+        double pitch = angles.X * Math.PI / 180.0;
+        double yaw = angles.Y * Math.PI / 180.0;
+
+        var forward = new Vector(
+            (float)(Math.Cos(pitch) * Math.Cos(yaw)),
+            (float)(Math.Cos(pitch) * Math.Sin(yaw)),
+            (float)(-Math.Sin(pitch))
+        );
+
+        const float maxDistance = 8000f;
+        var dest = new Vector(
+            eyePos.X + forward.X * maxDistance,
+            eyePos.Y + forward.Y * maxDistance,
+            eyePos.Z + forward.Z * maxDistance + 10f
+        );
+
+        targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
+        return true;
     }
 
     private void ShowServerMenu(CCSPlayerController player)
