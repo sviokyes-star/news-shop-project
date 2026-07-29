@@ -19,6 +19,9 @@ public class AdminOkyesPlugin : BasePlugin
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
+    // Ярко-оранжевый цвет (≈ #FF4500) для префикса "Okyes |".
+    private const char Orange = '\u0010';
+
     private static readonly string[] Maps =
     {
         "de_dust2",
@@ -184,9 +187,9 @@ public class AdminOkyesPlugin : BasePlugin
             {
                 bool enabled = ToggleNoclip(target);
                 if (enabled)
-                    Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} включил режим полёта для {target.PlayerName}");
+                    Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} Админ {controller.PlayerName} включил режим полёта для {target.PlayerName}");
                 else
-                    Server.PrintToChatAll($" {ChatColors.Yellow}[Admin Okyes] {controller.PlayerName} выключил режим полёта для {target.PlayerName}");
+                    Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Yellow} Админ {controller.PlayerName} выключил режим полёта для {target.PlayerName}");
             });
         });
 
