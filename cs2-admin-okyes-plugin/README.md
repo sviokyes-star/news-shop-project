@@ -26,7 +26,6 @@
 - Counter-Strike 2 сервер
 - [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp) (v200+)
 - **[CS2MenuManager](https://github.com/schwarper/CS2MenuManager)** — обязательная библиотека, без неё меню не откроется
-- **[CS2TraceRay](https://github.com/schwarper/CS2TraceRay/releases)** — обязательная библиотека для пункта «Телепорт к прицелу». Установить в `csgo/addons/counterstrikesharp/shared/CS2TraceRay/` (иначе плагин не загрузится)
 - .NET 8.0 SDK (для компиляции)
 
 ### Шаги установки

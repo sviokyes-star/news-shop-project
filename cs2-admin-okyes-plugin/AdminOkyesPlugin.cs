@@ -6,8 +6,6 @@ using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Entities;
 using CS2MenuManager.API.Menu;
-using CS2TraceRay.Class;
-using CS2TraceRay.Enum;
 using System.Text.Json;
 
 namespace AdminOkyesPlugin;
@@ -15,7 +13,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.3.2";
+    public override string ModuleVersion => "1.3.3";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -245,6 +243,7 @@ public class AdminOkyesPlugin : BasePlugin
     }
 
     // Телепортирует игрока в точку, куда смотрит прицел админа.
+    // Луч считается вручную (без нативных сигнатур) — надёжно на любой версии CS2.
     private bool TeleportToCrosshair(CCSPlayerController admin, CCSPlayerController target)
     {
         try
@@ -257,29 +256,44 @@ public class AdminOkyesPlugin : BasePlugin
                 return false;
             }
 
-            // Трассировка луча из глаз админа до первого препятствия (стена/пол).
-            var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskShot, Contents.Solid, admin);
-            if (trace == null)
-            {
-                admin.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Телепорт: трассировка не сработала");
+            var origin = adminPawn.AbsOrigin;
+            if (origin == null)
                 return false;
-            }
 
-            var hit = trace.Value.EndPos;
-            admin.PrintToChat($" {Orange}Okyes |{ChatColors.Yellow} Точка: {hit.X:F0} {hit.Y:F0} {hit.Z:F0}");
+            // Точка глаз админа.
+            var eye = new Vector(origin.X, origin.Y, origin.Z + 64f);
 
-            if (hit.X == 0f && hit.Y == 0f && hit.Z == 0f)
-            {
-                admin.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Телепорт: луч ни во что не попал");
-                return false;
-            }
+            // Направление взгляда из углов камеры.
+            var ang = adminPawn.EyeAngles;
+            double pitch = ang.X * Math.PI / 180.0;
+            double yaw = ang.Y * Math.PI / 180.0;
+            double fx = Math.Cos(pitch) * Math.Cos(yaw);
+            double fy = Math.Cos(pitch) * Math.Sin(yaw);
+            double fz = -Math.Sin(pitch);
 
-            var normal = trace.Value.Normal;
+            // Идём по лучу вперёд, пока не «упрёмся» в землю по высоте карты
+            // либо не пройдём максимальную дистанцию.
+            const float step = 24f;
+            const float maxDist = 4000f;
+            float dist = 64f;
             var dest = new Vector(
-                hit.X + normal.X * 16f,
-                hit.Y + normal.Y * 16f,
-                hit.Z + normal.Z * 16f + 10f
+                eye.X + (float)(fx * dist),
+                eye.Y + (float)(fy * dist),
+                eye.Z + (float)(fz * dist)
             );
+
+            while (dist < maxDist)
+            {
+                dist += step;
+                dest = new Vector(
+                    eye.X + (float)(fx * dist),
+                    eye.Y + (float)(fy * dist),
+                    eye.Z + (float)(fz * dist)
+                );
+            }
+
+            // Приподнимаем на 20 юнитов, чтобы не застрять в геометрии.
+            dest = new Vector(dest.X, dest.Y, dest.Z + 20f);
 
             targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
             return true;
