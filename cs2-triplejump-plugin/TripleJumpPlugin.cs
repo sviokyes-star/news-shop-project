@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.0.8";
+    public override string ModuleVersion => "1.0.9";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -41,76 +41,62 @@ public class TripleJumpPlugin : BasePlugin
             
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
             bool wasOnGround = _wasOnGround.ContainsKey(userId) && _wasOnGround[userId];
-            
-            // Сброс счетчика при приземлении или если игрок на земле
-            if (isOnGround)
+
+            if (!_jumpCount.ContainsKey(userId))
+                _jumpCount[userId] = 0;
+
+            if (!_lastJumpButton.ContainsKey(userId))
+                _lastJumpButton[userId] = 0;
+
+            // Любое касание земли сбрасывает серию прыжков.
+            // Важно при банихопе: касание длится всего 1 тик, поэтому ловим
+            // его в тот же тик, не полагаясь на "игрок всё ещё на земле".
+            if (isOnGround && _jumpCount[userId] != 0)
             {
-                if (_jumpCount[userId] != 0)
-                {
-                    _jumpCount[userId] = 0;
-                    _lastJumpButton[userId] = 0;
-                }
+                _jumpCount[userId] = 0;
+                _lastJumpButton[userId] = 0;
             }
-            
+
             // Проверяем нажатие прыжка
             var buttons = player.Buttons;
             ulong currentButtons = (ulong)buttons;
             bool isJumping = (buttons & PlayerButtons.Jump) != 0;
-            
-            if (!_jumpCount.ContainsKey(userId))
-                _jumpCount[userId] = 0;
-            
-            if (!_lastJumpButton.ContainsKey(userId))
-                _lastJumpButton[userId] = 0;
-            
+
             ulong lastButtons = _lastJumpButton[userId];
             bool wasJumpPressed = (lastButtons & (ulong)PlayerButtons.Jump) != 0;
-            
+
             // Детектируем момент нажатия (переход от не нажата к нажата)
             bool justPressedJump = isJumping && !wasJumpPressed;
-            
+
             if (justPressedJump)
             {
-                float now = Server.CurrentTime;
-                if (now - _lastDebugTime > 0.5f)
-                {
-                    Console.WriteLine($"[TRIPLE JUMP DEBUG] Player {player.PlayerName} pressed jump. Ground: {isOnGround}, Count: {_jumpCount[userId]}, WasGround: {wasOnGround}");
-                    _lastDebugTime = now;
-                }
-                
-                // Первый прыжок - если был на земле (переход с земли)
-                if (wasOnGround || _jumpCount[userId] == 0)
+                // Прыжок с земли (или из тика касания земли) — начинаем новую серию.
+                // Это надёжно работает при банихопе, где FL_ONGROUND держится 1 тик.
+                if (isOnGround || wasOnGround)
                 {
                     _jumpCount[userId] = 1;
-                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} first jump (from ground, count -> 1)");
                 }
                 // Второй и третий прыжок - в воздухе
                 else if (_jumpCount[userId] >= 1 && _jumpCount[userId] < 3)
                 {
                     _jumpCount[userId]++;
-                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} air jump #{_jumpCount[userId]}");
-                    
+
                     // Выполняем прыжок
                     if (pawn.AbsVelocity != null)
                     {
                         pawn.Teleport(null, null, new Vector(
-                            pawn.AbsVelocity.X, 
-                            pawn.AbsVelocity.Y, 
+                            pawn.AbsVelocity.X,
+                            pawn.AbsVelocity.Y,
                             301.993377f
                         ));
                     }
                 }
                 // Лимит исчерпан (3 прыжка) — больше не прыгаем в воздухе.
-                // НЕ сбрасываем счётчик здесь, иначе спам пробелом даст новую серию.
-                // Сброс произойдёт только при приземлении.
-                else
-                {
-                    Console.WriteLine($"[TRIPLE JUMP] {player.PlayerName} jump ignored (limit reached, count {_jumpCount[userId]})");
-                }
+                // Сброс произойдёт только при следующем касании земли.
             }
-            
+
             _lastJumpButton[userId] = currentButtons;
-            
+
             _wasOnGround[userId] = isOnGround;
         }
     }
