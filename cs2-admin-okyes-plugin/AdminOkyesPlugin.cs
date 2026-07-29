@@ -63,7 +63,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!HasAdminPermission(player))
             {
-                player.PrintToChat($" {ChatColors.Red}[Admin Okyes] У вас нет прав для использования админ-меню");
+                player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} У вас нет прав для использования админ-меню");
                 return HookResult.Handled;
             }
 
@@ -89,7 +89,7 @@ public class AdminOkyesPlugin : BasePlugin
 
         if (!HasAdminPermission(caller))
         {
-            caller.PrintToChat($" {ChatColors.Red}[Admin Okyes] У вас нет прав для использования админ-меню");
+            caller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} У вас нет прав для использования админ-меню");
             return;
         }
 
@@ -147,14 +147,14 @@ public class AdminOkyesPlugin : BasePlugin
             if (!AdminManager.PlayerHasPermissions(controller, "@css/ban") &&
                 !AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для бана");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для бана");
                 return;
             }
 
             ShowPlayerSelectMenu(controller, "Кого забанить?", target =>
             {
                 Server.ExecuteCommand($"banid 60 {target.UserId}");
-                Server.PrintToChatAll($" {ChatColors.Red}[Admin Okyes] {controller.PlayerName} забанил {target.PlayerName} на 60 минут");
+                Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Red} {controller.PlayerName} забанил {target.PlayerName} на 60 минут");
             });
         });
 
@@ -163,14 +163,14 @@ public class AdminOkyesPlugin : BasePlugin
             if (!AdminManager.PlayerHasPermissions(controller, "@css/kick") &&
                 !AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для кика");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для кика");
                 return;
             }
 
             ShowPlayerSelectMenu(controller, "Кого кикнуть?", target =>
             {
                 Server.ExecuteCommand($"kickid {target.UserId}");
-                Server.PrintToChatAll($" {ChatColors.Red}[Admin Okyes] {controller.PlayerName} кикнул {target.PlayerName}");
+                Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Red} {controller.PlayerName} кикнул {target.PlayerName}");
             });
         });
 
@@ -179,7 +179,7 @@ public class AdminOkyesPlugin : BasePlugin
             if (!AdminManager.PlayerHasPermissions(controller, "@css/slay") &&
                 !AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для режима полёта");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для режима полёта");
                 return;
             }
 
@@ -198,16 +198,16 @@ public class AdminOkyesPlugin : BasePlugin
             if (!AdminManager.PlayerHasPermissions(controller, "@css/slay") &&
                 !AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для телепорта");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для телепорта");
                 return;
             }
 
             ShowPlayerSelectMenu(controller, "Кого телепортировать?", target =>
             {
                 if (TeleportToCrosshair(controller, target))
-                    Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} телепортировал {target.PlayerName} к прицелу");
+                    Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} {controller.PlayerName} телепортировал {target.PlayerName} к прицелу");
                 else
-                    controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Не удалось выполнить телепорт");
+                    controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Не удалось выполнить телепорт");
             });
         });
 
@@ -281,7 +281,7 @@ public class AdminOkyesPlugin : BasePlugin
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root") &&
                 !AdminManager.PlayerHasPermissions(controller, "@css/changemap"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для смены карты");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для смены карты");
                 return;
             }
 
@@ -301,7 +301,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             menu.AddItem(map, (controller, option) =>
             {
-                Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} меняет карту на {map}...");
+                Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} {controller.PlayerName} меняет карту на {map}...");
                 Server.ExecuteCommand($"changelevel {map}");
             });
         }
@@ -317,7 +317,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для настройки таймера");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для настройки таймера");
                 return;
             }
 
@@ -331,7 +331,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для настройки таймера");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для настройки таймера");
                 return;
             }
 
@@ -354,7 +354,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления спавнами");
                 return;
             }
 
@@ -368,7 +368,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления спавнами");
                 return;
             }
 
@@ -382,7 +382,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления спавнами");
                 return;
             }
 
@@ -393,7 +393,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления спавнами");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления спавнами");
                 return;
             }
 
@@ -413,7 +413,7 @@ public class AdminOkyesPlugin : BasePlugin
 
         if (players.Count == 0)
         {
-            caller.PrintToChat($" {ChatColors.Yellow}[Admin Okyes] На сервере нет игроков");
+            caller.PrintToChat($" {Orange}Okyes |{ChatColors.Yellow} На сервере нет игроков");
             return;
         }
 
@@ -492,7 +492,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления магазином");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления магазином");
                 return;
             }
 
@@ -507,7 +507,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления магазином");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления магазином");
                 return;
             }
 
@@ -522,7 +522,7 @@ public class AdminOkyesPlugin : BasePlugin
     {
         if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
         {
-            player.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления магазином");
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления магазином");
             return;
         }
 
@@ -536,7 +536,7 @@ public class AdminOkyesPlugin : BasePlugin
                 amountMenu.AddItem(value.ToString(), (controller, option) =>
                 {
                     Server.ExecuteCommand($"{command} {target.UserId} {value}");
-                    controller.PrintToChat($" {ChatColors.Green}[Admin Okyes] {actionName}: {value} {currencyName} — {target.PlayerName}");
+                    controller.PrintToChat($" {Orange}Okyes |{ChatColors.Green} {actionName}: {value} {currencyName} — {target.PlayerName}");
                 });
             }
 
@@ -560,7 +560,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления подарками");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления подарками");
                 return;
             }
 
@@ -571,7 +571,7 @@ public class AdminOkyesPlugin : BasePlugin
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
-                controller.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления подарками");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления подарками");
                 return;
             }
 
@@ -586,7 +586,7 @@ public class AdminOkyesPlugin : BasePlugin
     {
         if (!AdminManager.PlayerHasPermissions(player, "@css/root"))
         {
-            player.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления подарками");
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления подарками");
             return;
         }
 
@@ -598,7 +598,7 @@ public class AdminOkyesPlugin : BasePlugin
             menu.AddItem(value.ToString(), (controller, option) =>
             {
                 Server.NextFrame(() => controller.ExecuteClientCommandFromServer($"css_gift {currencyArg} {value}"));
-                controller.PrintToChat($" {ChatColors.Green}[Admin Okyes] Подарок установлен: +{value} {currencyName}");
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Подарок установлен: +{value} {currencyName}");
             });
         }
 
@@ -613,7 +613,7 @@ public class AdminOkyesPlugin : BasePlugin
         var target = FindTarget(command.GetArg(1));
         if (target == null)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Admin Okyes] Игрок не найден");
+            command.ReplyToCommand($" {Orange}Okyes |{ChatColors.Red} Игрок не найден");
             return;
         }
 
@@ -622,7 +622,7 @@ public class AdminOkyesPlugin : BasePlugin
         string adminName = caller?.PlayerName ?? "Console";
 
         Server.ExecuteCommand($"banid {minutes} {target.UserId}");
-        Server.PrintToChatAll($" {ChatColors.Red}[Admin Okyes] {adminName} забанил {target.PlayerName} на {minutes} мин. Причина: {reason}");
+        Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Red} {adminName} забанил {target.PlayerName} на {minutes} мин. Причина: {reason}");
     }
 
     [ConsoleCommand("css_okkick", "Кикнуть игрока")]
@@ -633,7 +633,7 @@ public class AdminOkyesPlugin : BasePlugin
         var target = FindTarget(command.GetArg(1));
         if (target == null)
         {
-            command.ReplyToCommand($" {ChatColors.Red}[Admin Okyes] Игрок не найден");
+            command.ReplyToCommand($" {Orange}Okyes |{ChatColors.Red} Игрок не найден");
             return;
         }
 
@@ -641,7 +641,7 @@ public class AdminOkyesPlugin : BasePlugin
         string adminName = caller?.PlayerName ?? "Console";
 
         Server.ExecuteCommand($"kickid {target.UserId} {reason}");
-        Server.PrintToChatAll($" {ChatColors.Red}[Admin Okyes] {adminName} кикнул {target.PlayerName}. Причина: {reason}");
+        Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Red} {adminName} кикнул {target.PlayerName}. Причина: {reason}");
     }
 
     [ConsoleCommand("css_okmap", "Сменить карту")]
@@ -652,7 +652,7 @@ public class AdminOkyesPlugin : BasePlugin
         string map = command.GetArg(1);
         string adminName = caller?.PlayerName ?? "Console";
 
-        Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {adminName} меняет карту на {map}...");
+        Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} {adminName} меняет карту на {map}...");
         Server.ExecuteCommand($"changelevel {map}");
     }
 
@@ -785,7 +785,7 @@ public class AdminOkyesPlugin : BasePlugin
             if (online != null)
             {
                 AdminManager.RemovePlayerPermissions(online, VipFlag);
-                online.PrintToChat($" {ChatColors.Yellow}[Admin Okyes] Ваш VIP-статус истёк");
+                online.PrintToChat($" {Orange}Okyes |{ChatColors.Yellow} Ваш VIP-статус истёк");
             }
         }
         SaveVips();
@@ -834,7 +834,7 @@ public class AdminOkyesPlugin : BasePlugin
     {
         if (!HasVipPermission(player))
         {
-            player.PrintToChat($" {ChatColors.Red}[Admin Okyes] Недостаточно прав для управления VIP");
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для управления VIP");
             return;
         }
 
@@ -850,7 +850,7 @@ public class AdminOkyesPlugin : BasePlugin
             ShowPlayerSelectMenu(controller, "У кого забрать VIP?", target =>
             {
                 RevokeVip(target);
-                Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} забрал VIP у {target.PlayerName}");
+                Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} {controller.PlayerName} забрал VIP у {target.PlayerName}");
             });
         });
 
@@ -872,7 +872,7 @@ public class AdminOkyesPlugin : BasePlugin
                 ShowPlayerSelectMenu(controller, "Кому выдать VIP?", target =>
                 {
                     GrantVip(target, capturedSeconds);
-                    Server.PrintToChatAll($" {ChatColors.Green}[Admin Okyes] {controller.PlayerName} выдал VIP игроку {target.PlayerName} ({capturedLabel})");
+                    Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} {controller.PlayerName} выдал VIP игроку {target.PlayerName} ({capturedLabel})");
                 });
             });
         }
