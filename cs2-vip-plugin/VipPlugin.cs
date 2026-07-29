@@ -28,8 +28,14 @@ public class VipPlugin : BasePlugin
     // Количество здоровья, выдаваемое VIP-игроку при спавне.
     private const int VipHealth = 110;
 
+    // Настройки пробного VIP (!viptest), читаются из viptest_config.json.
+    private int _vipTestDurationSeconds = 3600;   // сколько длится пробный VIP
+    private int _vipTestCooldownSeconds = 86400;  // как часто можно брать (0 = один раз)
+
     public override void Load(bool hotReload)
     {
+        LoadVipTestConfig();
+
         AddCommand("css_vip", "Открыть VIP-меню", OnVipCommand);
         AddCommandListener("say", OnPlayerSay);
         AddCommandListener("say_team", OnPlayerSay);
@@ -99,9 +105,6 @@ public class VipPlugin : BasePlugin
         return HookResult.Continue;
     }
 
-    // Длительность пробного VIP по команде !viptest.
-    private const int VipTestDurationSeconds = 3600; // 1 час
-
     private void HandleVipTest(CCSPlayerController player)
     {
         if (IsVip(player))
@@ -110,14 +113,117 @@ public class VipPlugin : BasePlugin
             return;
         }
 
-        if (GrantVip(player.SteamID, VipTestDurationSeconds))
+        string sid = player.SteamID.ToString();
+        var usage = LoadUsage();
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        if (usage.TryGetValue(sid, out var lastUsed))
         {
-            player.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Тебе выдан пробный VIP на 1 час!");
+            // Кулдаун 0 — пробный VIP можно взять только один раз.
+            if (_vipTestCooldownSeconds <= 0)
+            {
+                player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Пробный VIP можно получить только один раз");
+                return;
+            }
+
+            long available = lastUsed + _vipTestCooldownSeconds;
+            if (now < available)
+            {
+                var left = TimeSpan.FromSeconds(available - now);
+                player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Пробный VIP снова будет доступен через {FormatTimeLeft(left)}");
+                return;
+            }
+        }
+
+        if (GrantVip(player.SteamID, _vipTestDurationSeconds))
+        {
+            usage[sid] = now;
+            SaveUsage(usage);
+
+            string dur = FormatTimeLeft(TimeSpan.FromSeconds(_vipTestDurationSeconds));
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Тебе выдан пробный VIP на {dur}!");
             player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Напиши {ChatColors.Green}!vip{ChatColors.White} чтобы открыть меню");
         }
         else
         {
             player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Не удалось выдать VIP, попробуй позже");
+        }
+    }
+
+    private static string FormatTimeLeft(TimeSpan t)
+    {
+        if (t.TotalDays >= 1) return $"{(int)t.TotalDays} д {t.Hours} ч";
+        if (t.TotalHours >= 1) return $"{(int)t.TotalHours} ч {t.Minutes} мин";
+        if (t.TotalMinutes >= 1) return $"{(int)t.TotalMinutes} мин";
+        return $"{(int)t.TotalSeconds} сек";
+    }
+
+    // --- Конфиг пробного VIP ---
+
+    private class VipTestConfig
+    {
+        public int DurationSeconds { get; set; } = 3600;
+        public int CooldownSeconds { get; set; } = 86400;
+    }
+
+    private string VipTestConfigPath => Path.Combine(ModuleDirectory, "viptest_config.json");
+    private string VipTestUsagePath => Path.Combine(ModuleDirectory, "viptest_usage.json");
+
+    private void LoadVipTestConfig()
+    {
+        try
+        {
+            if (!File.Exists(VipTestConfigPath))
+            {
+                var def = new VipTestConfig
+                {
+                    DurationSeconds = _vipTestDurationSeconds,
+                    CooldownSeconds = _vipTestCooldownSeconds
+                };
+                File.WriteAllText(VipTestConfigPath, JsonSerializer.Serialize(def,
+                    new JsonSerializerOptions { WriteIndented = true }));
+                Console.WriteLine($"[{ModuleName}] Создан viptest_config.json");
+                return;
+            }
+
+            var json = File.ReadAllText(VipTestConfigPath);
+            var cfg = JsonSerializer.Deserialize<VipTestConfig>(json);
+            if (cfg != null)
+            {
+                _vipTestDurationSeconds = cfg.DurationSeconds;
+                _vipTestCooldownSeconds = cfg.CooldownSeconds;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка чтения viptest_config.json: {ex.Message}");
+        }
+    }
+
+    private Dictionary<string, long> LoadUsage()
+    {
+        try
+        {
+            if (File.Exists(VipTestUsagePath))
+            {
+                var json = File.ReadAllText(VipTestUsagePath);
+                return JsonSerializer.Deserialize<Dictionary<string, long>>(json) ?? new();
+            }
+        }
+        catch { }
+        return new();
+    }
+
+    private void SaveUsage(Dictionary<string, long> usage)
+    {
+        try
+        {
+            File.WriteAllText(VipTestUsagePath, JsonSerializer.Serialize(usage,
+                new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка записи viptest_usage.json: {ex.Message}");
         }
     }
 
