@@ -13,14 +13,21 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.3.6";
+    public override string ModuleVersion => "1.4.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
     // Ярко-оранжевый цвет (≈ #FF4500) для префикса "Okyes |".
     private const char Orange = '\u0010';
 
-    private static readonly string[] Maps =
+    // Список карт читается из maps.txt рядом с плагином.
+    // Каждая строка — одна карта. Поддерживаются форматы:
+    //   de_dust2                     — обычная карта (changelevel)
+    //   workshop:3070463151          — карта Мастерской по ID (host_workshop_map)
+    //   Название|3070463151          — своё название | ID из Мастерской
+    private readonly List<string> _maps = new();
+
+    private static readonly string[] DefaultMaps =
     {
         "de_dust2",
         "de_mirage",
@@ -32,6 +39,43 @@ public class AdminOkyesPlugin : BasePlugin
         "de_train"
     };
 
+    private string MapsFilePath => Path.Combine(ModuleDirectory, "maps.txt");
+
+    private void LoadMaps()
+    {
+        try
+        {
+            if (!File.Exists(MapsFilePath))
+            {
+                File.WriteAllText(MapsFilePath,
+                    "# Список карт для админ-меню. Одна карта — одна строка.\n" +
+                    "# Обычная карта:      de_dust2\n" +
+                    "# Карта из Мастерской: workshop:3070463151\n" +
+                    "# Со своим названием:  Моя карта|3070463151\n" +
+                    string.Join("\n", DefaultMaps) + "\n");
+                Console.WriteLine($"[{ModuleName}] Создан maps.txt со списком карт");
+            }
+
+            _maps.Clear();
+            foreach (var line in File.ReadAllLines(MapsFilePath))
+            {
+                var s = line.Trim();
+                if (s.Length == 0 || s.StartsWith("#"))
+                    continue;
+                _maps.Add(s);
+            }
+
+            if (_maps.Count == 0)
+                _maps.AddRange(DefaultMaps);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка чтения maps.txt: {ex.Message}");
+            _maps.Clear();
+            _maps.AddRange(DefaultMaps);
+        }
+    }
+
     public override void Load(bool hotReload)
     {
         AddCommand("css_admin", "Открыть Admin [Okyes]", OnAdminMenuCommand);
@@ -39,6 +83,7 @@ public class AdminOkyesPlugin : BasePlugin
         AddCommandListener("say_team", OnPlayerSay);
 
         LoadVips();
+        LoadMaps();
         RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedVip);
         // Раз в минуту снимаем VIP у тех, чей срок истёк.
         AddTimer(60.0f, CheckExpiredVips, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
@@ -356,12 +401,35 @@ public class AdminOkyesPlugin : BasePlugin
     {
         var menu = new WasdMenu("Выберите карту", this);
 
-        foreach (var map in Maps)
+        foreach (var entry in _maps)
         {
-            menu.AddItem(map, (controller, option) =>
+            // Разбираем строку на отображаемое имя и команду смены карты.
+            string display;
+            string command;
+
+            if (entry.Contains('|'))
             {
-                Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} {controller.PlayerName} меняет карту на {map}...");
-                Server.ExecuteCommand($"changelevel {map}");
+                // "Название|ID" — карта Мастерской со своим названием.
+                var parts = entry.Split('|', 2);
+                display = parts[0].Trim();
+                command = $"host_workshop_map {parts[1].Trim()}";
+            }
+            else if (entry.StartsWith("workshop:", StringComparison.OrdinalIgnoreCase))
+            {
+                string id = entry.Substring("workshop:".Length).Trim();
+                display = $"Мастерская {id}";
+                command = $"host_workshop_map {id}";
+            }
+            else
+            {
+                display = entry;
+                command = $"changelevel {entry}";
+            }
+
+            menu.AddItem(display, (controller, option) =>
+            {
+                Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} {controller.PlayerName} меняет карту на {display}...");
+                Server.ExecuteCommand(command);
             });
         }
 
