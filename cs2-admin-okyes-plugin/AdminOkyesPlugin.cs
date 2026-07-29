@@ -13,7 +13,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.3.1";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -211,6 +211,9 @@ public class AdminOkyesPlugin : BasePlugin
         menu.Display(player, 0);
     }
 
+    // Кто сейчас в режиме полёта (SteamID64).
+    private readonly HashSet<ulong> _flying = new();
+
     // Включает/выключает режим полёта (noclip) у игрока. Возвращает true, если полёт включён.
     private bool ToggleNoclip(CCSPlayerController target)
     {
@@ -218,11 +221,20 @@ public class AdminOkyesPlugin : BasePlugin
         if (pawn == null || !pawn.IsValid)
             return false;
 
-        bool enable = pawn.MoveType != MoveType_t.MOVETYPE_NOCLIP;
-        var newType = enable ? MoveType_t.MOVETYPE_NOCLIP : MoveType_t.MOVETYPE_WALK;
+        bool enable = !_flying.Contains(target.SteamID);
 
-        pawn.MoveType = newType;
-        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+        // noclip требует sv_cheats — временно включаем, выполняем от имени игрока, возвращаем.
+        Server.ExecuteCommand("sv_cheats 1");
+        Server.NextFrame(() =>
+        {
+            target.ExecuteClientCommandFromServer("noclip");
+            AddTimer(0.2f, () => Server.ExecuteCommand("sv_cheats 0"));
+        });
+
+        if (enable)
+            _flying.Add(target.SteamID);
+        else
+            _flying.Remove(target.SteamID);
 
         return enable;
     }
