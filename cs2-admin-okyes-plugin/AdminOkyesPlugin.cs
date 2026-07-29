@@ -13,7 +13,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.3.3";
+    public override string ModuleVersion => "1.3.4";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -260,7 +260,8 @@ public class AdminOkyesPlugin : BasePlugin
             if (origin == null)
                 return false;
 
-            // Точка глаз админа.
+            // Уровень пола (ноги админа) и точка его глаз.
+            float floorZ = origin.Z;
             var eye = new Vector(origin.X, origin.Y, origin.Z + 64f);
 
             // Направление взгляда из углов камеры.
@@ -271,29 +272,27 @@ public class AdminOkyesPlugin : BasePlugin
             double fy = Math.Cos(pitch) * Math.Sin(yaw);
             double fz = -Math.Sin(pitch);
 
-            // Идём по лучу вперёд, пока не «упрёмся» в землю по высоте карты
-            // либо не пройдём максимальную дистанцию.
-            const float step = 24f;
-            const float maxDist = 4000f;
-            float dist = 64f;
+            const float maxDist = 3000f; // ограничение по дальности
+            float dist;
+
+            if (fz < -0.01)
+            {
+                // Смотрим вниз — находим, где луч пересекает уровень пола админа.
+                // eye.Z + fz*dist = floorZ  =>  dist = (floorZ - eye.Z) / fz
+                dist = (float)((floorZ - eye.Z) / fz);
+                if (dist > maxDist) dist = maxDist;
+            }
+            else
+            {
+                // Смотрим прямо/вверх — просто ставим на средней дистанции по горизонтали.
+                dist = 300f;
+            }
+
             var dest = new Vector(
                 eye.X + (float)(fx * dist),
                 eye.Y + (float)(fy * dist),
-                eye.Z + (float)(fz * dist)
+                floorZ + 20f // ставим на пол админа, чуть приподняв
             );
-
-            while (dist < maxDist)
-            {
-                dist += step;
-                dest = new Vector(
-                    eye.X + (float)(fx * dist),
-                    eye.Y + (float)(fy * dist),
-                    eye.Z + (float)(fz * dist)
-                );
-            }
-
-            // Приподнимаем на 20 юнитов, чтобы не застрять в геометрии.
-            dest = new Vector(dest.X, dest.Y, dest.Z + 20f);
 
             targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
             return true;
