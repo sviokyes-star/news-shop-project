@@ -253,11 +253,15 @@ public class AdminOkyesPlugin : BasePlugin
             return false;
 
         // Трассировка луча из глаз админа до первого препятствия (стена/пол).
-        var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskShot, Contents.Solid, admin);
+        var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskSolid, Contents.Solid, admin);
         if (trace == null)
             return false;
 
         var hit = trace.Value.EndPos;
+
+        // Если трейс ничего не задел — точка нулевая, телепорт не делаем.
+        if (hit.X == 0f && hit.Y == 0f && hit.Z == 0f)
+            return false;
 
         // Немного отступаем от поверхности по нормали и приподнимаем,
         // чтобы игрок не застрял в стене/полу.
@@ -268,7 +272,11 @@ public class AdminOkyesPlugin : BasePlugin
             hit.Z + normal.Z * 16f + 10f
         );
 
-        targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
+        Server.NextFrame(() =>
+        {
+            if (targetPawn.IsValid)
+                targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
+        });
         return true;
     }
 
