@@ -14,7 +14,7 @@ namespace VipPlugin;
 public class VipPlugin : BasePlugin
 {
     public override string ModuleName => "VIP [Okyes]";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "VIP-плагин с меню в стиле магазина";
 
@@ -90,7 +90,68 @@ public class VipPlugin : BasePlugin
             return HookResult.Handled;
         }
 
+        if (message.Equals("!viptest", StringComparison.OrdinalIgnoreCase))
+        {
+            HandleVipTest(player);
+            return HookResult.Handled;
+        }
+
         return HookResult.Continue;
+    }
+
+    // Длительность пробного VIP по команде !viptest.
+    private const int VipTestDurationSeconds = 3600; // 1 час
+
+    private void HandleVipTest(CCSPlayerController player)
+    {
+        if (IsVip(player))
+        {
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.White} У тебя уже есть VIP-статус");
+            return;
+        }
+
+        if (GrantVip(player.SteamID, VipTestDurationSeconds))
+        {
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Тебе выдан пробный VIP на 1 час!");
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Напиши {ChatColors.Green}!vip{ChatColors.White} чтобы открыть меню");
+        }
+        else
+        {
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Не удалось выдать VIP, попробуй позже");
+        }
+    }
+
+    // Записывает временный VIP в vips.json админ-плагина.
+    private bool GrantVip(ulong steamId, int durationSeconds)
+    {
+        try
+        {
+            var path = VipFilePath;
+            Dictionary<string, long> data = new();
+
+            if (File.Exists(path))
+            {
+                var json = File.ReadAllText(path);
+                data = JsonSerializer.Deserialize<Dictionary<string, long>>(json) ?? new();
+            }
+
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            data[steamId.ToString()] = now + durationSeconds;
+
+            var dir = Path.GetDirectoryName(path);
+            if (dir != null && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            File.WriteAllText(path, JsonSerializer.Serialize(data,
+                new JsonSerializerOptions { WriteIndented = true }));
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка выдачи пробного VIP: {ex.Message}");
+            return false;
+        }
     }
 
     public void OnVipCommand(CCSPlayerController? caller, CommandInfo command)
