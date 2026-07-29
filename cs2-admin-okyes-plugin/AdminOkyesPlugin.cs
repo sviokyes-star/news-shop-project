@@ -13,7 +13,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.3.5";
+    public override string ModuleVersion => "1.3.6";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -209,6 +209,25 @@ public class AdminOkyesPlugin : BasePlugin
             });
         });
 
+        menu.AddItem("Бессмертие", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/slay") &&
+                !AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для бессмертия");
+                return;
+            }
+
+            ShowPlayerSelectMenu(controller, "Кому включить бессмертие?", target =>
+            {
+                bool enabled = ToggleGodMode(target);
+                if (enabled)
+                    Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Green} Админ {controller.PlayerName} включил бессмертие для {target.PlayerName}");
+                else
+                    Server.PrintToChatAll($" {Orange}Okyes |{ChatColors.Yellow} Админ {controller.PlayerName} выключил бессмертие для {target.PlayerName}");
+            });
+        });
+
         menu.PrevMenu = GetMainMenu();
 
         menu.Display(player, 0);
@@ -238,6 +257,21 @@ public class AdminOkyesPlugin : BasePlugin
             _flying.Add(target.SteamID);
         else
             _flying.Remove(target.SteamID);
+
+        return enable;
+    }
+
+    // Включает/выключает бессмертие у игрока. Возвращает true, если бессмертие включено.
+    private bool ToggleGodMode(CCSPlayerController target)
+    {
+        var pawn = target.PlayerPawn.Value;
+        if (pawn == null || !pawn.IsValid)
+            return false;
+
+        // TakesDamage=true — урон проходит; false — бессмертие.
+        bool enable = pawn.TakesDamage;
+        pawn.TakesDamage = !enable;
+        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_bTakesDamage");
 
         return enable;
     }
