@@ -515,7 +515,57 @@ public class ShopPlugin : BasePlugin
             return HookResult.Handled;
         }
 
+        if (message.Equals("!viptest", StringComparison.OrdinalIgnoreCase))
+        {
+            HandleVipTest(player);
+            return HookResult.Handled;
+        }
+
         return HookResult.Continue;
+    }
+
+    // Пробный VIP: игрок без активного VIP получает временный статус.
+    private const int VipTestDurationSeconds = 3600; // 1 час
+
+    private void HandleVipTest(CCSPlayerController player)
+    {
+        ulong steamId = player.SteamID;
+
+        if (HasActiveVip(steamId))
+        {
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.White} У вас уже есть активный VIP-статус.");
+            return;
+        }
+
+        GrantVipFromDelivery(steamId, VipTestDurationSeconds);
+        player.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Вам выдан пробный VIP на 1 час!");
+        player.PrintToChat($" {Orange}Okyes |{ChatColors.White} Перезайдите на сервер, если привилегии не активировались.");
+    }
+
+    // Проверяет, есть ли у игрока действующий VIP по vips.json.
+    private bool HasActiveVip(ulong steamId)
+    {
+        try
+        {
+            var path = AdminVipFilePath();
+            if (!File.Exists(path))
+                return false;
+
+            var json = File.ReadAllText(path);
+            var data = JsonSerializer.Deserialize<Dictionary<string, long>>(json) ?? new();
+
+            if (!data.TryGetValue(steamId.ToString(), out var expires))
+                return false;
+
+            if (expires == 0)
+                return true; // навсегда
+
+            return expires > DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public void OnShopCommand(CCSPlayerController? caller, CommandInfo command)
