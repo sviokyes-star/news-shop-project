@@ -13,7 +13,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.3.4";
+    public override string ModuleVersion => "1.3.5";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -264,37 +264,29 @@ public class AdminOkyesPlugin : BasePlugin
             float floorZ = origin.Z;
             var eye = new Vector(origin.X, origin.Y, origin.Z + 64f);
 
-            // Направление взгляда из углов камеры.
+            // Горизонтальное направление взгляда (только по X/Y — куда смотрит прицел).
             var ang = adminPawn.EyeAngles;
-            double pitch = ang.X * Math.PI / 180.0;
             double yaw = ang.Y * Math.PI / 180.0;
-            double fx = Math.Cos(pitch) * Math.Cos(yaw);
-            double fy = Math.Cos(pitch) * Math.Sin(yaw);
-            double fz = -Math.Sin(pitch);
+            double fx = Math.Cos(yaw);
+            double fy = Math.Sin(yaw);
 
-            const float maxDist = 3000f; // ограничение по дальности
-            float dist;
+            // Дальность по горизонтали зависит от наклона взгляда:
+            // смотришь вниз — ближе, смотришь вперёд — дальше (в разумных пределах).
+            float pitch = ang.X; // >0 вниз, <0 вверх
+            float dist = 250f + Math.Clamp((0f - pitch), -30f, 60f) * 6f; // ~70..610
+            dist = Math.Clamp(dist, 100f, 700f);
 
-            if (fz < -0.01)
-            {
-                // Смотрим вниз — находим, где луч пересекает уровень пола админа.
-                // eye.Z + fz*dist = floorZ  =>  dist = (floorZ - eye.Z) / fz
-                dist = (float)((floorZ - eye.Z) / fz);
-                if (dist > maxDist) dist = maxDist;
-            }
-            else
-            {
-                // Смотрим прямо/вверх — просто ставим на средней дистанции по горизонтали.
-                dist = 300f;
-            }
-
+            // Ставим игрока НАД точкой (запас по высоте) и включаем гравитацию —
+            // движок сам опустит его на реальный пол под точкой.
+            // Так не проваливаемся сквозь карту и не застреваем в полу.
             var dest = new Vector(
                 eye.X + (float)(fx * dist),
                 eye.Y + (float)(fy * dist),
-                floorZ + 20f // ставим на пол админа, чуть приподняв
+                floorZ + 80f
             );
 
-            targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
+            // Небольшая скорость вниз, чтобы приземление было мгновенным и стабильным.
+            targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0f, 0f, -50f));
             return true;
         }
         catch (Exception ex)
