@@ -13,7 +13,7 @@ namespace AdminOkyesPlugin;
 public class AdminOkyesPlugin : BasePlugin
 {
     public override string ModuleName => "Admin [Okyes]";
-    public override string ModuleVersion => "1.4.0";
+    public override string ModuleVersion => "1.4.1";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Админ-панель с меню управления игроками и сервером";
 
@@ -153,7 +153,7 @@ public class AdminOkyesPlugin : BasePlugin
             ShowServerMenu(controller);
         });
 
-        menu.AddItem("Управление Таймером", (controller, option) =>
+        menu.AddItem("Управление таймером", (controller, option) =>
         {
             ShowTimerMenu(controller);
         });
@@ -438,7 +438,7 @@ public class AdminOkyesPlugin : BasePlugin
 
     private void ShowTimerMenu(CCSPlayerController player)
     {
-        var menu = new WasdMenu("Управление Таймером", this);
+        var menu = new WasdMenu("Управление таймером", this);
 
         menu.AddItem("Добавить старт", (controller, option) =>
         {
@@ -477,7 +477,7 @@ public class AdminOkyesPlugin : BasePlugin
     {
         var menu = new WasdMenu("Управление спавнами", this);
 
-        menu.AddItem("Добавить точку спавна CT", (controller, option) =>
+        menu.AddItem("Добавить спавн CT", (controller, option) =>
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
@@ -491,7 +491,7 @@ public class AdminOkyesPlugin : BasePlugin
             Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setctspawn"));
         });
 
-        menu.AddItem("Добавить точку спавна T", (controller, option) =>
+        menu.AddItem("Добавить спавн T", (controller, option) =>
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
@@ -569,7 +569,7 @@ public class AdminOkyesPlugin : BasePlugin
             ShowServerMenu(controller);
         });
 
-        menu.AddItem("Управление Таймером", (controller, option) =>
+        menu.AddItem("Управление таймером", (controller, option) =>
         {
             ShowTimerMenu(controller);
         });
