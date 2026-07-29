@@ -247,37 +247,49 @@ public class AdminOkyesPlugin : BasePlugin
     // Телепортирует игрока в точку, куда смотрит прицел админа.
     private bool TeleportToCrosshair(CCSPlayerController admin, CCSPlayerController target)
     {
-        var adminPawn = admin.PlayerPawn.Value;
-        var targetPawn = target.PlayerPawn.Value;
-        if (adminPawn == null || !adminPawn.IsValid || targetPawn == null || !targetPawn.IsValid)
-            return false;
-
-        // Трассировка луча из глаз админа до первого препятствия (стена/пол).
-        var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskSolid, Contents.Solid, admin);
-        if (trace == null)
-            return false;
-
-        var hit = trace.Value.EndPos;
-
-        // Если трейс ничего не задел — точка нулевая, телепорт не делаем.
-        if (hit.X == 0f && hit.Y == 0f && hit.Z == 0f)
-            return false;
-
-        // Немного отступаем от поверхности по нормали и приподнимаем,
-        // чтобы игрок не застрял в стене/полу.
-        var normal = trace.Value.Normal;
-        var dest = new Vector(
-            hit.X + normal.X * 16f,
-            hit.Y + normal.Y * 16f,
-            hit.Z + normal.Z * 16f + 10f
-        );
-
-        Server.NextFrame(() =>
+        try
         {
-            if (targetPawn.IsValid)
-                targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
-        });
-        return true;
+            var adminPawn = admin.PlayerPawn.Value;
+            var targetPawn = target.PlayerPawn.Value;
+            if (adminPawn == null || !adminPawn.IsValid || targetPawn == null || !targetPawn.IsValid)
+            {
+                admin.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Телепорт: игрок недоступен");
+                return false;
+            }
+
+            // Трассировка луча из глаз админа до первого препятствия (стена/пол).
+            var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskShot, Contents.Solid, admin);
+            if (trace == null)
+            {
+                admin.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Телепорт: трассировка не сработала");
+                return false;
+            }
+
+            var hit = trace.Value.EndPos;
+            admin.PrintToChat($" {Orange}Okyes |{ChatColors.Yellow} Точка: {hit.X:F0} {hit.Y:F0} {hit.Z:F0}");
+
+            if (hit.X == 0f && hit.Y == 0f && hit.Z == 0f)
+            {
+                admin.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Телепорт: луч ни во что не попал");
+                return false;
+            }
+
+            var normal = trace.Value.Normal;
+            var dest = new Vector(
+                hit.X + normal.X * 16f,
+                hit.Y + normal.Y * 16f,
+                hit.Z + normal.Z * 16f + 10f
+            );
+
+            targetPawn.Teleport(dest, targetPawn.AbsRotation, new Vector(0, 0, 0));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            admin.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Ошибка телепорта: {ex.Message}");
+            Console.WriteLine($"[{ModuleName}] TeleportToCrosshair error: {ex}");
+            return false;
+        }
     }
 
     private void ShowServerMenu(CCSPlayerController player)
