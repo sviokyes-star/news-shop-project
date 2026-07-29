@@ -1,5 +1,8 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Admin;
+using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.UserMessages;
 using CounterStrikeSharp.API.Modules.Utils;
 
@@ -8,7 +11,7 @@ namespace NoMapMusicPlugin;
 public class NoMapMusicPlugin : BasePlugin
 {
     public override string ModuleName => "No Map Music";
-    public override string ModuleVersion => "2.0.0";
+    public override string ModuleVersion => "2.1.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Отключает встроенную музыку карт (в т.ч. воркшоп) для всех игроков";
 
@@ -43,6 +46,7 @@ public class NoMapMusicPlugin : BasePlugin
     public override void Load(bool hotReload)
     {
         BuildBlockedHashes();
+        LoadBlockedHashesFromFile();
 
         // Перехватываем звуковые события карт (музыка/эмбиент воркшоп-карт).
         HookUserMessage(SosStartSoundEvent, OnSoundEvent, HookMode.Pre);
@@ -57,24 +61,67 @@ public class NoMapMusicPlugin : BasePlugin
         Console.WriteLine($"[{ModuleName}] Плагин загружен! Музыка карт отключена.");
     }
 
+    // Режим диагностики — печатает хеши всех звуковых событий в консоль.
+    private bool _debug = false;
+
+    // Возможные названия поля с хешем звукового события в разных версиях CS2.
+    private static readonly string[] HashFields =
+    {
+        "soundevent_hash", "soundevent_guid", "sound_event_hash", "hash"
+    };
+
     // Блокирует запуск звукового события, если это музыка.
     private HookResult OnSoundEvent(UserMessage um)
     {
         try
         {
-            if (!um.HasField("soundevent_hash"))
+            uint hash = ReadHash(um);
+            if (hash == 0)
                 return HookResult.Continue;
 
-            uint hash = um.ReadUInt("soundevent_hash");
+            if (_debug)
+                Console.WriteLine($"[{ModuleName}] SoundEvent hash = {hash}");
+
             if (_blockedHashes.Contains(hash))
-                return HookResult.Stop; // это музыка — блокируем
+                return HookResult.Stop; // заблокировано — музыка
         }
         catch
         {
-            // На всякий случай не мешаем игре при ошибке чтения.
+            // Не мешаем игре при ошибке чтения.
         }
 
         return HookResult.Continue;
+    }
+
+    // Читает хеш события из первого доступного поля.
+    private uint ReadHash(UserMessage um)
+    {
+        foreach (var field in HashFields)
+        {
+            if (um.HasField(field))
+                return um.ReadUInt(field);
+        }
+        return 0;
+    }
+
+    private string BlockedHashesFile => Path.Combine(ModuleDirectory, "blocked_hashes.txt");
+
+    private void LoadBlockedHashesFromFile()
+    {
+        if (!File.Exists(BlockedHashesFile))
+            return;
+
+        foreach (var line in File.ReadAllLines(BlockedHashesFile))
+        {
+            var s = line.Trim();
+            if (uint.TryParse(s, out var h))
+                _blockedHashes.Add(h);
+        }
+    }
+
+    private void SaveBlockedHash(uint hash)
+    {
+        File.AppendAllText(BlockedHashesFile, hash + "\n");
     }
 
     // Собираем хеши музыкальных событий из типовых музыкальных имён.
@@ -123,6 +170,36 @@ public class NoMapMusicPlugin : BasePlugin
 
         foreach (var cmd in MuteCommands)
             player.ExecuteClientCommandFromServer(cmd);
+    }
+
+    // Включить/выключить вывод хешей звуковых событий в консоль сервера.
+    [ConsoleCommand("css_music_debug", "Показывать хеши звуковых событий в консоли")]
+    [RequiresPermissions("@css/root")]
+    public void OnMusicDebug(CCSPlayerController? caller, CommandInfo command)
+    {
+        _debug = !_debug;
+        string state = _debug ? "ВКЛючена" : "ВЫКЛючена";
+        Console.WriteLine($"[{ModuleName}] Диагностика {state}. Найди хеш, который повторяется в такт музыке.");
+        command.ReplyToCommand($"[No Map Music] Диагностика {state}. Смотри консоль сервера.");
+    }
+
+    // Заблокировать конкретный хеш музыки (узнать его можно через css_music_debug).
+    [ConsoleCommand("css_music_block", "Заблокировать звуковое событие по хешу")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(minArgs: 1, usage: "<хеш>")]
+    public void OnMusicBlock(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (!uint.TryParse(command.GetArg(1), out var hash))
+        {
+            command.ReplyToCommand("[No Map Music] Неверный хеш");
+            return;
+        }
+
+        if (_blockedHashes.Add(hash))
+            SaveBlockedHash(hash);
+
+        command.ReplyToCommand($"[No Map Music] Хеш {hash} заблокирован. Сменит карту — правило сохранится.");
+        Console.WriteLine($"[{ModuleName}] Заблокирован хеш {hash}");
     }
 
     public override void Unload(bool hotReload)
