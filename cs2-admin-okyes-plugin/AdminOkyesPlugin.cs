@@ -253,7 +253,7 @@ public class AdminOkyesPlugin : BasePlugin
             return false;
 
         // Трассировка луча из глаз админа до первого препятствия (стена/пол).
-        var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskShot, Contents.Solid, adminPawn);
+        var trace = admin.GetGameTraceByEyePosition(TraceMask.MaskShot, Contents.Solid, admin);
         if (trace == null)
             return false;
 
