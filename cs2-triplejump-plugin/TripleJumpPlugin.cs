@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -52,17 +52,10 @@ public class TripleJumpPlugin : BasePlugin
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
             bool wasOnGround = _wasOnGround.ContainsKey(userId) && _wasOnGround[userId];
 
-            float zVel = pawn.AbsVelocity?.Z ?? 0f;
-            float prevZVel = _lastZVel[userId];
-
-            // Детект касания земли по вертикальной скорости.
-            // При банихопе FL_ONGROUND держится всего 1 тик и часто теряется
-            // из-за телепорта bhop в том же тике, поэтому дополнительно ловим
-            // момент приземления: игрок падал вниз (Z<0), а стал лететь вверх (Z>0)
-            // — это возможно только если он оттолкнулся от земли.
-            bool landedByVelocity = prevZVel < -50f && zVel > 100f;
-
-            bool touchedGround = isOnGround || wasOnGround || landedByVelocity;
+            // Серию прыжков сбрасывает только реальное касание земли (FL_ONGROUND).
+            // Эвристику по вертикальной скорости убрали: она ложно срабатывала
+            // в воздухе у части игроков и давала бесконечные прыжки.
+            bool touchedGround = isOnGround || wasOnGround;
 
             // Любое касание земли сбрасывает серию прыжков.
             if (touchedGround && _jumpCount[userId] != 0)
@@ -111,7 +104,6 @@ public class TripleJumpPlugin : BasePlugin
 
             _lastJumpButton[userId] = currentButtons;
             _wasOnGround[userId] = isOnGround;
-            _lastZVel[userId] = zVel;
         }
     }
 
