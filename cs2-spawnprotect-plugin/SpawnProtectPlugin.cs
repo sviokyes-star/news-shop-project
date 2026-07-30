@@ -4,8 +4,6 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Memory;
-using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace SpawnProtectPlugin;
@@ -15,17 +13,12 @@ public class SpawnProtectConfig
     // Радиус зоны защиты вокруг каждой точки спавна (в юнитах игры).
     [JsonPropertyName("ZoneRadius")]
     public float ZoneRadius { get; set; } = 250f;
-
-    // Защищать только от урона КАРТЫ (ловушки/триггеры/мир), а не от игроков.
-    // true = урон от врагов проходит; false = блокируется любой урон в зоне.
-    [JsonPropertyName("OnlyMapDamage")]
-    public bool OnlyMapDamage { get; set; } = true;
 }
 
 public class SpawnProtectPlugin : BasePlugin
 {
     public override string ModuleName => "Spawn Protect";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Защита игроков от урона карты в зоне спавна";
 
@@ -42,8 +35,10 @@ public class SpawnProtectPlugin : BasePlugin
 
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
 
-        // Хук на получение урона живым существом — здесь можно отменить урон.
-        VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Hook(OnTakeDamage, HookMode.Pre);
+        // Каждый тик восстанавливаем HP игрокам в зоне спавна — надёжный способ
+        // без хрупких хуков урона: ловушка карты снимает HP, а мы возвращаем его,
+        // делая игрока фактически бессмертным в зоне спавна.
+        RegisterListener<Listeners.OnTick>(OnTick);
 
         // Соберём спавны сразу при загрузке (если карта уже идёт).
         CollectSpawnPoints();
@@ -104,48 +99,37 @@ public class SpawnProtectPlugin : BasePlugin
         Console.WriteLine($"[{ModuleName}] Найдено точек спавна: {_spawnPoints.Count}");
     }
 
-    private HookResult OnTakeDamage(DynamicHook hook)
+    private void OnTick()
     {
-        var victim = hook.GetParam<CEntityInstance>(0);
-        var info = hook.GetParam<CTakeDamageInfo>(1);
+        // Нет точек спавна — нечего защищать.
+        if (_spawnPoints.Count == 0)
+            return;
 
-        if (victim == null || !victim.IsValid || info == null)
-            return HookResult.Continue;
-
-        // Урон получает игрок?
-        if (victim.DesignerName != "player")
-            return HookResult.Continue;
-
-        var pawn = victim.As<CCSPlayerPawn>();
-        if (pawn == null || !pawn.IsValid)
-            return HookResult.Continue;
-
-        // Если защищаем только от урона карты — пропускаем урон, у которого
-        // атакующий — другой игрок.
-        if (Config.OnlyMapDamage && IsPlayerAttacker(info))
-            return HookResult.Continue;
-
-        // Игрок в зоне спавна? Если да — отменяем урон.
-        var origin = pawn.AbsOrigin;
-        if (origin == null)
-            return HookResult.Continue;
-
-        if (IsInSpawnZone(origin))
+        foreach (var player in Utilities.GetPlayers())
         {
-            info.Damage = 0f;
-            return HookResult.Handled;
+            if (player == null || !player.IsValid || !player.PawnIsAlive)
+                continue;
+
+            var pawn = player.PlayerPawn.Value;
+            if (pawn == null || !pawn.IsValid)
+                continue;
+
+            var origin = pawn.AbsOrigin;
+            if (origin == null)
+                continue;
+
+            if (!IsInSpawnZone(origin))
+                continue;
+
+            // Игрок в зоне спавна — держим HP на максимуме, чтобы урон карты
+            // не мог его убить. Обновляем только если HP просело (без лишней работы).
+            int maxHp = pawn.MaxHealth > 0 ? pawn.MaxHealth : 100;
+            if (pawn.Health < maxHp)
+            {
+                pawn.Health = maxHp;
+                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+            }
         }
-
-        return HookResult.Continue;
-    }
-
-    // Проверяем, является ли атакующий игроком (значит это PvP, не ловушка карты).
-    private bool IsPlayerAttacker(CTakeDamageInfo info)
-    {
-        var attacker = info.Attacker.Value;
-        if (attacker == null)
-            return false;
-        return attacker.DesignerName == "player";
     }
 
     private bool IsInSpawnZone(Vector origin)
@@ -173,7 +157,6 @@ public class SpawnProtectPlugin : BasePlugin
 
     public override void Unload(bool hotReload)
     {
-        VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Unhook(OnTakeDamage, HookMode.Pre);
         _spawnPoints.Clear();
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
