@@ -12,7 +12,7 @@ namespace RtvPlugin;
 public class RtvPlugin : BasePlugin
 {
     public override string ModuleName => "Rock The Vote";
-    public override string ModuleVersion => "2.1.0";
+    public override string ModuleVersion => "2.2.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Голосование за смену карты с выбором следующей карты";
 
@@ -24,6 +24,10 @@ public class RtvPlugin : BasePlugin
 
     // За сколько минут до конца карты автоматически запускать голосование.
     private const double AutoVoteBeforeEndMinutes = 2.0;
+
+    // Подпись варианта "Продлить карту" и на сколько минут продлевать.
+    private const string ExtendOption = "Продлить карту";
+    private const int ExtendMinutes = 15;
 
     private static readonly string[] DefaultMaps =
     {
@@ -256,6 +260,10 @@ public class RtvPlugin : BasePlugin
         Server.PrintToChatAll($"{Prefix}{ChatColors.Gold} Голосование за следующую карту началось! У вас 20 секунд.");
 
         var candidates = new List<string>();
+
+        // Первый вариант — продлить текущую карту.
+        candidates.Add(ExtendOption);
+
         foreach (var kv in _nominations)
             if (!candidates.Contains(kv.Key))
                 candidates.Add(kv.Key);
@@ -302,6 +310,20 @@ public class RtvPlugin : BasePlugin
     private void FinishVote(Dictionary<string, int> votes)
     {
         var winner = votes.OrderByDescending(v => v.Value).First();
+
+        // Победило "Продлить карту" — увеличиваем лимит времени, не меняем карту.
+        if (winner.Key == ExtendOption)
+        {
+            float timelimit = ConVar.Find("mp_timelimit")?.GetPrimitiveValue<float>() ?? 0f;
+            Server.ExecuteCommand($"mp_timelimit {timelimit + ExtendMinutes}");
+            _mapStartTime = DateTime.Now;
+
+            Server.PrintToChatAll($"{Prefix}{ChatColors.Gold} Карта продлена на {ExtendMinutes} минут!{ChatColors.Default} ({winner.Value} голосов)");
+            _voteInProgress = false;
+            _rtvVoters.Clear();
+            _nominations.Clear();
+            return;
+        }
 
         string command = _nominations.TryGetValue(winner.Key, out var cmd)
             ? cmd
