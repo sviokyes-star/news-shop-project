@@ -1,189 +1,292 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.Utils;
+using CS2MenuManager.API.Class;
+using CS2MenuManager.API.Menu;
 
 namespace RtvPlugin;
 
 public class RtvPlugin : BasePlugin
 {
     public override string ModuleName => "Rock The Vote";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "2.0.0";
     public override string ModuleAuthor => "Okyes";
-    public override string ModuleDescription => "Голосование за смену карты в CS2";
+    public override string ModuleDescription => "Голосование за смену карты с выбором следующей карты";
 
-    private readonly HashSet<ulong> _votedPlayers = new();
-    private int _requiredVotes = 0;
-    private float _votePercentage = 0.6f;
+    private const char Orange = ChatColors.Orange;
+    private const string Prefix = " \x0e[RTV]\x01";
+
+    // Доля игроков для запуска голосования (0.6 = 60%).
+    private const double VotePercent = 0.6;
+
+    private static readonly string[] DefaultMaps =
+    {
+        "de_dust2", "de_mirage", "de_inferno", "de_nuke",
+        "de_ancient", "de_anubis", "de_vertigo", "de_train"
+    };
+
+    private readonly List<string> _maps = new();
+    private readonly HashSet<int> _rtvVoters = new();
+    private readonly Dictionary<string, string> _nominations = new();
     private bool _voteInProgress = false;
-    private int _mapChangeCountdown = 0;
-    private CounterStrikeSharp.API.Modules.Timers.Timer? _countdownTimer;
+
+    private string MapsFilePath => Path.Combine(ModuleDirectory, "maps.txt");
 
     public override void Load(bool hotReload)
     {
+        LoadMaps();
+
+        AddCommand("css_rtv", "Голосовать за смену карты", CmdRtv);
+        AddCommand("css_unrtv", "Отозвать голос за смену карты", CmdUnRtv);
+        AddCommand("css_nominate", "Номинировать карту", CmdNominate);
+        AddCommand("css_maps", "Список доступных карт", CmdMaps);
+        AddCommand("css_rtv_status", "Статус голосования", CmdStatus);
+
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
-        RegisterEventHandler<EventRoundStart>(OnRoundStart);
-        
-        Console.WriteLine($"[{ModuleName}] Плагин загружен!");
-        Console.WriteLine($"[{ModuleName}] Требуется {(_votePercentage * 100)}% голосов для смены карты");
+
+        Console.WriteLine($"[{ModuleName}] Плагин загружен! Карт в пуле: {_maps.Count}");
     }
 
-    [ConsoleCommand("css_rtv", "Голосовать за смену карты")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnRtvCommand(CCSPlayerController? player, CommandInfo command)
+    private void LoadMaps()
+    {
+        try
+        {
+            if (!File.Exists(MapsFilePath))
+            {
+                File.WriteAllText(MapsFilePath,
+                    "# Список карт для RTV-голосования. Одна карта — одна строка.\n" +
+                    "# Обычная карта:       de_dust2\n" +
+                    "# Карта из Мастерской: workshop:3070463151\n" +
+                    "# Со своим названием:  Моя карта|3070463151\n" +
+                    string.Join("\n", DefaultMaps) + "\n");
+                Console.WriteLine($"[{ModuleName}] Создан maps.txt со списком карт");
+            }
+
+            _maps.Clear();
+            foreach (var line in File.ReadAllLines(MapsFilePath))
+            {
+                var s = line.Trim();
+                if (s.Length == 0 || s.StartsWith("#"))
+                    continue;
+                _maps.Add(s);
+            }
+
+            if (_maps.Count == 0)
+                _maps.AddRange(DefaultMaps);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка чтения maps.txt: {ex.Message}");
+            _maps.Clear();
+            _maps.AddRange(DefaultMaps);
+        }
+    }
+
+    private (string display, string command) ParseMap(string entry)
+    {
+        if (entry.Contains('|'))
+        {
+            var parts = entry.Split('|', 2);
+            return (parts[0].Trim(), $"host_workshop_map {parts[1].Trim()}");
+        }
+        if (entry.StartsWith("workshop:", StringComparison.OrdinalIgnoreCase))
+        {
+            string id = entry.Substring("workshop:".Length).Trim();
+            return ($"Мастерская {id}", $"host_workshop_map {id}");
+        }
+        return (entry, $"changelevel {entry}");
+    }
+
+    private static int OnlinePlayers()
+        => Utilities.GetPlayers().Count(p => p.IsValid && !p.IsBot && !p.IsHLTV);
+
+    private int VotesNeeded()
+        => Math.Max(2, (int)Math.Ceiling(OnlinePlayers() * VotePercent));
+
+    private void CmdRtv(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
 
         if (_voteInProgress)
         {
-            player.PrintToChat($" {ChatColors.Green}[RTV]{ChatColors.Default} Голосование уже идёт!");
+            player.PrintToChat($"{Prefix} Голосование за карту уже идёт!");
             return;
         }
 
-        ulong steamId = player.SteamID;
-
-        if (_votedPlayers.Contains(steamId))
+        if (!_rtvVoters.Add(player.Slot))
         {
-            player.PrintToChat($" {ChatColors.Green}[RTV]{ChatColors.Default} Вы уже проголосовали!");
+            player.PrintToChat($"{Prefix} Ты уже проголосовал за смену карты.");
             return;
         }
 
-        _votedPlayers.Add(steamId);
-        UpdateRequiredVotes();
+        int have = _rtvVoters.Count;
+        int need = VotesNeeded();
+        Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {player.PlayerName}{ChatColors.Default} хочет сменить карту ({ChatColors.Yellow}{have}/{need}{ChatColors.Default})");
 
-        int currentVotes = _votedPlayers.Count;
-        
-        Server.PrintToChatAll($" {ChatColors.Green}[RTV]{ChatColors.Default} {player.PlayerName} хочет сменить карту ({ChatColors.Yellow}{currentVotes}/{_requiredVotes}{ChatColors.Default})");
-
-        if (currentVotes >= _requiredVotes)
-        {
+        if (have >= need)
             StartVote();
-        }
     }
 
-    [ConsoleCommand("css_rtv_status", "Статус голосования")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
-    public void OnRtvStatusCommand(CCSPlayerController? caller, CommandInfo command)
+    private void CmdUnRtv(CCSPlayerController? player, CommandInfo command)
     {
-        int currentVotes = _votedPlayers.Count;
-        UpdateRequiredVotes();
+        if (player == null || !player.IsValid || _voteInProgress)
+            return;
 
-        if (caller != null)
-        {
-            caller.PrintToChat($" {ChatColors.Green}[RTV]{ChatColors.Default} Голосов: {ChatColors.Yellow}{currentVotes}/{_requiredVotes}");
-            if (_votedPlayers.Contains(caller.SteamID))
-            {
-                caller.PrintToChat($" {ChatColors.Green}[RTV]{ChatColors.Default} Вы уже проголосовали");
-            }
-        }
-        else
-        {
-            Console.WriteLine($"[RTV] Голосов: {currentVotes}/{_requiredVotes}");
-        }
+        if (_rtvVoters.Remove(player.Slot))
+            Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {player.PlayerName}{ChatColors.Default} отозвал голос ({ChatColors.Yellow}{_rtvVoters.Count}/{VotesNeeded()}{ChatColors.Default})");
     }
 
-    [ConsoleCommand("css_rtv_cancel", "Отменить голосование")]
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    public void OnRtvCancelCommand(CCSPlayerController? player, CommandInfo command)
+    private void CmdNominate(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid)
             return;
 
-        ulong steamId = player.SteamID;
-
-        if (!_votedPlayers.Contains(steamId))
+        string arg = command.ArgString.Trim();
+        if (string.IsNullOrEmpty(arg))
         {
-            player.PrintToChat($" {ChatColors.Green}[RTV]{ChatColors.Default} Вы не голосовали!");
+            ShowNominateMenu(player);
             return;
         }
 
-        _votedPlayers.Remove(steamId);
-        UpdateRequiredVotes();
+        var match = _maps.FirstOrDefault(m =>
+            ParseMap(m).display.Contains(arg, StringComparison.OrdinalIgnoreCase) ||
+            m.Contains(arg, StringComparison.OrdinalIgnoreCase));
 
-        int currentVotes = _votedPlayers.Count;
-        
-        player.PrintToChat($" {ChatColors.Green}[RTV]{ChatColors.Default} Голос отменён");
-        Server.PrintToChatAll($" {ChatColors.Green}[RTV]{ChatColors.Default} {player.PlayerName} отменил голос ({ChatColors.Yellow}{currentVotes}/{_requiredVotes}{ChatColors.Default})");
+        if (match == null)
+        {
+            player.PrintToChat($"{Prefix} Карта \"{arg}\" не найдена. Набери css_maps.");
+            return;
+        }
+
+        Nominate(player, match);
+    }
+
+    private void ShowNominateMenu(CCSPlayerController player)
+    {
+        var menu = new WasdMenu("Номинировать карту", this);
+        foreach (var entry in _maps)
+        {
+            var (display, _) = ParseMap(entry);
+            menu.AddItem(display, (controller, option) => Nominate(controller, entry));
+        }
+        menu.Display(player, 0);
+    }
+
+    private void Nominate(CCSPlayerController player, string entry)
+    {
+        var (display, command) = ParseMap(entry);
+        if (_nominations.ContainsKey(display))
+        {
+            player.PrintToChat($"{Prefix} Карта {display} уже номинирована.");
+            return;
+        }
+
+        _nominations[display] = command;
+        Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {player.PlayerName}{ChatColors.Default} номинировал карту {ChatColors.Gold}{display}");
+    }
+
+    private void CmdMaps(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        player.PrintToChat($"{Prefix} Доступные карты:");
+        foreach (var entry in _maps)
+            player.PrintToChat($" {Orange}> {ChatColors.Default}{ParseMap(entry).display}");
+    }
+
+    private void CmdStatus(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        player.PrintToChat($"{Prefix} Голосов за RTV: {ChatColors.Yellow}{_rtvVoters.Count}/{VotesNeeded()}");
+    }
+
+    // Финальное голосование за следующую карту.
+    private void StartVote()
+    {
+        _voteInProgress = true;
+        Server.PrintToChatAll($"{Prefix}{ChatColors.Gold} Голосование за следующую карту началось! У вас 20 секунд.");
+
+        var candidates = new List<string>();
+        foreach (var kv in _nominations)
+            if (!candidates.Contains(kv.Key))
+                candidates.Add(kv.Key);
+
+        var rnd = new Random();
+        foreach (var entry in _maps.OrderBy(_ => rnd.Next()))
+        {
+            if (candidates.Count >= 5) break;
+            var (display, _) = ParseMap(entry);
+            if (!candidates.Contains(display))
+                candidates.Add(display);
+        }
+
+        var votes = new Dictionary<string, int>();
+        foreach (var c in candidates)
+            votes[c] = 0;
+
+        var voted = new HashSet<int>();
+
+        foreach (var p in Utilities.GetPlayers())
+        {
+            if (!p.IsValid || p.IsBot || p.IsHLTV)
+                continue;
+
+            var menu = new WasdMenu("Голосование за карту", this);
+            foreach (var c in candidates)
+            {
+                string display = c;
+                menu.AddItem(display, (controller, option) =>
+                {
+                    if (voted.Add(controller.Slot))
+                    {
+                        votes[display]++;
+                        controller.PrintToChat($"{Prefix} Твой голос за {ChatColors.Gold}{display}{ChatColors.Default} учтён.");
+                    }
+                });
+            }
+            menu.Display(p, 20);
+        }
+
+        AddTimer(20.0f, () => FinishVote(votes));
+    }
+
+    private void FinishVote(Dictionary<string, int> votes)
+    {
+        var winner = votes.OrderByDescending(v => v.Value).First();
+
+        string command = _nominations.TryGetValue(winner.Key, out var cmd)
+            ? cmd
+            : _maps.Select(ParseMap).FirstOrDefault(m => m.display == winner.Key).command
+              ?? $"changelevel {winner.Key}";
+
+        Server.PrintToChatAll($"{Prefix}{ChatColors.Gold} Победила карта: {winner.Key}{ChatColors.Default} ({winner.Value} голосов)");
+        Server.PrintToChatAll($"{Prefix} Смена карты через 5 секунд...");
+
+        AddTimer(5.0f, () =>
+        {
+            Server.ExecuteCommand(command);
+            _voteInProgress = false;
+            _rtvVoters.Clear();
+            _nominations.Clear();
+        });
     }
 
     private HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        
-        if (player == null || !player.IsValid)
-            return HookResult.Continue;
-
-        _votedPlayers.Remove(player.SteamID);
-        UpdateRequiredVotes();
-
+        if (player != null && player.IsValid)
+            _rtvVoters.Remove(player.Slot);
         return HookResult.Continue;
-    }
-
-    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
-    {
-        if (!_voteInProgress)
-        {
-            _votedPlayers.Clear();
-        }
-
-        return HookResult.Continue;
-    }
-
-    private void UpdateRequiredVotes()
-    {
-        var players = Utilities.GetPlayers().Where(p => p?.IsValid == true && !p.IsBot).ToList();
-        int totalPlayers = players.Count;
-        
-        _requiredVotes = (int)Math.Ceiling(totalPlayers * _votePercentage);
-        
-        if (_requiredVotes < 2)
-            _requiredVotes = 2;
-    }
-
-    private void StartVote()
-    {
-        _voteInProgress = true;
-        _mapChangeCountdown = 10;
-
-        Server.PrintToChatAll($" {ChatColors.Green}[RTV]{ChatColors.Default} {ChatColors.Red}Голосование принято! Смена карты через 10 секунд...");
-        Console.WriteLine("[RTV] Голосование принято, смена карты");
-
-        _countdownTimer = AddTimer(1.0f, () =>
-        {
-            if (_mapChangeCountdown > 0)
-            {
-                if (_mapChangeCountdown <= 5)
-                {
-                    Server.PrintToChatAll($" {ChatColors.Green}[RTV]{ChatColors.Default} {ChatColors.Red}{_mapChangeCountdown}...");
-                }
-                _mapChangeCountdown--;
-            }
-            else
-            {
-                _countdownTimer?.Kill();
-                ChangeMap();
-            }
-        }, TimerFlags.REPEAT);
-    }
-
-    private void ChangeMap()
-    {
-        Server.PrintToChatAll($" {ChatColors.Green}[RTV]{ChatColors.Default} {ChatColors.Red}Смена карты...");
-        Console.WriteLine("[RTV] Принудительная смена карты");
-        
-        AddTimer(1.0f, () =>
-        {
-            Server.ExecuteCommand("mp_timelimit 0.1");
-        });
     }
 
     public override void Unload(bool hotReload)
     {
-        _countdownTimer?.Kill();
-        _votedPlayers.Clear();
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 }

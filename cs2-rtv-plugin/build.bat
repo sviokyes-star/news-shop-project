@@ -1,12 +1,17 @@
 @echo off
-echo Building RTV Plugin...
+echo Компиляция Rock The Vote...
+
+cd /d "%~dp0"
+
+dotnet restore
 dotnet build -c Release
-if %errorlevel% neq 0 (
-    echo Build failed!
-    pause
-    exit /b %errorlevel%
+
+if %errorlevel% equ 0 (
+    echo Плагин успешно скомпилирован!
+    echo Файл находится в: bin\Release\net8.0\RtvPlugin.dll
+) else (
+    echo Ошибка компиляции!
+    exit /b 1
 )
 
-echo Build successful!
-echo Output: bin\Release\net8.0\cs2-rtv-plugin.dll
 pause
