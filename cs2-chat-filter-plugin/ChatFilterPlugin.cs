@@ -8,12 +8,16 @@ namespace ChatFilterPlugin;
 public class ChatFilterPlugin : BasePlugin
 {
     public override string ModuleName => "Chat Filter [Okyes]";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Убирает служебные сообщения карт из чата";
 
-    // ID сообщения чата (SayText2) — через него карты пишут в чат.
-    private const int SayText2 = 118;
+    // ID сообщений, через которые в чат/HUD попадает текст.
+    // Разные карты используют разные каналы, поэтому хукаем несколько.
+    private static readonly int[] TextMessageIds = { 117, 118, 124 };
+
+    // Режим диагностики — печатает ID и текст сообщений в консоль сервера.
+    private bool _debug = false;
 
     // Подстроки, при наличии которых сообщение из чата убирается.
     // Регистр не важен. Настраивается в файле filters.txt.
@@ -36,7 +40,8 @@ public class ChatFilterPlugin : BasePlugin
     {
         LoadFilters();
 
-        HookUserMessage(SayText2, OnSayText, HookMode.Pre);
+        foreach (var id in TextMessageIds)
+            HookUserMessage(id, OnSayText, HookMode.Pre);
 
         Console.WriteLine($"[{ModuleName}] Плагин загружен! Фильтров: {_filters.Count}");
     }
@@ -82,13 +87,18 @@ public class ChatFilterPlugin : BasePlugin
     {
         try
         {
-            string text = ExtractText(um).ToLowerInvariant();
-            if (text.Length == 0)
+            string text = ExtractText(um);
+
+            if (_debug && text.Trim().Length > 0)
+                Console.WriteLine($"[{ModuleName}] TEXT: \"{text}\"");
+
+            string lower = text.ToLowerInvariant();
+            if (lower.Length == 0)
                 return HookResult.Continue;
 
             foreach (var f in _filters)
             {
-                if (text.Contains(f))
+                if (lower.Contains(f))
                     return HookResult.Stop; // сообщение не покажется
             }
         }
@@ -100,20 +110,37 @@ public class ChatFilterPlugin : BasePlugin
         return HookResult.Continue;
     }
 
-    // Собирает весь текст сообщения из полей SayText2 (messagename + params).
+    // Возможные строковые поля в разных типах текстовых сообщений.
+    private static readonly string[] TextFields =
+    {
+        "messagename", "text", "message", "param1", "param2", "param3", "param4"
+    };
+
+    // Собирает весь текст сообщения из всех известных полей.
     private string ExtractText(UserMessage um)
     {
         var parts = new List<string>();
 
-        if (um.HasField("messagename"))
-            parts.Add(um.ReadString("messagename"));
+        foreach (var field in TextFields)
+        {
+            if (um.HasField(field))
+            {
+                var val = um.ReadString(field);
+                if (!string.IsNullOrEmpty(val))
+                    parts.Add(val);
+            }
+        }
 
         // params — повторяемое поле с подстановками текста.
         if (um.HasField("params"))
         {
             int count = um.GetRepeatedFieldCount("params");
             for (int i = 0; i < count; i++)
-                parts.Add(um.ReadString("params", i));
+            {
+                var val = um.ReadString("params", i);
+                if (!string.IsNullOrEmpty(val))
+                    parts.Add(val);
+            }
         }
 
         return string.Join(" ", parts);
@@ -128,9 +155,21 @@ public class ChatFilterPlugin : BasePlugin
         command.ReplyToCommand($"[Chat Filter] Перезагружено фильтров: {_filters.Count}");
     }
 
+    // Включить/выключить вывод текста всех сообщений в консоль сервера.
+    [CounterStrikeSharp.API.Core.Attributes.Registration.ConsoleCommand("css_chatfilter_debug", "Показывать текст сообщений в консоли")]
+    [CounterStrikeSharp.API.Modules.Commands.CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnDebug(CCSPlayerController? caller, CommandInfo command)
+    {
+        _debug = !_debug;
+        string state = _debug ? "ВКЛючена" : "ВЫКЛючена";
+        Console.WriteLine($"[{ModuleName}] Диагностика {state}. Смотри консоль — найди строку с нужным текстом.");
+        command.ReplyToCommand($"[Chat Filter] Диагностика {state}. Смотри консоль сервера.");
+    }
+
     public override void Unload(bool hotReload)
     {
-        UnhookUserMessage(SayText2, OnSayText, HookMode.Pre);
+        foreach (var id in TextMessageIds)
+            UnhookUserMessage(id, OnSayText, HookMode.Pre);
         Console.WriteLine($"[{ModuleName}] Плагин выгружен!");
     }
 }
