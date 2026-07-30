@@ -13,6 +13,7 @@ public class TripleJumpPlugin : BasePlugin
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
+    private bool _debug = false;
     private readonly Dictionary<int, int> _jumpCount = new();
     private readonly Dictionary<int, bool> _wasOnGround = new();
     private readonly Dictionary<int, ulong> _lastJumpButton = new();
@@ -87,6 +88,9 @@ public class TripleJumpPlugin : BasePlugin
 
             if (justPressedJump)
             {
+                if (_debug)
+                    Console.WriteLine($"[TJ] {player.PlayerName} JUMP: onGround={isOnGround} wasGround={wasOnGround} groundTicks={_groundTicks[userId]} touched={touchedGround} count(before)={_jumpCount[userId]}");
+
                 // Прыжок с земли (или из тика касания земли) — начинаем новую серию.
                 // Это надёжно работает при банихопе, где FL_ONGROUND держится 1 тик.
                 if (touchedGround)
@@ -160,6 +164,15 @@ public class TripleJumpPlugin : BasePlugin
         }
 
         return HookResult.Continue;
+    }
+
+    [ConsoleCommand("css_tj_debug", "Диагностика тройного прыжка")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnTjDebug(CCSPlayerController? player, CommandInfo command)
+    {
+        _debug = !_debug;
+        Console.WriteLine($"[TJ] Диагностика {( _debug ? "ВКЛ" : "ВЫКЛ")}");
+        command.ReplyToCommand($"[TJ] Диагностика {( _debug ? "ВКЛ" : "ВЫКЛ")}");
     }
 
     [ConsoleCommand("css_triplejump", "Показать информацию о тройном прыжке")]
