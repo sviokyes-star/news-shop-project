@@ -308,7 +308,8 @@ public class RtvPlugin : BasePlugin
         ShowVoteMenus(candidates, votes, voted, 20);
 
         float elapsed = 0f;
-        var refreshTimer = AddTimer(3.0f, () =>
+        CounterStrikeSharp.API.Modules.Timers.Timer? refreshTimer = null;
+        refreshTimer = AddTimer(3.0f, () =>
         {
             elapsed += 3.0f;
             int left = (int)Math.Max(0, 20 - elapsed);
@@ -318,7 +319,7 @@ public class RtvPlugin : BasePlugin
 
         AddTimer(20.0f, () =>
         {
-            refreshTimer.Kill();
+            refreshTimer?.Kill();
             FinishVote(votes);
         });
     }
