@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.9.1";
+    public override string ModuleVersion => "2.0.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -49,49 +49,38 @@ public class TripleJumpPlugin : BasePlugin
             if (!_lastZVel.ContainsKey(userId))
                 _lastZVel[userId] = 0f;
 
-            bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
-            bool wasOnGround = _wasOnGround.ContainsKey(userId) && _wasOnGround[userId];
-
-            // Детект фронта нажатия прыжка: сравниваем текущее состояние кнопок
-            // с сохранённым за прошлый тик (_lastJumpButton).
+            // === Модель как в рабочем DoubleJumpCS2 ===
+            uint curFlags = pawn.Flags;
             ulong curButtons = (ulong)player.Buttons;
-            ulong oldButtons = _lastJumpButton[userId];
+            ulong prevButtons = _lastJumpButton[userId];
 
-            bool isJumping = (curButtons & (ulong)PlayerButtons.Jump) != 0;
-            bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
-            bool justPressedJump = isJumping && !wasJumping;
+            bool isOnGround = (curFlags & (uint)PlayerFlags.FL_ONGROUND) != 0;
 
-            // _jumpCount здесь = число СДЕЛАННЫХ воздушных доп. прыжков в текущем
-            // полёте. Взлётный прыжок НЕ считаем — иначе доступных остаётся мало
-            // ("двойной вместо тройного"). Лимит доп. прыжков в воздухе = 3.
+            // Максимум доп. прыжков в воздухе (тройной = 3 доп. прыжка).
             const int MaxAirJumps = 3;
 
-            // Отрыв от земли или нахождение на земле — новый полёт: обнуляем счётчик.
-            bool tookOff = wasOnGround && !isOnGround;
-            if (tookOff || isOnGround)
+            // Касание земли (по флагу этого тика) обнуляет счётчик доп. прыжков.
+            // Ловит и стойку, и короткое касание при bhop.
+            if (isOnGround)
                 _jumpCount[userId] = 0;
 
-            // ДИАГНОСТИКА в чат (смена состояния кнопки), чтобы видеть касания земли.
-            if (isJumping != wasJumping)
-                player.PrintToChat($" {ChatColors.Grey}[TJ] jump={(isJumping ? "DOWN" : "up")} ground={isOnGround} wasGround={wasOnGround} tookOff={tookOff} air={_jumpCount[userId]}");
+            // Фронт нажатия прыжка: сейчас нажат, в прошлом тике — нет.
+            bool jumpPressed = (curButtons & (ulong)PlayerButtons.Jump) != 0;
+            bool jumpWasPressed = (prevButtons & (ulong)PlayerButtons.Jump) != 0;
+            bool justPressedJump = jumpPressed && !jumpWasPressed;
 
-            if (justPressedJump && !isOnGround)
+            // Доп. прыжок — только в воздухе и в пределах лимита.
+            if (justPressedJump && !isOnGround && _jumpCount[userId] < MaxAirJumps)
             {
-                if (_jumpCount[userId] < MaxAirJumps)
+                _jumpCount[userId]++;
+
+                if (pawn.AbsVelocity != null)
                 {
-                    // Воздушный доп. прыжок.
-                    _jumpCount[userId]++;
-
-                    if (pawn.AbsVelocity != null)
-                    {
-                        pawn.Teleport(null, null, new Vector(
-                            pawn.AbsVelocity.X,
-                            pawn.AbsVelocity.Y,
-                            301.993377f
-                        ));
-                    }
-
-                    player.PrintToChat($" {ChatColors.Green}[TJ] AIR JUMP -> {_jumpCount[userId]}/{MaxAirJumps}");
+                    pawn.Teleport(null, null, new Vector(
+                        pawn.AbsVelocity.X,
+                        pawn.AbsVelocity.Y,
+                        301.993377f
+                    ));
                 }
             }
 
