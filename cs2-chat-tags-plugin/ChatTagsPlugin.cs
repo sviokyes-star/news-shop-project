@@ -11,7 +11,7 @@ namespace ChatTagsPlugin;
 public class ChatTagsPlugin : BasePlugin
 {
     public override string ModuleName => "Chat Tags [Okyes]";
-    public override string ModuleVersion => "3.2.0";
+    public override string ModuleVersion => "3.3.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Теги [ADMIN] и [VIP] перед ником (чат + таблица)";
 
@@ -63,13 +63,24 @@ public class ChatTagsPlugin : BasePlugin
 
         string message = info.GetArg(1).Trim();
 
-        // Пустое — не трогаем.
         if (string.IsNullOrEmpty(message))
             return HookResult.Continue;
 
-        // Команды с префиксом "/" — это скрытые команды, их в чате не показываем.
-        if (message.StartsWith("/"))
-            return HookResult.Continue;
+        // Команды (!, /) — скрываем из чата, но выполняем.
+        if (message.StartsWith("!") || message.StartsWith("/"))
+        {
+            // Превращаем "!rtv arg" в серверную команду "css_rtv arg".
+            string body = message.Substring(1).Trim();
+            if (body.Length > 0)
+            {
+                string[] parts = body.Split(' ', 2);
+                string cmd = "css_" + parts[0];
+                string rest = parts.Length > 1 ? " " + parts[1] : "";
+                player.ExecuteClientCommandFromServer(cmd + rest);
+            }
+            // Гасим сообщение — команда в чате не показывается.
+            return HookResult.Handled;
+        }
 
         string tag = GetColoredTag(player);
         if (string.IsNullOrEmpty(tag))
