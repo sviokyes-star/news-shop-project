@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.7.1";
+    public override string ModuleVersion => "1.8.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -51,15 +51,9 @@ public class TripleJumpPlugin : BasePlugin
 
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
 
-            // Вертикальная скорость сейчас и на прошлом тике.
+            // Вертикальная скорость сейчас.
             float zVel = pawn.AbsVelocity?.Z ?? 0f;
-            float prevZVel = _lastZVel[userId];
-
-            // "Отскок от земли": игрок падал вниз (Z заметно < 0), а на этом тике
-            // резко полетел вверх (Z заметно > 0). Так бывает ТОЛЬКО при отталкивании
-            // от земли — надёжный признак приземления/нового прыжка, когда флаг
-            // FL_ONGROUND не выставляется (mg-карты, наклонные поверхности).
-            bool bounced = prevZVel < -100f && zVel > 150f;
+            bool wasOnGround = _wasOnGround.ContainsKey(userId) && _wasOnGround[userId];
 
             // Тики с момента последнего воздушного доп. прыжка (растёт каждый тик).
             _groundTicks[userId]++;
@@ -73,25 +67,27 @@ public class TripleJumpPlugin : BasePlugin
             bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
             bool justPressedJump = isJumping && !wasJumping;
 
-            // Приземление сбрасывает серию — НО не сразу после нашего доп. прыжка,
-            // иначе наш же teleport (Z=302) распознается как "отскок" и сбросит серию.
-            // Ждём короткую паузу после доп. прыжка.
             const int CooldownAfterAirJump = 8;
             bool cooldownPassed = _groundTicks[userId] > CooldownAfterAirJump;
 
-            // Признак приземления: флаг земли ИЛИ отскок по скорости (для карт,
-            // где FL_ONGROUND не выставляется). Логи показали, что онграунд после
-            // тройного прыжка не приходит вовсе — поэтому опираемся и на скорость.
-            bool landed = isOnGround || bounced;
+            // ВЗЛЁТ с земли (bhop или обычный прыжок): игрок только что был на земле,
+            // а теперь летит вверх. Считаем это первым прыжком серии — тогда
+            // следующий ОДИНОЧНЫЙ клик в воздухе сразу даст доп. прыжок.
+            bool tookOff = wasOnGround && !isOnGround && zVel > 0f;
+            if (tookOff && _jumpCount[userId] == 0)
+                _jumpCount[userId] = 1;
+
+            // Приземление сбрасывает серию. Ключевое: сбрасываем ТОЛЬКО когда игрок
+            // реально на земле или падает вниз возле земли — НЕ когда летит вверх
+            // (иначе bhop-подъём ложно сбрасывал серию, и одиночный клик не работал).
+            bool landed = isOnGround && zVel <= 0f;
             if (landed && cooldownPassed)
                 _jumpCount[userId] = 0;
 
             if (justPressedJump)
             {
-                // Начало новой серии — только если серия ещё не идёт (count==0).
-                // Это ловит и обычный прыжок с земли, и взлёт через bhop.
-                // Как только count>=1, любой клик — воздушный доп. прыжок,
-                // даже если FL_ONGROUND мелькнул (bhop у самой земли).
+                // Начало новой серии — только если серия ещё не идёт (count==0)
+                // и игрок на земле. В воздухе клик всегда идёт в доп. прыжок.
                 if (_jumpCount[userId] == 0)
                 {
                     _jumpCount[userId] = 1;
