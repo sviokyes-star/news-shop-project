@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.4.0";
+    public override string ModuleVersion => "1.4.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -52,11 +52,10 @@ public class TripleJumpPlugin : BasePlugin
 
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
 
-            // Детект фронта нажатия прыжка. Берём OldButtons из MovementServices —
-            // это серверное состояние кнопок с прошлого тика, оно надёжнее, чем
-            // player.Buttons при активном bhop (там кнопка "залипает").
+            // Детект фронта нажатия прыжка: сравниваем текущее состояние кнопок
+            // с сохранённым за прошлый тик (_lastJumpButton).
             ulong curButtons = (ulong)player.Buttons;
-            ulong oldButtons = pawn.MovementServices?.OldButtons ?? _lastJumpButton[userId];
+            ulong oldButtons = _lastJumpButton[userId];
 
             bool isJumping = (curButtons & (ulong)PlayerButtons.Jump) != 0;
             bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
