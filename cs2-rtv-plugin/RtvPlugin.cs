@@ -12,7 +12,7 @@ namespace RtvPlugin;
 public class RtvPlugin : BasePlugin
 {
     public override string ModuleName => "Rock The Vote";
-    public override string ModuleVersion => "2.3.0";
+    public override string ModuleVersion => "2.4.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Голосование за смену карты с выбором следующей карты";
 
@@ -304,28 +304,53 @@ public class RtvPlugin : BasePlugin
 
         var voted = new HashSet<int>();
 
+        // Показываем меню всем и обновляем счётчики голосов каждые 3 секунды.
+        ShowVoteMenus(candidates, votes, voted, 20);
+
+        float elapsed = 0f;
+        var refreshTimer = AddTimer(3.0f, () =>
+        {
+            elapsed += 3.0f;
+            int left = (int)Math.Max(0, 20 - elapsed);
+            if (left > 0)
+                ShowVoteMenus(candidates, votes, voted, left);
+        }, TimerFlags.REPEAT);
+
+        AddTimer(20.0f, () =>
+        {
+            refreshTimer.Kill();
+            FinishVote(votes);
+        });
+    }
+
+    // Строит и показывает меню голосования всем игрокам с текущими счётчиками.
+    private void ShowVoteMenus(List<string> candidates, Dictionary<string, int> votes, HashSet<int> voted, int secondsLeft)
+    {
         foreach (var p in Utilities.GetPlayers())
         {
             if (!p.IsValid || p.IsBot || p.IsHLTV)
                 continue;
 
-            var menu = new WasdMenu("Голосование за карту", this);
+            var menu = new WasdMenu($"Голосование за карту ({secondsLeft} сек)", this);
             foreach (var c in candidates)
             {
                 string display = c;
-                menu.AddItem(display, (controller, option) =>
+                string label = $"{display} [{votes[display]}]";
+                menu.AddItem(label, (controller, option) =>
                 {
                     if (voted.Add(controller.Slot))
                     {
                         votes[display]++;
                         controller.PrintToChat($"{Prefix} Твой голос за {ChatColors.Gold}{display}{ChatColors.Default} учтён.");
                     }
+                    else
+                    {
+                        controller.PrintToChat($"{Prefix} Ты уже проголосовал.");
+                    }
                 });
             }
-            menu.Display(p, 20);
+            menu.Display(p, secondsLeft);
         }
-
-        AddTimer(20.0f, () => FinishVote(votes));
     }
 
     private void FinishVote(Dictionary<string, int> votes)
