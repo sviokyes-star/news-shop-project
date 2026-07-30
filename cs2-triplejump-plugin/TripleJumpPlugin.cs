@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "2.0.0";
+    public override string ModuleVersion => "2.1.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -49,28 +49,38 @@ public class TripleJumpPlugin : BasePlugin
             if (!_lastZVel.ContainsKey(userId))
                 _lastZVel[userId] = 0f;
 
-            // === Модель как в рабочем DoubleJumpCS2 ===
+            // === Точная модель рабочего DoubleJumpCS2 (декомпилировано из .dll) ===
+            // Флаги и кнопки текущего тика + сохранённые за прошлый тик.
             uint curFlags = pawn.Flags;
+            uint prevFlags = (uint)_groundTicks[userId];         // хранит PrevFlags
             ulong curButtons = (ulong)player.Buttons;
             ulong prevButtons = _lastJumpButton[userId];
 
-            bool isOnGround = (curFlags & (uint)PlayerFlags.FL_ONGROUND) != 0;
-
-            // Максимум доп. прыжков в воздухе (тройной = 3 доп. прыжка).
+            const uint FL_ONGROUND = (uint)PlayerFlags.FL_ONGROUND;
             const int MaxAirJumps = 3;
 
-            // Касание земли (по флагу этого тика) обнуляет счётчик доп. прыжков.
-            // Ловит и стойку, и короткое касание при bhop.
-            if (isOnGround)
+            // Земля определяется по ОКНУ из двух тиков: текущий ИЛИ предыдущий флаг.
+            // Именно так делает рабочий плагин — это ловит короткое касание при bhop,
+            // которое в одном тике легко пропустить.
+            bool onGroundNow = (curFlags & FL_ONGROUND) != 0;
+            bool onGroundPrev = (prevFlags & FL_ONGROUND) != 0;
+            bool onGround = onGroundNow || onGroundPrev;
+
+            // Касание земли обнуляет счётчик доп. прыжков.
+            if (onGround)
                 _jumpCount[userId] = 0;
 
-            // Фронт нажатия прыжка: сейчас нажат, в прошлом тике — нет.
-            bool jumpPressed = (curButtons & (ulong)PlayerButtons.Jump) != 0;
-            bool jumpWasPressed = (prevButtons & (ulong)PlayerButtons.Jump) != 0;
-            bool justPressedJump = jumpPressed && !jumpWasPressed;
+            // Фронт нажатия прыжка (бит IN_JUMP): нажат сейчас, не был нажат в прошлом.
+            bool jumpNow = (curButtons & (ulong)PlayerButtons.Jump) != 0;
+            bool jumpPrev = (prevButtons & (ulong)PlayerButtons.Jump) != 0;
+            bool justPressedJump = jumpNow && !jumpPrev;
 
-            // Доп. прыжок — только в воздухе и в пределах лимита.
-            if (justPressedJump && !isOnGround && _jumpCount[userId] < MaxAirJumps)
+            // Доп. прыжок: в воздухе, есть лимит, и игрок реально движется по вертикали
+            // (CanForceJump: Z-скорость != 0 — как в оригинале).
+            float zVel = pawn.AbsVelocity?.Z ?? 0f;
+            bool canForceJump = zVel != 0f;
+
+            if (justPressedJump && !onGround && _jumpCount[userId] < MaxAirJumps && canForceJump)
             {
                 _jumpCount[userId]++;
 
@@ -84,8 +94,10 @@ public class TripleJumpPlugin : BasePlugin
                 }
             }
 
+            // Сохраняем состояние для следующего тика.
             _lastJumpButton[userId] = curButtons;
-            _wasOnGround[userId] = isOnGround;
+            _groundTicks[userId] = (int)curFlags;   // станет PrevFlags
+            _wasOnGround[userId] = onGroundNow;
         }
     }
 
