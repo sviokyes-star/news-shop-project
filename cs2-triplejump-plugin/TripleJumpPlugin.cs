@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.6.1";
+    public override string ModuleVersion => "1.6.2";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -65,9 +65,9 @@ public class TripleJumpPlugin : BasePlugin
             bool justPressedJump = isJumping && !wasJumping;
 
             // Диагностика сырого состояния кнопки прыжка (только смена состояния),
-            // чтобы понять, ловится ли отдельный клик в воздухе.
+            // чтобы понять, ловится ли отдельный клик в воздухе. Пишем В ЧАТ игроку.
             if (_debug && isJumping != wasJumping)
-                Console.WriteLine($"[TJ-BTN] {player.PlayerName} jump={(isJumping ? "DOWN" : "up")} onGround={isOnGround} count={_jumpCount[userId]} sinceAir={_groundTicks[userId]}");
+                player.PrintToChat($" {ChatColors.Grey}[TJ-BTN] jump={(isJumping ? "DOWN" : "up")} ground={isOnGround} count={_jumpCount[userId]} sinceAir={_groundTicks[userId]}");
 
             // Приземление сбрасывает серию — НО не сразу после доп. прыжка.
             // После воздушного прыжка игрок ещё летит вверх и FL_ONGROUND может
@@ -79,7 +79,7 @@ public class TripleJumpPlugin : BasePlugin
                 _jumpCount[userId] = 0;
 
             if (_debug && justPressedJump)
-                Console.WriteLine($"[TJ] {player.PlayerName} JUMP: onGround={isOnGround} sinceAir={_groundTicks[userId]} count(before)={_jumpCount[userId]}");
+                player.PrintToChat($" {ChatColors.Yellow}[TJ] JUMP ground={isOnGround} sinceAir={_groundTicks[userId]} count(before)={_jumpCount[userId]}");
 
             if (justPressedJump)
             {
@@ -109,7 +109,7 @@ public class TripleJumpPlugin : BasePlugin
                     }
 
                     if (_debug)
-                        Console.WriteLine($"[TJ] {player.PlayerName} AIR JUMP -> count={_jumpCount[userId]}");
+                        player.PrintToChat($" {ChatColors.Green}[TJ] AIR JUMP -> count={_jumpCount[userId]}");
                 }
             }
 
@@ -168,8 +168,10 @@ public class TripleJumpPlugin : BasePlugin
     public void OnTjDebug(CCSPlayerController? player, CommandInfo command)
     {
         _debug = !_debug;
-        Console.WriteLine($"[TJ] Диагностика {( _debug ? "ВКЛ" : "ВЫКЛ")}");
-        command.ReplyToCommand($"[TJ] Диагностика {( _debug ? "ВКЛ" : "ВЫКЛ")}");
+        string state = _debug ? "ВКЛ" : "ВЫКЛ";
+        command.ReplyToCommand($"[TJ] Диагностика {state}");
+        if (player != null && player.IsValid)
+            player.PrintToChat($" {ChatColors.Yellow}[TJ] Диагностика {state} — логи будут в чате");
     }
 
     [ConsoleCommand("css_triplejump", "Показать информацию о тройном прыжке")]
