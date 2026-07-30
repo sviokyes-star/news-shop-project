@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.6.0";
+    public override string ModuleVersion => "1.6.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -63,6 +63,11 @@ public class TripleJumpPlugin : BasePlugin
             bool isJumping = (curButtons & (ulong)PlayerButtons.Jump) != 0;
             bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
             bool justPressedJump = isJumping && !wasJumping;
+
+            // Диагностика сырого состояния кнопки прыжка (только смена состояния),
+            // чтобы понять, ловится ли отдельный клик в воздухе.
+            if (_debug && isJumping != wasJumping)
+                Console.WriteLine($"[TJ-BTN] {player.PlayerName} jump={(isJumping ? "DOWN" : "up")} onGround={isOnGround} count={_jumpCount[userId]} sinceAir={_groundTicks[userId]}");
 
             // Приземление сбрасывает серию — НО не сразу после доп. прыжка.
             // После воздушного прыжка игрок ещё летит вверх и FL_ONGROUND может
