@@ -24,12 +24,19 @@ public class TripleJumpConfig : BasePluginConfig
     public float BhopTakeoffVelocity { get; set; } = 200f;
 }
 
-public class TripleJumpPlugin : BasePlugin<TripleJumpConfig>
+public class TripleJumpPlugin : BasePlugin, IPluginConfig<TripleJumpConfig>
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "2.3.3";
+    public override string ModuleVersion => "2.3.4";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
+
+    public TripleJumpConfig Config { get; set; } = new();
+
+    public void OnConfigParsed(TripleJumpConfig config)
+    {
+        Config = config;
+    }
 
     private readonly Dictionary<int, int> _jumpCount = new();
     private readonly Dictionary<int, bool> _wasOnGround = new();
