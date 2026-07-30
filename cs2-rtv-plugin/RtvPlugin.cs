@@ -12,7 +12,7 @@ namespace RtvPlugin;
 public class RtvPlugin : BasePlugin
 {
     public override string ModuleName => "Rock The Vote";
-    public override string ModuleVersion => "2.2.0";
+    public override string ModuleVersion => "2.3.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Голосование за смену карты с выбором следующей карты";
 
@@ -100,6 +100,23 @@ public class RtvPlugin : BasePlugin
             _maps.Clear();
             _maps.AddRange(DefaultMaps);
         }
+    }
+
+    // Проверяет, совпадает ли запись из maps.txt с текущей картой.
+    private bool IsCurrentMap(string entry, string currentMap)
+    {
+        if (string.IsNullOrEmpty(currentMap))
+            return false;
+
+        // Для воркшоп-карт Server.MapName возвращает системное имя карты,
+        // поэтому сверяем по имени карты (без ID) и по обычному названию.
+        string name = entry;
+        if (entry.Contains('|'))
+            name = entry.Split('|', 2)[0].Trim();
+        else if (entry.StartsWith("workshop:", StringComparison.OrdinalIgnoreCase))
+            return false; // ID не сопоставить с системным именем — пропускаем фильтр
+
+        return string.Equals(name, currentMap, StringComparison.OrdinalIgnoreCase);
     }
 
     private (string display, string command) ParseMap(string entry)
@@ -268,10 +285,14 @@ public class RtvPlugin : BasePlugin
             if (!candidates.Contains(kv.Key))
                 candidates.Add(kv.Key);
 
+        // Текущая карта — чтобы исключить её из вариантов для смены.
+        string currentMap = Server.MapName ?? "";
+
         var rnd = new Random();
         foreach (var entry in _maps.OrderBy(_ => rnd.Next()))
         {
             if (candidates.Count >= 5) break;
+            if (IsCurrentMap(entry, currentMap)) continue;
             var (display, _) = ParseMap(entry);
             if (!candidates.Contains(display))
                 candidates.Add(display);
