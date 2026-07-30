@@ -16,8 +16,9 @@ public class RtvPlugin : BasePlugin
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Голосование за смену карты с выбором следующей карты";
 
-    private static readonly char Orange = ChatColors.Orange;
-    private const string Prefix = " \x0eOkyes |\x01";
+    // Ярко-оранжевый цвет (≈ #FF4500) для префикса "Okyes |".
+    private const char Orange = '\u0010';
+    private const string Prefix = " \u0010Okyes |\x01";
 
     // Доля игроков для запуска голосования (0.6 = 60%).
     private const double VotePercent = 0.6;
