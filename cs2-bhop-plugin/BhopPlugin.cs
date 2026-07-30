@@ -45,7 +45,12 @@ public class BhopPlugin : BasePlugin
 
     private void OnTick()
     {
-        var players = Utilities.GetPlayers();
+      try
+      {
+        List<CCSPlayerController> players;
+        try { players = Utilities.GetPlayers(); }
+        catch { return; } // entity-система ещё не готова (старт/смена карты)
+
         foreach (var player in players)
         {
             if (player == null || !player.IsValid || player.PlayerPawn.Value == null)
@@ -69,6 +74,8 @@ public class BhopPlugin : BasePlugin
                 pawn.Teleport(null, null, new Vector(pawn.AbsVelocity!.X, pawn.AbsVelocity.Y, 301.993377f));
             }
         }
+      }
+      catch { /* защита: ошибка в тике не должна валить сервер */ }
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
