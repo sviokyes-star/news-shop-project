@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.9.0";
+    public override string ModuleVersion => "1.9.1";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -61,29 +61,25 @@ public class TripleJumpPlugin : BasePlugin
             bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
             bool justPressedJump = isJumping && !wasJumping;
 
-            // МОДЕЛЬ: считаем прыжки в текущем полёте. Новый полёт начинается в момент
-            // ОТРЫВА от земли (в прошлом тике был на земле, сейчас — нет). Это и есть
-            // взлётный прыжок = 1. При банихопе отрыв происходит на КАЖДОМ прыжке
-            // (касание земли длится 1 тик, но wasOnGround его ловит), поэтому серия
-            // корректно сбрасывается на каждом bhop без опоры на скорость/онграунд.
-            bool tookOff = wasOnGround && !isOnGround;
-            if (tookOff)
-                _jumpCount[userId] = 1;
+            // _jumpCount здесь = число СДЕЛАННЫХ воздушных доп. прыжков в текущем
+            // полёте. Взлётный прыжок НЕ считаем — иначе доступных остаётся мало
+            // ("двойной вместо тройного"). Лимит доп. прыжков в воздухе = 3.
+            const int MaxAirJumps = 3;
 
-            // Пока стоим на земле — серия обнулена (первый прыжок стартует с земли).
-            if (isOnGround)
+            // Отрыв от земли или нахождение на земле — новый полёт: обнуляем счётчик.
+            bool tookOff = wasOnGround && !isOnGround;
+            if (tookOff || isOnGround)
                 _jumpCount[userId] = 0;
 
-            if (justPressedJump)
+            // ДИАГНОСТИКА в чат (смена состояния кнопки), чтобы видеть касания земли.
+            if (isJumping != wasJumping)
+                player.PrintToChat($" {ChatColors.Grey}[TJ] jump={(isJumping ? "DOWN" : "up")} ground={isOnGround} wasGround={wasOnGround} tookOff={tookOff} air={_jumpCount[userId]}");
+
+            if (justPressedJump && !isOnGround)
             {
-                if (_jumpCount[userId] == 0)
+                if (_jumpCount[userId] < MaxAirJumps)
                 {
-                    // Прыжок с земли — старт серии.
-                    _jumpCount[userId] = 1;
-                }
-                else if (_jumpCount[userId] < 3)
-                {
-                    // Воздушный доп. прыжок (2-й и 3-й).
+                    // Воздушный доп. прыжок.
                     _jumpCount[userId]++;
 
                     if (pawn.AbsVelocity != null)
@@ -94,6 +90,8 @@ public class TripleJumpPlugin : BasePlugin
                             301.993377f
                         ));
                     }
+
+                    player.PrintToChat($" {ChatColors.Green}[TJ] AIR JUMP -> {_jumpCount[userId]}/{MaxAirJumps}");
                 }
             }
 
