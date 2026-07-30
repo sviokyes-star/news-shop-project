@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.8.0";
+    public override string ModuleVersion => "1.9.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -50,13 +50,7 @@ public class TripleJumpPlugin : BasePlugin
                 _lastZVel[userId] = 0f;
 
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
-
-            // Вертикальная скорость сейчас.
-            float zVel = pawn.AbsVelocity?.Z ?? 0f;
             bool wasOnGround = _wasOnGround.ContainsKey(userId) && _wasOnGround[userId];
-
-            // Тики с момента последнего воздушного доп. прыжка (растёт каждый тик).
-            _groundTicks[userId]++;
 
             // Детект фронта нажатия прыжка: сравниваем текущее состояние кнопок
             // с сохранённым за прошлый тик (_lastJumpButton).
@@ -67,38 +61,30 @@ public class TripleJumpPlugin : BasePlugin
             bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
             bool justPressedJump = isJumping && !wasJumping;
 
-            const int CooldownAfterAirJump = 8;
-            bool cooldownPassed = _groundTicks[userId] > CooldownAfterAirJump;
-
-            // ВЗЛЁТ с земли (bhop или обычный прыжок): игрок только что был на земле,
-            // а теперь летит вверх. Считаем это первым прыжком серии — тогда
-            // следующий ОДИНОЧНЫЙ клик в воздухе сразу даст доп. прыжок.
-            bool tookOff = wasOnGround && !isOnGround && zVel > 0f;
-            if (tookOff && _jumpCount[userId] == 0)
+            // МОДЕЛЬ: считаем прыжки в текущем полёте. Новый полёт начинается в момент
+            // ОТРЫВА от земли (в прошлом тике был на земле, сейчас — нет). Это и есть
+            // взлётный прыжок = 1. При банихопе отрыв происходит на КАЖДОМ прыжке
+            // (касание земли длится 1 тик, но wasOnGround его ловит), поэтому серия
+            // корректно сбрасывается на каждом bhop без опоры на скорость/онграунд.
+            bool tookOff = wasOnGround && !isOnGround;
+            if (tookOff)
                 _jumpCount[userId] = 1;
 
-            // Приземление сбрасывает серию. Ключевое: сбрасываем ТОЛЬКО когда игрок
-            // реально на земле или падает вниз возле земли — НЕ когда летит вверх
-            // (иначе bhop-подъём ложно сбрасывал серию, и одиночный клик не работал).
-            bool landed = isOnGround && zVel <= 0f;
-            if (landed && cooldownPassed)
+            // Пока стоим на земле — серия обнулена (первый прыжок стартует с земли).
+            if (isOnGround)
                 _jumpCount[userId] = 0;
 
             if (justPressedJump)
             {
-                // Начало новой серии — только если серия ещё не идёт (count==0)
-                // и игрок на земле. В воздухе клик всегда идёт в доп. прыжок.
                 if (_jumpCount[userId] == 0)
                 {
+                    // Прыжок с земли — старт серии.
                     _jumpCount[userId] = 1;
                 }
                 else if (_jumpCount[userId] < 3)
                 {
                     // Воздушный доп. прыжок (2-й и 3-й).
                     _jumpCount[userId]++;
-                    // Обнуляем счётчик тиков — запускаем cooldown, чтобы мелькание
-                    // земли сразу после этого прыжка не сбросило серию.
-                    _groundTicks[userId] = 0;
 
                     if (pawn.AbsVelocity != null)
                     {
@@ -108,16 +94,11 @@ public class TripleJumpPlugin : BasePlugin
                             301.993377f
                         ));
                     }
-
                 }
             }
 
             _lastJumpButton[userId] = curButtons;
             _wasOnGround[userId] = isOnGround;
-            // Запоминаем актуальную Z-скорость. Если в этом тике был наш доп. прыжок,
-            // мы только что выставили Z=302 — сохраняем именно это значение, чтобы
-            // на следующем тике не было ложного "отскока".
-            _lastZVel[userId] = pawn.AbsVelocity?.Z ?? zVel;
         }
     }
 
