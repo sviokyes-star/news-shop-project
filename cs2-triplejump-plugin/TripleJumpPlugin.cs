@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
@@ -6,12 +7,36 @@ using CounterStrikeSharp.API.Modules.Utils;
 
 namespace TripleJumpPlugin;
 
-public class TripleJumpPlugin : BasePlugin
+public class TripleJumpConfig : BasePluginConfig
+{
+    // Сколько ДОПОЛНИТЕЛЬНЫХ прыжков в воздухе доступно (не считая взлётный).
+    // 2 = тройной прыжок (взлёт + 2), 1 = двойной, 3 = четверной и т.д.
+    [JsonPropertyName("AirJumps")]
+    public int AirJumps { get; set; } = 2;
+
+    // Сила прыжка — вертикальная скорость, которая задаётся при доп. прыжке.
+    [JsonPropertyName("JumpForce")]
+    public float JumpForce { get; set; } = 301.993377f;
+
+    // Порог скорости отскока вверх для детекта банихопа (для карт без флага земли).
+    // Больше значение — реже ложные срабатывания, но нужен более резкий прыжок.
+    [JsonPropertyName("BhopTakeoffVelocity")]
+    public float BhopTakeoffVelocity { get; set; } = 200f;
+}
+
+public class TripleJumpPlugin : BasePlugin, IPluginConfig<TripleJumpConfig>
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "2.2.0";
+    public override string ModuleVersion => "2.3.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
+
+    public TripleJumpConfig Config { get; set; } = new();
+
+    public void OnConfigParsed(TripleJumpConfig config)
+    {
+        Config = config;
+    }
 
     private readonly Dictionary<int, int> _jumpCount = new();
     private readonly Dictionary<int, bool> _wasOnGround = new();
@@ -57,7 +82,7 @@ public class TripleJumpPlugin : BasePlugin
             ulong prevButtons = _lastJumpButton[userId];
 
             const uint FL_ONGROUND = (uint)PlayerFlags.FL_ONGROUND;
-            const int MaxAirJumps = 2;   // тройной прыжок = взлёт + 2 доп. прыжка
+            int maxAirJumps = Config.AirJumps;   // из конфига (2 = тройной прыжок)
 
             // Земля определяется по ОКНУ из двух тиков: текущий ИЛИ предыдущий флаг.
             bool onGroundNow = (curFlags & FL_ONGROUND) != 0;
@@ -71,7 +96,7 @@ public class TripleJumpPlugin : BasePlugin
             // BHOP-ОТТАЛКИВАНИЕ: игрок падал вниз (Z < 0), а на этом тике резко полетел
             // вверх (Z заметно > 0). На mg-картах флаг земли при bhop не выставляется,
             // поэтому это единственный надёжный признак нового прыжка с земли.
-            bool bhopTakeoff = prevZVel < 0f && zVel > 200f;
+            bool bhopTakeoff = prevZVel < 0f && zVel > Config.BhopTakeoffVelocity;
 
             // Касание земли ИЛИ bhop-отталкивание обнуляет счётчик доп. прыжков —
             // значит серия доп. прыжков доступна на КАЖДОМ прыжке банихопа.
@@ -84,7 +109,7 @@ public class TripleJumpPlugin : BasePlugin
             bool justPressedJump = jumpNow && !jumpPrev;
 
             // Доп. прыжок: в воздухе и в пределах лимита.
-            if (justPressedJump && !onGround && _jumpCount[userId] < MaxAirJumps)
+            if (justPressedJump && !onGround && _jumpCount[userId] < maxAirJumps)
             {
                 _jumpCount[userId]++;
 
@@ -93,7 +118,7 @@ public class TripleJumpPlugin : BasePlugin
                     pawn.Teleport(null, null, new Vector(
                         pawn.AbsVelocity.X,
                         pawn.AbsVelocity.Y,
-                        301.993377f
+                        Config.JumpForce
                     ));
                 }
             }
@@ -160,8 +185,9 @@ public class TripleJumpPlugin : BasePlugin
         if (player == null || !player.IsValid)
             return;
 
-        player.PrintToChat($" {ChatColors.Green}[TRIPLE JUMP]{ChatColors.Default} Тройной прыжок активен!");
-        player.PrintToChat($" {ChatColors.Yellow}Прыгайте до 3 раз подряд в воздухе");
+        int total = Config.AirJumps + 1;
+        player.PrintToChat($" {ChatColors.Green}[TRIPLE JUMP]{ChatColors.Default} Мультипрыжок активен!");
+        player.PrintToChat($" {ChatColors.Yellow}Доступно прыжков подряд: {total}");
     }
 
     public override void Unload(bool hotReload)
