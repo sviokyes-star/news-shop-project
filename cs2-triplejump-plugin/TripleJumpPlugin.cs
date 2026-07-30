@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -52,10 +52,20 @@ public class TripleJumpPlugin : BasePlugin
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
             bool wasOnGround = _wasOnGround.ContainsKey(userId) && _wasOnGround[userId];
 
-            // Серию прыжков сбрасывает только реальное касание земли (FL_ONGROUND).
-            // Эвристику по вертикальной скорости убрали: она ложно срабатывала
-            // в воздухе у части игроков и давала бесконечные прыжки.
-            bool touchedGround = isOnGround || wasOnGround;
+            // Считаем тики, прошедшие с последнего реального касания земли.
+            // При касании — сбрасываем в 0, иначе увеличиваем.
+            // При банихопе FL_ONGROUND держится всего 1 тик, поэтому опираемся
+            // не на мгновенный флаг, а на окно из нескольких последних тиков.
+            if (isOnGround)
+                _groundTicks[userId] = 0;
+            else
+                _groundTicks[userId]++;
+
+            // "Недавно на земле" — реальный флаг был в пределах окна тиков.
+            // Это переживает мелькание флага при bhop, но в чистом воздухе
+            // (серия прыжков без касания земли) окно закрывается — бесконечных нет.
+            const int GroundWindowTicks = 4;
+            bool touchedGround = isOnGround || wasOnGround || _groundTicks[userId] <= GroundWindowTicks;
 
             // Любое касание земли сбрасывает серию прыжков.
             if (touchedGround && _jumpCount[userId] != 0)
