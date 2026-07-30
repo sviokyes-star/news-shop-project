@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
@@ -7,7 +8,7 @@ using CounterStrikeSharp.API.Modules.Utils;
 
 namespace TripleJumpPlugin;
 
-public class TripleJumpConfig : BasePluginConfig
+public class TripleJumpConfig
 {
     // Сколько ДОПОЛНИТЕЛЬНЫХ прыжков в воздухе доступно (не считая взлётный).
     // 2 = тройной прыжок (взлёт + 2), 1 = двойной, 3 = четверной и т.д.
@@ -24,19 +25,14 @@ public class TripleJumpConfig : BasePluginConfig
     public float BhopTakeoffVelocity { get; set; } = 200f;
 }
 
-public class TripleJumpPlugin : BasePlugin, IPluginConfig<TripleJumpConfig>
+public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "2.3.4";
+    public override string ModuleVersion => "2.4.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
     public TripleJumpConfig Config { get; set; } = new();
-
-    public void OnConfigParsed(TripleJumpConfig config)
-    {
-        Config = config;
-    }
 
     private readonly Dictionary<int, int> _jumpCount = new();
     private readonly Dictionary<int, bool> _wasOnGround = new();
@@ -44,14 +40,51 @@ public class TripleJumpPlugin : BasePlugin, IPluginConfig<TripleJumpConfig>
     private readonly Dictionary<int, int> _groundTicks = new();
     private readonly Dictionary<int, float> _lastZVel = new();
 
+    // Путь к файлу конфига: <папка_плагина>/triplejump_config.json
+    private string ConfigPath => Path.Combine(ModuleDirectory, "triplejump_config.json");
+
     public override void Load(bool hotReload)
     {
+        LoadOrCreateConfig();
+
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         
         Console.WriteLine($"[{ModuleName}] Плагин загружен!");
+    }
+
+    // Читаем конфиг из файла; если файла нет — создаём с настройками по умолчанию.
+    private void LoadOrCreateConfig()
+    {
+        try
+        {
+            if (File.Exists(ConfigPath))
+            {
+                string json = File.ReadAllText(ConfigPath);
+                var loaded = JsonSerializer.Deserialize<TripleJumpConfig>(json);
+                if (loaded != null)
+                    Config = loaded;
+                Console.WriteLine($"[{ModuleName}] Конфиг загружен: {ConfigPath}");
+            }
+            else
+            {
+                SaveConfig();
+                Console.WriteLine($"[{ModuleName}] Создан конфиг по умолчанию: {ConfigPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка чтения конфига: {ex.Message}. Использую значения по умолчанию.");
+            Config = new TripleJumpConfig();
+        }
+    }
+
+    private void SaveConfig()
+    {
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        File.WriteAllText(ConfigPath, JsonSerializer.Serialize(Config, options));
     }
 
     private void OnTick()
@@ -188,6 +221,14 @@ public class TripleJumpPlugin : BasePlugin, IPluginConfig<TripleJumpConfig>
         int total = Config.AirJumps + 1;
         player.PrintToChat($" {ChatColors.Green}[TRIPLE JUMP]{ChatColors.Default} Мультипрыжок активен!");
         player.PrintToChat($" {ChatColors.Yellow}Доступно прыжков подряд: {total}");
+    }
+
+    [ConsoleCommand("css_tj_reload", "Перезагрузить конфиг тройного прыжка")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnReloadCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        LoadOrCreateConfig();
+        command.ReplyToCommand($"[TRIPLE JUMP] Конфиг перезагружен. Прыжков подряд: {Config.AirJumps + 1}");
     }
 
     public override void Unload(bool hotReload)
