@@ -1,6 +1,5 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Timers;
@@ -121,19 +120,6 @@ public class RtvPlugin : BasePlugin
         return string.Equals(name, currentMap, StringComparison.OrdinalIgnoreCase);
     }
 
-    // Ник с префиксом группы: [ADMIN] для админов, [VIP] для VIP.
-    private string NameWithTag(CCSPlayerController player)
-    {
-        if (AdminManager.PlayerHasPermissions(player, "@css/generic") ||
-            AdminManager.PlayerHasPermissions(player, "@css/root"))
-            return $"{ChatColors.Red}[ADMIN] {ChatColors.Green}{player.PlayerName}";
-
-        if (AdminManager.PlayerHasPermissions(player, "@vip/vip"))
-            return $"{ChatColors.Gold}[VIP] {ChatColors.Green}{player.PlayerName}";
-
-        return player.PlayerName;
-    }
-
     private (string display, string command) ParseMap(string entry)
     {
         if (entry.Contains('|'))
@@ -174,7 +160,7 @@ public class RtvPlugin : BasePlugin
 
         int have = _rtvVoters.Count;
         int need = VotesNeeded();
-        Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {NameWithTag(player)}{ChatColors.Default} хочет сменить карту ({ChatColors.Yellow}{have}/{need}{ChatColors.Default})");
+        Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {player.PlayerName}{ChatColors.Default} хочет сменить карту ({ChatColors.Yellow}{have}/{need}{ChatColors.Default})");
 
         if (have >= need)
             StartVote();
@@ -186,7 +172,7 @@ public class RtvPlugin : BasePlugin
             return;
 
         if (_rtvVoters.Remove(player.Slot))
-            Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {NameWithTag(player)}{ChatColors.Default} отозвал голос ({ChatColors.Yellow}{_rtvVoters.Count}/{VotesNeeded()}{ChatColors.Default})");
+            Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {player.PlayerName}{ChatColors.Default} отозвал голос ({ChatColors.Yellow}{_rtvVoters.Count}/{VotesNeeded()}{ChatColors.Default})");
     }
 
     private void CmdNominate(CCSPlayerController? player, CommandInfo command)
@@ -235,7 +221,7 @@ public class RtvPlugin : BasePlugin
         }
 
         _nominations[display] = command;
-        Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {NameWithTag(player)}{ChatColors.Default} номинировал карту {ChatColors.Gold}{display}");
+        Server.PrintToChatAll($"{Prefix}{ChatColors.Green} {player.PlayerName}{ChatColors.Default} номинировал карту {ChatColors.Gold}{display}");
     }
 
     private void CmdMaps(CCSPlayerController? player, CommandInfo command)
