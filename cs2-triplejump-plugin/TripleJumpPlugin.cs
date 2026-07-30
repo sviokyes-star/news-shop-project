@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.6.2";
+    public override string ModuleVersion => "1.7.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -52,6 +52,16 @@ public class TripleJumpPlugin : BasePlugin
 
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
 
+            // Вертикальная скорость сейчас и на прошлом тике.
+            float zVel = pawn.AbsVelocity?.Z ?? 0f;
+            float prevZVel = _lastZVel[userId];
+
+            // "Отскок от земли": игрок падал вниз (Z заметно < 0), а на этом тике
+            // резко полетел вверх (Z заметно > 0). Так бывает ТОЛЬКО при отталкивании
+            // от земли — надёжный признак приземления/нового прыжка, когда флаг
+            // FL_ONGROUND не выставляется (mg-карты, наклонные поверхности).
+            bool bounced = prevZVel < -100f && zVel > 150f;
+
             // Тики с момента последнего воздушного доп. прыжка (растёт каждый тик).
             _groundTicks[userId]++;
 
@@ -69,17 +79,21 @@ public class TripleJumpPlugin : BasePlugin
             if (_debug && isJumping != wasJumping)
                 player.PrintToChat($" {ChatColors.Grey}[TJ-BTN] jump={(isJumping ? "DOWN" : "up")} ground={isOnGround} count={_jumpCount[userId]} sinceAir={_groundTicks[userId]}");
 
-            // Приземление сбрасывает серию — НО не сразу после доп. прыжка.
-            // После воздушного прыжка игрок ещё летит вверх и FL_ONGROUND может
-            // мелькнуть у самой земли; ждём небольшую паузу, чтобы такое мелькание
-            // не сбило текущую серию. При bhop реальные приземления дальше по времени.
+            // Приземление сбрасывает серию — НО не сразу после нашего доп. прыжка,
+            // иначе наш же teleport (Z=302) распознается как "отскок" и сбросит серию.
+            // Ждём короткую паузу после доп. прыжка.
             const int CooldownAfterAirJump = 8;
             bool cooldownPassed = _groundTicks[userId] > CooldownAfterAirJump;
-            if (isOnGround && cooldownPassed)
+
+            // Признак приземления: флаг земли ИЛИ отскок по скорости (для карт,
+            // где FL_ONGROUND не выставляется). Логи показали, что онграунд после
+            // тройного прыжка не приходит вовсе — поэтому опираемся и на скорость.
+            bool landed = isOnGround || bounced;
+            if (landed && cooldownPassed)
                 _jumpCount[userId] = 0;
 
             if (_debug && justPressedJump)
-                player.PrintToChat($" {ChatColors.Yellow}[TJ] JUMP ground={isOnGround} sinceAir={_groundTicks[userId]} count(before)={_jumpCount[userId]}");
+                player.PrintToChat($" {ChatColors.Yellow}[TJ] JUMP ground={isOnGround} bounced={bounced} sinceAir={_groundTicks[userId]} count(before)={_jumpCount[userId]}");
 
             if (justPressedJump)
             {
@@ -115,6 +129,10 @@ public class TripleJumpPlugin : BasePlugin
 
             _lastJumpButton[userId] = curButtons;
             _wasOnGround[userId] = isOnGround;
+            // Запоминаем актуальную Z-скорость. Если в этом тике был наш доп. прыжок,
+            // мы только что выставили Z=302 — сохраняем именно это значение, чтобы
+            // на следующем тике не было ложного "отскока".
+            _lastZVel[userId] = pawn.AbsVelocity?.Z ?? zVel;
         }
     }
 
