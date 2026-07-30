@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.4.1";
+    public override string ModuleVersion => "1.5.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -52,6 +52,14 @@ public class TripleJumpPlugin : BasePlugin
 
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
 
+            // Считаем, сколько тиков ПОДРЯД игрок стоит на земле.
+            // При bhop флаг FL_ONGROUND мелькает 1 тик — это НЕ приземление.
+            // Реальное приземление = игрок на земле несколько тиков подряд.
+            if (isOnGround)
+                _groundTicks[userId]++;
+            else
+                _groundTicks[userId] = 0;
+
             // Детект фронта нажатия прыжка: сравниваем текущее состояние кнопок
             // с сохранённым за прошлый тик (_lastJumpButton).
             ulong curButtons = (ulong)player.Buttons;
@@ -61,28 +69,30 @@ public class TripleJumpPlugin : BasePlugin
             bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
             bool justPressedJump = isJumping && !wasJumping;
 
-            // Серию сбрасываем СТРОГО по реальному касанию земли.
-            // На земле счётчик = 0, поэтому первый прыжок отсюда сделает серию = 1.
-            if (isOnGround)
+            // Серию сбрасываем только при РЕАЛЬНОМ приземлении (стоим >= 3 тиков).
+            // Мелькание земли при bhop (1-2 тика) серию не сбивает, поэтому
+            // воздушные доп. прыжки после банихопа больше не теряются.
+            const int LandedTicks = 3;
+            bool reallyLanded = _groundTicks[userId] >= LandedTicks;
+            if (reallyLanded)
                 _jumpCount[userId] = 0;
 
             if (_debug && justPressedJump)
-                Console.WriteLine($"[TJ] {player.PlayerName} JUMP: onGround={isOnGround} count(before)={_jumpCount[userId]}");
+                Console.WriteLine($"[TJ] {player.PlayerName} JUMP: onGround={isOnGround} groundTicks={_groundTicks[userId]} count(before)={_jumpCount[userId]}");
 
             if (justPressedJump)
             {
-                if (isOnGround)
+                // Начало новой серии — только если серия ещё не идёт (count==0).
+                // Это ловит и обычный прыжок с земли, и взлёт через bhop.
+                // Как только count>=1, любой клик — воздушный доп. прыжок,
+                // даже если FL_ONGROUND мелькнул (bhop у самой земли).
+                if (_jumpCount[userId] == 0)
                 {
-                    // Прыжок с земли — начало серии.
                     _jumpCount[userId] = 1;
                 }
                 else if (_jumpCount[userId] < 3)
                 {
                     // Воздушный доп. прыжок (2-й и 3-й).
-                    // Если count==0 — значит игрок взлетел с земли без нашего клика
-                    // (например, через bhop-плагин): считаем взлёт первым прыжком.
-                    if (_jumpCount[userId] == 0)
-                        _jumpCount[userId] = 1;
                     _jumpCount[userId]++;
 
                     if (pawn.AbsVelocity != null)
