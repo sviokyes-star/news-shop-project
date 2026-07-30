@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "2.1.0";
+    public override string ModuleVersion => "2.2.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -57,17 +57,25 @@ public class TripleJumpPlugin : BasePlugin
             ulong prevButtons = _lastJumpButton[userId];
 
             const uint FL_ONGROUND = (uint)PlayerFlags.FL_ONGROUND;
-            const int MaxAirJumps = 3;
+            const int MaxAirJumps = 2;   // тройной прыжок = взлёт + 2 доп. прыжка
 
             // Земля определяется по ОКНУ из двух тиков: текущий ИЛИ предыдущий флаг.
-            // Именно так делает рабочий плагин — это ловит короткое касание при bhop,
-            // которое в одном тике легко пропустить.
             bool onGroundNow = (curFlags & FL_ONGROUND) != 0;
             bool onGroundPrev = (prevFlags & FL_ONGROUND) != 0;
             bool onGround = onGroundNow || onGroundPrev;
 
-            // Касание земли обнуляет счётчик доп. прыжков.
-            if (onGround)
+            // Z-скорость сейчас и на прошлом тике.
+            float zVel = pawn.AbsVelocity?.Z ?? 0f;
+            float prevZVel = _lastZVel[userId];
+
+            // BHOP-ОТТАЛКИВАНИЕ: игрок падал вниз (Z < 0), а на этом тике резко полетел
+            // вверх (Z заметно > 0). На mg-картах флаг земли при bhop не выставляется,
+            // поэтому это единственный надёжный признак нового прыжка с земли.
+            bool bhopTakeoff = prevZVel < 0f && zVel > 200f;
+
+            // Касание земли ИЛИ bhop-отталкивание обнуляет счётчик доп. прыжков —
+            // значит серия доп. прыжков доступна на КАЖДОМ прыжке банихопа.
+            if (onGround || bhopTakeoff)
                 _jumpCount[userId] = 0;
 
             // Фронт нажатия прыжка (бит IN_JUMP): нажат сейчас, не был нажат в прошлом.
@@ -75,12 +83,8 @@ public class TripleJumpPlugin : BasePlugin
             bool jumpPrev = (prevButtons & (ulong)PlayerButtons.Jump) != 0;
             bool justPressedJump = jumpNow && !jumpPrev;
 
-            // Доп. прыжок: в воздухе, есть лимит, и игрок реально движется по вертикали
-            // (CanForceJump: Z-скорость != 0 — как в оригинале).
-            float zVel = pawn.AbsVelocity?.Z ?? 0f;
-            bool canForceJump = zVel != 0f;
-
-            if (justPressedJump && !onGround && _jumpCount[userId] < MaxAirJumps && canForceJump)
+            // Доп. прыжок: в воздухе и в пределах лимита.
+            if (justPressedJump && !onGround && _jumpCount[userId] < MaxAirJumps)
             {
                 _jumpCount[userId]++;
 
@@ -95,8 +99,11 @@ public class TripleJumpPlugin : BasePlugin
             }
 
             // Сохраняем состояние для следующего тика.
+            // Z берём АКТУАЛЬНУЮ (после возможного нашего прыжка Z=302), чтобы наш
+            // же прыжок не распознался как bhop-отталкивание на следующем тике.
             _lastJumpButton[userId] = curButtons;
             _groundTicks[userId] = (int)curFlags;   // станет PrevFlags
+            _lastZVel[userId] = pawn.AbsVelocity?.Z ?? zVel;
             _wasOnGround[userId] = onGroundNow;
         }
     }
