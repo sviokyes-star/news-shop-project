@@ -18,7 +18,7 @@ public class SpawnProtectConfig
 public class SpawnProtectPlugin : BasePlugin
 {
     public override string ModuleName => "Spawn Protect";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Защита игроков от урона карты в зоне спавна";
 
@@ -35,10 +35,10 @@ public class SpawnProtectPlugin : BasePlugin
 
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
 
-        // Каждый тик восстанавливаем HP игрокам в зоне спавна — надёжный способ
-        // без хрупких хуков урона: ловушка карты снимает HP, а мы возвращаем его,
-        // делая игрока фактически бессмертным в зоне спавна.
-        RegisterListener<Listeners.OnTick>(OnTick);
+        // Восстанавливаем HP игрокам в зоне спавна по таймеру (5 раз в секунду).
+        // Таймер вместо каждого тика — намного меньше нагрузка, и одного попадания
+        // ловушки достаточно, чтобы мы успели вернуть здоровье до смерти.
+        AddTimer(0.2f, ProtectSpawnPlayers, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
 
         // Соберём спавны сразу при загрузке (если карта уже идёт).
         CollectSpawnPoints();
@@ -84,51 +84,65 @@ public class SpawnProtectPlugin : BasePlugin
     // Собираем координаты всех точек спавна обеих команд.
     private void CollectSpawnPoints()
     {
-        _spawnPoints.Clear();
-
-        foreach (var name in new[] { "info_player_terrorist", "info_player_counterterrorist" })
+        try
         {
-            foreach (var ent in Utilities.FindAllEntitiesByDesignerName<SpawnPoint>(name))
-            {
-                var origin = ent.AbsOrigin;
-                if (origin != null)
-                    _spawnPoints.Add(new Vector(origin.X, origin.Y, origin.Z));
-            }
-        }
+            _spawnPoints.Clear();
 
-        Console.WriteLine($"[{ModuleName}] Найдено точек спавна: {_spawnPoints.Count}");
+            foreach (var name in new[] { "info_player_terrorist", "info_player_counterterrorist" })
+            {
+                foreach (var ent in Utilities.FindAllEntitiesByDesignerName<SpawnPoint>(name))
+                {
+                    var origin = ent.AbsOrigin;
+                    if (origin != null)
+                        _spawnPoints.Add(new Vector(origin.X, origin.Y, origin.Z));
+                }
+            }
+
+            Console.WriteLine($"[{ModuleName}] Найдено точек спавна: {_spawnPoints.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка сбора точек спавна: {ex.Message}");
+        }
     }
 
-    private void OnTick()
+    private void ProtectSpawnPlayers()
     {
-        // Нет точек спавна — нечего защищать.
-        if (_spawnPoints.Count == 0)
-            return;
-
-        foreach (var player in Utilities.GetPlayers())
+        // Любое исключение здесь НЕ должно ронять сервер — таймер повторяется.
+        try
         {
-            if (player == null || !player.IsValid || !player.PawnIsAlive)
-                continue;
+            if (_spawnPoints.Count == 0)
+                return;
 
-            var pawn = player.PlayerPawn.Value;
-            if (pawn == null || !pawn.IsValid)
-                continue;
-
-            var origin = pawn.AbsOrigin;
-            if (origin == null)
-                continue;
-
-            if (!IsInSpawnZone(origin))
-                continue;
-
-            // Игрок в зоне спавна — держим HP на максимуме, чтобы урон карты
-            // не мог его убить. Обновляем только если HP просело (без лишней работы).
-            int maxHp = pawn.MaxHealth > 0 ? pawn.MaxHealth : 100;
-            if (pawn.Health < maxHp)
+            foreach (var player in Utilities.GetPlayers())
             {
-                pawn.Health = maxHp;
-                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+                if (player == null || !player.IsValid || !player.PawnIsAlive)
+                    continue;
+
+                var pawn = player.PlayerPawn.Value;
+                if (pawn == null || !pawn.IsValid)
+                    continue;
+
+                var origin = pawn.AbsOrigin;
+                if (origin == null)
+                    continue;
+
+                if (!IsInSpawnZone(origin))
+                    continue;
+
+                // Игрок в зоне спавна — держим HP на максимуме, чтобы урон карты
+                // не мог его убить. Обновляем только если HP просело.
+                int maxHp = pawn.MaxHealth > 0 ? pawn.MaxHealth : 100;
+                if (pawn.Health < maxHp)
+                {
+                    pawn.Health = maxHp;
+                    Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{ModuleName}] Ошибка в защите спавна: {ex.Message}");
         }
     }
 
