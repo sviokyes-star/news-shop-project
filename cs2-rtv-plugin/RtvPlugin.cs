@@ -17,7 +17,7 @@ public class RtvPlugin : BasePlugin
     public override string ModuleDescription => "Голосование за смену карты с выбором следующей карты";
 
     private static readonly char Orange = ChatColors.Orange;
-    private const string Prefix = " \x0e[RTV]\x01";
+    private const string Prefix = " \x0eOkyes |\x01";
 
     // Доля игроков для запуска голосования (0.6 = 60%).
     private const double VotePercent = 0.6;
