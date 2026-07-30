@@ -1,6 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using CS2MenuManager.API.Class;
@@ -11,7 +12,7 @@ namespace RtvPlugin;
 public class RtvPlugin : BasePlugin
 {
     public override string ModuleName => "Rock The Vote";
-    public override string ModuleVersion => "2.0.0";
+    public override string ModuleVersion => "2.1.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Голосование за смену карты с выбором следующей карты";
 
@@ -20,6 +21,9 @@ public class RtvPlugin : BasePlugin
 
     // Доля игроков для запуска голосования (0.6 = 60%).
     private const double VotePercent = 0.6;
+
+    // За сколько минут до конца карты автоматически запускать голосование.
+    private const double AutoVoteBeforeEndMinutes = 2.0;
 
     private static readonly string[] DefaultMaps =
     {
@@ -31,6 +35,9 @@ public class RtvPlugin : BasePlugin
     private readonly HashSet<int> _rtvVoters = new();
     private readonly Dictionary<string, string> _nominations = new();
     private bool _voteInProgress = false;
+
+    // Время старта текущей карты (для автозапуска голосования).
+    private DateTime _mapStartTime = DateTime.Now;
 
     private string MapsFilePath => Path.Combine(ModuleDirectory, "maps.txt");
 
@@ -45,6 +52,13 @@ public class RtvPlugin : BasePlugin
         AddCommand("css_rtv_status", "Статус голосования", CmdStatus);
 
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
+
+        // Фиксируем старт карты для автозапуска голосования.
+        _mapStartTime = DateTime.Now;
+        RegisterListener<Listeners.OnMapStart>(OnMapStart);
+
+        // Каждые 15 секунд проверяем, не пора ли автоматически запускать голосование.
+        AddTimer(15.0f, CheckAutoVote, TimerFlags.REPEAT);
 
         Console.WriteLine($"[{ModuleName}] Плагин загружен! Карт в пуле: {_maps.Count}");
     }
@@ -204,6 +218,35 @@ public class RtvPlugin : BasePlugin
             return;
 
         player.PrintToChat($"{Prefix} Голосов за RTV: {ChatColors.Yellow}{_rtvVoters.Count}/{VotesNeeded()}");
+    }
+
+    // Новая карта загружена — сбрасываем состояние.
+    private void OnMapStart(string mapName)
+    {
+        _mapStartTime = DateTime.Now;
+        _voteInProgress = false;
+        _rtvVoters.Clear();
+        _nominations.Clear();
+    }
+
+    // Автозапуск голосования за N минут до конца карты (по mp_timelimit).
+    private void CheckAutoVote()
+    {
+        if (_voteInProgress)
+            return;
+
+        float timelimit = ConVar.Find("mp_timelimit")?.GetPrimitiveValue<float>() ?? 0f;
+        if (timelimit <= 0f)
+            return; // безлимитная карта — автозапуск не нужен
+
+        double elapsedMinutes = (DateTime.Now - _mapStartTime).TotalMinutes;
+        double remaining = timelimit - elapsedMinutes;
+
+        if (remaining <= AutoVoteBeforeEndMinutes && remaining > 0)
+        {
+            Server.PrintToChatAll($"{Prefix}{ChatColors.Gold} Карта скоро закончится — автоматическое голосование за следующую карту!");
+            StartVote();
+        }
     }
 
     // Финальное голосование за следующую карту.
