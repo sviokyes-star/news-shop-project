@@ -11,7 +11,7 @@ namespace ChatTagsPlugin;
 public class ChatTagsPlugin : BasePlugin
 {
     public override string ModuleName => "Chat Tags [Okyes]";
-    public override string ModuleVersion => "3.0.0";
+    public override string ModuleVersion => "3.1.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Теги [ADMIN] и [VIP] перед ником (чат + таблица)";
 
@@ -211,7 +211,7 @@ public class ChatTagsPlugin : BasePlugin
     // Тег с цветом (для чата).
     private string GetColoredTag(CCSPlayerController player)
     {
-        if (IsAdmin(player)) return $"{Orange}{AdminTag} ";
+        if (IsAdmin(player)) return $"{ChatColors.Red}{AdminTag} ";
         if (IsVip(player)) return $"{ChatColors.Gold}{VipTag} ";
         return "";
     }
