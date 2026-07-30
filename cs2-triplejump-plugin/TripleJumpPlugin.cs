@@ -9,7 +9,7 @@ namespace TripleJumpPlugin;
 public class TripleJumpPlugin : BasePlugin
 {
     public override string ModuleName => "Triple Jump";
-    public override string ModuleVersion => "1.5.0";
+    public override string ModuleVersion => "1.6.0";
     public override string ModuleAuthor => "poehali.dev";
     public override string ModuleDescription => "Тройной прыжок для CS2";
 
@@ -52,13 +52,8 @@ public class TripleJumpPlugin : BasePlugin
 
             bool isOnGround = (pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) != 0;
 
-            // Считаем, сколько тиков ПОДРЯД игрок стоит на земле.
-            // При bhop флаг FL_ONGROUND мелькает 1 тик — это НЕ приземление.
-            // Реальное приземление = игрок на земле несколько тиков подряд.
-            if (isOnGround)
-                _groundTicks[userId]++;
-            else
-                _groundTicks[userId] = 0;
+            // Тики с момента последнего воздушного доп. прыжка (растёт каждый тик).
+            _groundTicks[userId]++;
 
             // Детект фронта нажатия прыжка: сравниваем текущее состояние кнопок
             // с сохранённым за прошлый тик (_lastJumpButton).
@@ -69,16 +64,17 @@ public class TripleJumpPlugin : BasePlugin
             bool wasJumping = (oldButtons & (ulong)PlayerButtons.Jump) != 0;
             bool justPressedJump = isJumping && !wasJumping;
 
-            // Серию сбрасываем только при РЕАЛЬНОМ приземлении (стоим >= 3 тиков).
-            // Мелькание земли при bhop (1-2 тика) серию не сбивает, поэтому
-            // воздушные доп. прыжки после банихопа больше не теряются.
-            const int LandedTicks = 3;
-            bool reallyLanded = _groundTicks[userId] >= LandedTicks;
-            if (reallyLanded)
+            // Приземление сбрасывает серию — НО не сразу после доп. прыжка.
+            // После воздушного прыжка игрок ещё летит вверх и FL_ONGROUND может
+            // мелькнуть у самой земли; ждём небольшую паузу, чтобы такое мелькание
+            // не сбило текущую серию. При bhop реальные приземления дальше по времени.
+            const int CooldownAfterAirJump = 8;
+            bool cooldownPassed = _groundTicks[userId] > CooldownAfterAirJump;
+            if (isOnGround && cooldownPassed)
                 _jumpCount[userId] = 0;
 
             if (_debug && justPressedJump)
-                Console.WriteLine($"[TJ] {player.PlayerName} JUMP: onGround={isOnGround} groundTicks={_groundTicks[userId]} count(before)={_jumpCount[userId]}");
+                Console.WriteLine($"[TJ] {player.PlayerName} JUMP: onGround={isOnGround} sinceAir={_groundTicks[userId]} count(before)={_jumpCount[userId]}");
 
             if (justPressedJump)
             {
@@ -94,6 +90,9 @@ public class TripleJumpPlugin : BasePlugin
                 {
                     // Воздушный доп. прыжок (2-й и 3-й).
                     _jumpCount[userId]++;
+                    // Обнуляем счётчик тиков — запускаем cooldown, чтобы мелькание
+                    // земли сразу после этого прыжка не сбросило серию.
+                    _groundTicks[userId] = 0;
 
                     if (pawn.AbsVelocity != null)
                     {
