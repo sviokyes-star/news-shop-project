@@ -699,7 +699,7 @@ public class AdminOkyesPlugin : BasePlugin
         });
     }
 
-    private static readonly int[] GiftAmounts = { 5, 10, 25, 50, 100 };
+    private static readonly int[] GiftAmounts = { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
 
     private void ShowGiftsMenu(CCSPlayerController player)
     {
