@@ -496,6 +496,17 @@ public class AdminOkyesPlugin : BasePlugin
             Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setend2"));
         });
 
+        menu.AddItem("Сброс рекордов на карте", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для настройки таймера");
+                return;
+            }
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_resetrecords"));
+        });
+
         menu.PrevMenu = GetMainMenu();
 
         menu.Display(player, 0);

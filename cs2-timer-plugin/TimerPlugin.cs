@@ -352,6 +352,34 @@ public class TimerPlugin : BasePlugin
         Console.WriteLine($"[TIMER] Record holder for {mapName} set to: {holderName}");
     }
 
+    [ConsoleCommand("css_resetrecords", "Сбросить рекорды на текущей карте")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnResetRecordsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        string mapName = Server.MapName;
+
+        bool had = _mapRecords.Remove(mapName);
+        _mapRecordHolders.Remove(mapName);
+
+        foreach (var kv in _playerRecords)
+            kv.Value.Remove(mapName);
+
+        SaveRecords();
+        SaveRecordHolders();
+        SavePlayerRecords();
+
+        if (player != null)
+        {
+            if (had)
+                player.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Рекорды на карте {mapName} сброшены");
+            else
+                player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} На карте {mapName} рекордов не было");
+        }
+
+        Console.WriteLine($"[TIMER] Records reset for map: {mapName}");
+    }
+
     [ConsoleCommand("css_top", "Показать топ-10 результатов")]
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     public void OnTopCommand(CCSPlayerController? player, CommandInfo command)
