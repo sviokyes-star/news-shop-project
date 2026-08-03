@@ -102,6 +102,31 @@ public class AdminOkyesPlugin : BasePlugin
 
         string message = info.GetArg(1).Trim();
 
+        // Админ вводит произвольную сумму подарка в чат.
+        if (_awaitingGiftAmount.ContainsKey(player.SteamID))
+        {
+            string currencyArg = _awaitingGiftAmount[player.SteamID];
+            _awaitingGiftAmount.Remove(player.SteamID);
+
+            if (message.Equals("отмена", StringComparison.OrdinalIgnoreCase) ||
+                message.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+            {
+                player.PrintToChat($" {Orange}Okyes |{ChatColors.Yellow} Установка подарка отменена");
+                return HookResult.Handled;
+            }
+
+            if (!int.TryParse(message, out int amount) || amount <= 0)
+            {
+                player.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Нужно ввести положительное число. Попробуйте снова через меню");
+                return HookResult.Handled;
+            }
+
+            string curName = currencyArg == "gold" ? "золота" : "серебра";
+            Server.NextFrame(() => player.ExecuteClientCommandFromServer($"css_gift {currencyArg} {amount}"));
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Подарок установлен: +{amount} {curName}");
+            return HookResult.Handled;
+        }
+
         if (message.Equals("!admin", StringComparison.OrdinalIgnoreCase))
         {
             if (!HasAdminPermission(player))
@@ -701,6 +726,10 @@ public class AdminOkyesPlugin : BasePlugin
 
     private static readonly int[] GiftAmounts = { 5, 10, 25, 50, 100 };
 
+    // Админы, ожидающие ввода произвольной суммы подарка в чат.
+    // Ключ — steamId, значение — валюта ("gold"/"silver").
+    private readonly Dictionary<ulong, string> _awaitingGiftAmount = new();
+
     private void ShowGiftsMenu(CCSPlayerController player)
     {
         var menu = new WasdMenu("Управление подарками", this);
@@ -756,6 +785,12 @@ public class AdminOkyesPlugin : BasePlugin
                 controller.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Подарок установлен: +{value} {currencyName}");
             });
         }
+
+        menu.AddItem("Своё число (ввести в чат)", (controller, option) =>
+        {
+            _awaitingGiftAmount[controller.SteamID] = currencyArg;
+            controller.PrintToChat($" {Orange}Okyes |{ChatColors.Green} Напишите в чат количество {currencyName} (или «отмена»)");
+        });
 
         menu.Display(player, 0);
     }
