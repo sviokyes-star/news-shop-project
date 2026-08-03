@@ -14,7 +14,7 @@ namespace TimerPlugin;
 public class TimerPlugin : BasePlugin
 {
     public override string ModuleName => "Okyes - Map Timer";
-    public override string ModuleVersion => "1.4.0";
+    public override string ModuleVersion => "1.5.0";
     public override string ModuleAuthor => "Okyes";
     public override string ModuleDescription => "Таймер прохождения карты для CS2";
 
@@ -31,6 +31,10 @@ public class TimerPlugin : BasePlugin
     private readonly Dictionary<int, bool> _inStartZone = new();
     private readonly Dictionary<int, bool> _inEndZone = new();
     private readonly Dictionary<int, float> _lastFinishTime = new();
+
+    // Временные первые углы для задания зоны по двум точкам (ключ — userId).
+    private readonly Dictionary<int, Vector> _startCorner1 = new();
+    private readonly Dictionary<int, Vector> _endCorner1 = new();
     private float _lastDebugLog = 0f;
     
     private CounterStrikeSharp.API.Modules.Timers.Timer? _beamTimer;
@@ -194,6 +198,94 @@ public class TimerPlugin : BasePlugin
 
         player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Зона финиша установлена и сохранена!");
         player.PrintToChat($" {ChatColors.Yellow}Координаты: {position.X:F0}, {position.Y:F0}, {position.Z:F0}");
+    }
+
+    [ConsoleCommand("css_setstart1", "Отметить 1-й угол зоны старта")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnSetStart1Command(CCSPlayerController? player, CommandInfo command)
+    {
+        var pos = GetPlayerPos(player);
+        if (player == null || pos == null) return;
+
+        _startCorner1[(int)player.UserId!] = new Vector(pos.X, pos.Y, pos.Z);
+        player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} 1-й угол СТАРТА отмечен: {ChatColors.Yellow}{pos.X:F0}, {pos.Y:F0}, {pos.Z:F0}");
+        player.PrintToChat($" {ChatColors.Green}Теперь встань в противоположный угол и введи css_setstart2");
+    }
+
+    [ConsoleCommand("css_setstart2", "Отметить 2-й угол зоны старта и создать зону")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnSetStart2Command(CCSPlayerController? player, CommandInfo command)
+    {
+        var pos = GetPlayerPos(player);
+        if (player == null || pos == null) return;
+
+        int userId = (int)player.UserId!;
+        if (!_startCorner1.ContainsKey(userId))
+        {
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Сначала отметь 1-й угол командой css_setstart1");
+            return;
+        }
+
+        var c1 = _startCorner1[userId];
+        var c2 = new Vector(pos.X, pos.Y, pos.Z);
+
+        string mapName = Server.MapName;
+        if (!_mapZones.ContainsKey(mapName))
+            _mapZones[mapName] = new MapZones();
+
+        _mapZones[mapName].StartMin = MinVector(c1, c2);
+        _mapZones[mapName].StartMax = MaxVector(c1, c2);
+        _startCorner1.Remove(userId);
+        SaveZones();
+
+        var size = SizeOf(_mapZones[mapName].StartMin!, _mapZones[mapName].StartMax!);
+        player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Зона СТАРТА создана! Размер: {ChatColors.Yellow}{size.X:F0} x {size.Y:F0} x {size.Z:F0}");
+    }
+
+    [ConsoleCommand("css_setend1", "Отметить 1-й угол зоны финиша")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnSetEnd1Command(CCSPlayerController? player, CommandInfo command)
+    {
+        var pos = GetPlayerPos(player);
+        if (player == null || pos == null) return;
+
+        _endCorner1[(int)player.UserId!] = new Vector(pos.X, pos.Y, pos.Z);
+        player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} 1-й угол ФИНИША отмечен: {ChatColors.Yellow}{pos.X:F0}, {pos.Y:F0}, {pos.Z:F0}");
+        player.PrintToChat($" {ChatColors.Green}Теперь встань в противоположный угол и введи css_setend2");
+    }
+
+    [ConsoleCommand("css_setend2", "Отметить 2-й угол зоны финиша и создать зону")]
+    [RequiresPermissions("@css/root")]
+    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void OnSetEnd2Command(CCSPlayerController? player, CommandInfo command)
+    {
+        var pos = GetPlayerPos(player);
+        if (player == null || pos == null) return;
+
+        int userId = (int)player.UserId!;
+        if (!_endCorner1.ContainsKey(userId))
+        {
+            player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Сначала отметь 1-й угол командой css_setend1");
+            return;
+        }
+
+        var c1 = _endCorner1[userId];
+        var c2 = new Vector(pos.X, pos.Y, pos.Z);
+
+        string mapName = Server.MapName;
+        if (!_mapZones.ContainsKey(mapName))
+            _mapZones[mapName] = new MapZones();
+
+        _mapZones[mapName].EndMin = MinVector(c1, c2);
+        _mapZones[mapName].EndMax = MaxVector(c1, c2);
+        _endCorner1.Remove(userId);
+        SaveZones();
+
+        var size = SizeOf(_mapZones[mapName].EndMin!, _mapZones[mapName].EndMax!);
+        player.PrintToChat($" {Orange}Okyes |{ChatColors.Default} Зона ФИНИША создана! Размер: {ChatColors.Yellow}{size.X:F0} x {size.Y:F0} x {size.Z:F0}");
     }
 
     [ConsoleCommand("css_showzones", "Показать зоны старта и финиша")]
@@ -363,6 +455,27 @@ public class TimerPlugin : BasePlugin
                position.Z >= min.Z && position.Z <= max.Z;
     }
 
+    // Позиция игрока (или null, если игрок/пешка невалидны).
+    private Vector? GetPlayerPos(CCSPlayerController? player)
+    {
+        if (player == null || !player.IsValid || player.PlayerPawn.Value == null)
+            return null;
+        return player.PlayerPawn.Value.AbsOrigin;
+    }
+
+    // Минимальный угол коробки из двух произвольных точек.
+    private Vector MinVector(Vector a, Vector b)
+        => new Vector(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Min(a.Z, b.Z));
+
+    // Максимальный угол коробки. Прибавляем 72 по Z к верхней точке,
+    // чтобы зона гарантированно накрывала игрока по высоте (рост модели).
+    private Vector MaxVector(Vector a, Vector b)
+        => new Vector(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y), Math.Max(a.Z, b.Z) + 72f);
+
+    // Габариты зоны для вывода в чат.
+    private Vector SizeOf(Vector min, Vector max)
+        => new Vector(max.X - min.X, max.Y - min.Y, max.Z - min.Z);
+
 
 
     private void StartTimer(CCSPlayerController player)
@@ -465,6 +578,8 @@ public class TimerPlugin : BasePlugin
 
         int userId = (int)player.UserId!;
         _playerTimers.Remove(userId);
+        _startCorner1.Remove(userId);
+        _endCorner1.Remove(userId);
 
         return HookResult.Continue;
     }
