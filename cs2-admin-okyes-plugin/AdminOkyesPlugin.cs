@@ -440,7 +440,7 @@ public class AdminOkyesPlugin : BasePlugin
     {
         var menu = new WasdMenu("Управление таймером", this);
 
-        menu.AddItem("Добавить старт", (controller, option) =>
+        menu.AddItem("Старт: 1-й угол", (controller, option) =>
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
@@ -451,10 +451,10 @@ public class AdminOkyesPlugin : BasePlugin
             if (controller.PlayerPawn.Value == null)
                 return;
 
-            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setstart"));
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setstart1"));
         });
 
-        menu.AddItem("Добавить финиш", (controller, option) =>
+        menu.AddItem("Старт: 2-й угол (создать)", (controller, option) =>
         {
             if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
             {
@@ -465,7 +465,35 @@ public class AdminOkyesPlugin : BasePlugin
             if (controller.PlayerPawn.Value == null)
                 return;
 
-            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setend"));
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setstart2"));
+        });
+
+        menu.AddItem("Финиш: 1-й угол", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для настройки таймера");
+                return;
+            }
+
+            if (controller.PlayerPawn.Value == null)
+                return;
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setend1"));
+        });
+
+        menu.AddItem("Финиш: 2-й угол (создать)", (controller, option) =>
+        {
+            if (!AdminManager.PlayerHasPermissions(controller, "@css/root"))
+            {
+                controller.PrintToChat($" {Orange}Okyes |{ChatColors.Red} Недостаточно прав для настройки таймера");
+                return;
+            }
+
+            if (controller.PlayerPawn.Value == null)
+                return;
+
+            Server.NextFrame(() => controller.ExecuteClientCommandFromServer("css_setend2"));
         });
 
         menu.PrevMenu = GetMainMenu();
