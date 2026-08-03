@@ -24,7 +24,9 @@ public class NoMapMusicPlugin : BasePlugin
     private static readonly string[] MusicKeywords =
     {
         "music", "song", "theme", "soundtrack", "ost",
-        "bgm", "ambient_music", "background_music", "menu_music"
+        "bgm", "ambient_music", "background_music", "menu_music",
+        "track", "melody", "tune", "radio", "jukebox", "loop_music",
+        "map_music", "course_music", "lego"
     };
 
     // Предвычисленные хеши музыкальных событий (по ключевым словам).
@@ -70,19 +72,28 @@ public class NoMapMusicPlugin : BasePlugin
         "soundevent_hash", "soundevent_guid", "sound_event_hash", "hash"
     };
 
+    // Возможные названия поля с именем звукового события.
+    private static readonly string[] NameFields =
+    {
+        "soundevent_name", "sound_event_name", "name", "soundevent"
+    };
+
     // Блокирует запуск звукового события, если это музыка.
     private HookResult OnSoundEvent(UserMessage um)
     {
         try
         {
             uint hash = ReadHash(um);
-            if (hash == 0)
-                return HookResult.Continue;
+            string name = ReadName(um);
 
             if (_debug)
-                Console.WriteLine($"[{ModuleName}] SoundEvent hash = {hash}");
+                Console.WriteLine($"[{ModuleName}] SoundEvent hash = {hash}, name = '{name}'");
 
-            if (_blockedHashes.Contains(hash))
+            // Блокировка по имени события — ловит нестандартные имена музыки.
+            if (!string.IsNullOrEmpty(name) && IsMusicName(name))
+                return HookResult.Stop;
+
+            if (hash != 0 && _blockedHashes.Contains(hash))
                 return HookResult.Stop; // заблокировано — музыка
         }
         catch
@@ -91,6 +102,18 @@ public class NoMapMusicPlugin : BasePlugin
         }
 
         return HookResult.Continue;
+    }
+
+    // Проверяет, содержит ли имя события музыкальное ключевое слово.
+    private bool IsMusicName(string name)
+    {
+        string lower = name.ToLowerInvariant();
+        foreach (var kw in MusicKeywords)
+        {
+            if (lower.Contains(kw))
+                return true;
+        }
+        return false;
     }
 
     // Читает хеш события из первого доступного поля.
@@ -102,6 +125,24 @@ public class NoMapMusicPlugin : BasePlugin
                 return um.ReadUInt(field);
         }
         return 0;
+    }
+
+    // Читает имя события из первого доступного поля.
+    private string ReadName(UserMessage um)
+    {
+        foreach (var field in NameFields)
+        {
+            try
+            {
+                if (um.HasField(field))
+                    return um.ReadString(field);
+            }
+            catch
+            {
+                // Поле есть, но не строка — пропускаем.
+            }
+        }
+        return string.Empty;
     }
 
     private string BlockedHashesFile => Path.Combine(ModuleDirectory, "blocked_hashes.txt");
