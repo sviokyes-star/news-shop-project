@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import func2url from '../../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { SteamUser } from './types';
 

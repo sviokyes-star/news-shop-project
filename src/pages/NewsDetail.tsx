@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import Comments from '@/components/Comments';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { formatShortDate } from '@/utils/dateFormat';
 
 interface NewsItem {

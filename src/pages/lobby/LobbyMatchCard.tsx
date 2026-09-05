@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import PlayerLink from '@/components/ui/player-link';
 import { toast } from '@/hooks/use-toast';
-import func2url from '../../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { Lobby, Player, SteamUser } from './types';
 
 interface LobbyMatchCardProps {

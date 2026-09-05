@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import { formatRelativeTime } from '@/utils/dateFormat';
-import func2url from '../../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface SteamUser {

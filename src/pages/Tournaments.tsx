@@ -11,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import apiUrl from '@/lib/api';
 
 interface SteamUser {
   steamId: string;
@@ -57,7 +58,7 @@ const Tournaments = () => {
       });
       verifyParams.append('mode', 'verify');
       
-      fetch(`https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f?${verifyParams.toString()}`)
+      fetch(`${apiUrl['steam-auth']}?${verifyParams.toString()}`)
         .then(res => res.json())
         .then(data => {
           if (data.steamId) {
@@ -78,8 +79,8 @@ const Tournaments = () => {
     setIsLoadingTournaments(true);
     try {
       const url = user 
-        ? `https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675?steam_id=${user.steamId}`
-        : 'https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675';
+        ? `${apiUrl['tournaments']}?steam_id=${user.steamId}`
+        : apiUrl['tournaments'];
       
       const response = await fetch(url);
       const data = await response.json();
@@ -104,7 +105,7 @@ const Tournaments = () => {
     setIsRegistering(tournamentId);
 
     try {
-      const response = await fetch('https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675', {
+      const response = await fetch(apiUrl['tournaments'], {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +152,7 @@ const Tournaments = () => {
 
     try {
       const tournamentId = unregisterTournamentId;
-      const response = await fetch('https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675', {
+      const response = await fetch(apiUrl['tournaments'], {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +190,7 @@ const Tournaments = () => {
 
   const handleSteamLogin = async () => {
     const returnUrl = `${window.location.origin}${window.location.pathname}`;
-    const response = await fetch(`https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f?mode=login&return_url=${encodeURIComponent(returnUrl)}`);
+    const response = await fetch(`${apiUrl['steam-auth']}?mode=login&return_url=${encodeURIComponent(returnUrl)}`);
     const data = await response.json();
     
     if (data.redirectUrl) {
@@ -206,7 +207,7 @@ const Tournaments = () => {
     if (!user) return;
 
     try {
-      const response = await fetch('https://functions.poehali.dev/bbe58a49-e2ff-44b8-a59a-1e66ad5ed675', {
+      const response = await fetch(apiUrl['tournaments'], {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

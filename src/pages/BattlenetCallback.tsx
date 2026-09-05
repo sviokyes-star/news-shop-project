@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 
 const BattlenetCallback = () => {
   const navigate = useNavigate();

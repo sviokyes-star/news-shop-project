@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import LobbyMatchCard from './lobby/LobbyMatchCard';
 import LobbyChat from './lobby/LobbyChat';
 import { SteamUser, LobbyData, STATUS_LABELS, TournamentAdmin } from './lobby/types';

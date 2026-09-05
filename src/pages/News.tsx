@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { formatShortDate } from '@/utils/dateFormat';
 
 interface NewsItem {
@@ -42,7 +42,7 @@ const News = () => {
       });
       verifyParams.append('mode', 'verify');
       
-      fetch(`https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f?${verifyParams.toString()}`)
+      fetch(`${func2url['steam-auth']}?${verifyParams.toString()}`)
         .then(res => res.json())
         .then(data => {
           if (data.steamId) {
@@ -79,7 +79,7 @@ const News = () => {
 
   const handleSteamLogin = async () => {
     const returnUrl = `${window.location.origin}${window.location.pathname}`;
-    const response = await fetch(`https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f?mode=login&return_url=${encodeURIComponent(returnUrl)}`);
+    const response = await fetch(`${func2url['steam-auth']}?mode=login&return_url=${encodeURIComponent(returnUrl)}`);
     const data = await response.json();
     
     if (data.redirectUrl) {

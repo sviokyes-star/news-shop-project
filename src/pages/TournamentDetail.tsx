@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import TournamentInfo from '@/components/tournament/TournamentInfo';
 import CountdownTimer from '@/components/tournament/CountdownTimer';
 import TournamentActions from '@/components/tournament/TournamentActions';

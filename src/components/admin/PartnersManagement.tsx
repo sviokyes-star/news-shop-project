@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
-import func2url from '../../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface Partner {

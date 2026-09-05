@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import UserProfileHero from '@/components/user-profile/UserProfileHero';
 import UserProfileFriends from '@/components/user-profile/UserProfileFriends';
 import UserProfileTournaments from '@/components/user-profile/UserProfileTournaments';
@@ -93,7 +93,7 @@ const UserProfile = () => {
       setIsLoading(true);
     }
     try {
-      const res = await fetch(`https://functions.poehali.dev/88f7bd27-aac7-4eab-b045-2d423b092ebb?steam_id=${id}`);
+      const res = await fetch(`${func2url['profile']}?steam_id=${id}`);
       const data = await res.json();
       if (!data.user || !data.user.steamId) { setNotFound(true); }
       else {

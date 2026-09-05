@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-import func2url from '../../../backend/func2url.json';
+import func2url from '@/lib/api';
 
 interface Transaction {
   id: number;

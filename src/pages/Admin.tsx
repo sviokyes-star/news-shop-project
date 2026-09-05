@@ -13,7 +13,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     return this.props.children;
   }
 }
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import NewsManagement from '@/components/admin/NewsManagement';
 import ShopManagement from '@/components/admin/ShopManagement';
 import ServersManagement from '@/components/admin/ServersManagement';

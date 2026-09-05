@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import func2url from '../../../backend/func2url.json';
+import func2url from '@/lib/api';
 import TournamentForm from './tournaments/TournamentForm';
 import TournamentCard from './tournaments/TournamentCard';
 import type { Tournament, SteamUser, TournamentFormData } from './tournaments/types';

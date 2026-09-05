@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
-import func2url from '../../../../backend/func2url.json';
+import func2url from '@/lib/api';
 
 const USERS_URL: string = (func2url as Record<string, string>)['users'] ?? '';
 

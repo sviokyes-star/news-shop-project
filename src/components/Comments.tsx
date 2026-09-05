@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import PlayerLink from '@/components/ui/player-link';
 import { formatDateTime } from '@/utils/dateFormat';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import BanDialog, { BanType } from '@/components/ui/ban-dialog';
 
@@ -55,7 +55,7 @@ export default function Comments({ newsId }: CommentsProps) {
       if (user?.steamId) {
         try {
           const response = await fetch(
-            `https://functions.poehali.dev/88f7bd27-aac7-4eab-b045-2d423b092ebb?steam_id=${user.steamId}`
+            `${func2url['profile']}?steam_id=${user.steamId}`
           );
           const data = await response.json();
           setUserNickname(data.user.nickname || user.personaName);

@@ -1,4 +1,4 @@
-import func2url from '../../../../backend/func2url.json';
+import func2url from '@/lib/api';
 import type { User } from './UserListItem';
 
 interface AdminUser {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { Transaction, Product, SteamUser } from './shop/types';
 import BalanceCard from './shop/BalanceCard';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import ProfileHero from '@/components/profile/ProfileHero';
 import ProfileFriends from '@/components/profile/ProfileFriends';
@@ -134,7 +134,7 @@ const Profile = () => {
     }
     try {
       const response = await fetch(
-        `https://functions.poehali.dev/88f7bd27-aac7-4eab-b045-2d423b092ebb?steam_id=${steamId}`
+        `${func2url['profile']}?steam_id=${steamId}`
       );
       const data = await response.json();
       setProfileData(data);

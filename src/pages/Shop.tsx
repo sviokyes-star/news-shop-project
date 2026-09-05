@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import ShopTab from '@/components/ShopTab';
-import func2url from '../../backend/func2url.json';
+import func2url from '@/lib/api';
 
 interface Product {
   id: number;
@@ -41,7 +41,7 @@ const Shop = () => {
       const verifyParams = new URLSearchParams();
       params.forEach((value, key) => verifyParams.append(key, value));
       verifyParams.append('mode', 'verify');
-      fetch(`https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f?${verifyParams.toString()}`)
+      fetch(`${func2url['steam-auth']}?${verifyParams.toString()}`)
         .then(res => res.json())
         .then(data => {
           if (data.steamId) {

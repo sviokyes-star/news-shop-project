@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ServersTab from '@/components/ServersTab';
+import apiUrl from '@/lib/api';
 
 interface SteamUser {
   steamId: string;
@@ -29,7 +30,7 @@ const Servers = () => {
       });
       verifyParams.append('mode', 'verify');
       
-      fetch(`https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f?${verifyParams.toString()}`)
+      fetch(`${apiUrl['steam-auth']}?${verifyParams.toString()}`)
         .then(res => res.json())
         .then(data => {
           if (data.steamId) {
@@ -44,7 +45,7 @@ const Servers = () => {
 
   const handleSteamLogin = async () => {
     const returnUrl = `${window.location.origin}${window.location.pathname}`;
-    const response = await fetch(`https://functions.poehali.dev/1fc223ef-7704-4b55-a8b5-fea6b000272f?mode=login&return_url=${encodeURIComponent(returnUrl)}`);
+    const response = await fetch(`${apiUrl['steam-auth']}?mode=login&return_url=${encodeURIComponent(returnUrl)}`);
     const data = await response.json();
     
     if (data.redirectUrl) {

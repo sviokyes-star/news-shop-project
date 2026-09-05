@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import func2url from '../../../backend/func2url.json';
+import func2url from '@/lib/api';
 import ShopItemForm from './ShopItemForm';
 import ShopItemList from './ShopItemList';
 import { ShopItem, SteamUser, ShopFormData, EMPTY_FORM } from './ShopItemTypes';
