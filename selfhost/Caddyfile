@@ -1,3 +1,14 @@
+http://localhost {
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy api:8000
+	}
+
+	handle {
+		respond "ok" 200
+	}
+}
+
 {$DOMAIN} {
 	encode gzip zstd
 
