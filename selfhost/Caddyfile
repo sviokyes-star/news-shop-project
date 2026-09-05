@@ -12,7 +12,7 @@ http://localhost {
 {$DOMAIN} {
 	encode gzip zstd
 
-	handle_path /files/* {
+	handle /files/* {
 		reverse_proxy storage:9000
 	}
 

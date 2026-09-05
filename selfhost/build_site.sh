@@ -33,6 +33,10 @@ mkdir -p selfhost/site
 rm -rf selfhost/site/*
 cp -r dist/* selfhost/site/
 
+echo "==> Перевожу ссылки на картинки на свой домен"
+find selfhost/site -type f \( -name '*.js' -o -name '*.css' -o -name '*.html' \) -print0 |
+	xargs -0 sed -i -E "s#https://cdn\.poehali\.dev/projects/[^/\"']+/(bucket|files)/#https://${DOMAIN}/files/#g"
+
 echo
 echo "==> Готово. Файлы сайта:"
 ls selfhost/site | head -10
