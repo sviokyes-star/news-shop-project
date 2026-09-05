@@ -1,0 +1,18 @@
+{$DOMAIN} {
+	encode gzip zstd
+
+	handle_path /files/* {
+		reverse_proxy storage:9000
+	}
+
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv/site
+		try_files {path} /index.html
+		file_server
+	}
+}
