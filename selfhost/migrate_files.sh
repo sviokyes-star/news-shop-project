@@ -8,10 +8,14 @@ set +a
 
 SOURCE_PROJECT_ID="${SOURCE_PROJECT_ID:-0cd5ea72-8c09-43b2-b92c-a0fdee84371e}"
 
+ROOT="$(cd .. && pwd)"
+
 echo "==> Переношу файлы с платформы в локальное хранилище"
-docker compose exec -T \
+docker compose run --rm --no-deps \
 	-e SOURCE_PROJECT_ID="$SOURCE_PROJECT_ID" \
-	api python /app/selfhost/migrate_files.py
+	-e SCAN_ROOT=/src \
+	-v "$ROOT:/src:ro" \
+	api python /src/selfhost/migrate_files.py
 
 echo
 echo "==> Переписываю ссылки в базе на локальные"

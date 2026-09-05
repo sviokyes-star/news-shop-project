@@ -70,7 +70,9 @@ def collect_from_sources(root: str) -> set:
 
 
 def main() -> int:
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = os.environ.get("SCAN_ROOT") or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
 
     print("==> Ищу файлы в базе")
     keys = collect_from_db()
