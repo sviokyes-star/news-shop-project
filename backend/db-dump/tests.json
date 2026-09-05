@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Без ключа доступ запрещён",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401
+    },
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}
