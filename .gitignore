@@ -26,3 +26,12 @@ builds
 
 # warmup/handoff артефакты
 tmp/
+
+# Python
+__pycache__/
+*.pyc
+
+# Selfhost
+selfhost/.env
+selfhost/backups/
+selfhost/site/
