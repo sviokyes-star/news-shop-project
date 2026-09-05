@@ -36,7 +36,32 @@ def _patch_boto3() -> None:
     boto3.client = client
 
 
+def _patch_psycopg2() -> None:
+    schema = os.environ.get("MAIN_DB_SCHEMA", "")
+    if not schema:
+        return
+    try:
+        import psycopg2
+    except ImportError:
+        return
+
+    original_connect = psycopg2.connect
+
+    def connect(*args: Any, **kwargs: Any) -> Any:
+        conn = original_connect(*args, **kwargs)
+        try:
+            with conn.cursor() as cur:
+                cur.execute('SET search_path TO "' + schema + '", public')
+            conn.commit()
+        except Exception:
+            pass
+        return conn
+
+    psycopg2.connect = connect
+
+
 _patch_boto3()
+_patch_psycopg2()
 
 
 def _load_handlers() -> Dict[str, Callable]:
