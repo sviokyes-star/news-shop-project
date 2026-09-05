@@ -62,6 +62,72 @@ def handler(event, context):
     )
     tables = [r[0] for r in cur.fetchall()]
 
+    if params.get('mode') == 'schema':
+        ddl = [
+            '-- Структура базы, снятая с рабочего проекта.',
+            'CREATE SCHEMA IF NOT EXISTS ' + SCHEMA + ';',
+            'SET search_path TO ' + SCHEMA + ';',
+            '',
+        ]
+        for table in tables:
+            cur.execute(
+                'SELECT column_name, data_type, character_maximum_length, '
+                'numeric_precision, numeric_scale, is_nullable, column_default '
+                'FROM information_schema.columns '
+                'WHERE table_schema = %s AND table_name = %s ORDER BY ordinal_position',
+                (SCHEMA, table),
+            )
+            parts = []
+            for name, dtype, maxlen, prec, scale, nullable, default in cur.fetchall():
+                if default and 'nextval' in str(default):
+                    col = '"' + name + '" ' + ('BIGSERIAL' if dtype == 'bigint' else 'SERIAL')
+                else:
+                    typ = dtype.upper()
+                    if dtype == 'character varying' and maxlen:
+                        typ = 'VARCHAR(' + str(maxlen) + ')'
+                    elif dtype == 'character varying':
+                        typ = 'VARCHAR'
+                    elif dtype == 'numeric' and prec:
+                        typ = 'NUMERIC(' + str(prec) + ',' + str(scale or 0) + ')'
+                    elif dtype == 'timestamp without time zone':
+                        typ = 'TIMESTAMP'
+                    elif dtype == 'timestamp with time zone':
+                        typ = 'TIMESTAMPTZ'
+                    elif dtype == 'USER-DEFINED':
+                        typ = 'TEXT'
+                    col = '"' + name + '" ' + typ
+                    if default is not None:
+                        col += ' DEFAULT ' + str(default)
+                if nullable == 'NO' and (not default or 'nextval' not in str(default)):
+                    col += ' NOT NULL'
+                parts.append('  ' + col)
+
+            cur.execute(
+                'SELECT a.attname FROM pg_index i '
+                'JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) '
+                'WHERE i.indrelid = %s::regclass AND i.indisprimary',
+                (SCHEMA + '.' + table,),
+            )
+            pk = [r[0] for r in cur.fetchall()]
+            if pk:
+                parts.append('  PRIMARY KEY (' + ', '.join('"' + c + '"' for c in pk) + ')')
+
+            ddl.append('CREATE TABLE IF NOT EXISTS "' + table + '" (')
+            ddl.append(',\n'.join(parts))
+            ddl.append(');')
+            ddl.append('')
+
+        cur.close()
+        conn.close()
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': '\n'.join(ddl),
+        }
+
     lines = [
         '-- Данные проекта. Структуру создают миграции из db_migrations.',
         'SET search_path TO ' + SCHEMA + ';',
