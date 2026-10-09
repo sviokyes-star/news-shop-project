@@ -152,16 +152,23 @@ scp -r dist/* root@IP_АДРЕС_СЕРВЕРА:/opt/app/selfhost/site/
 ## Шаг 9. Включи автоматические бэкапы
 
 ```bash
-crontab -e
+cd /opt/app/selfhost
+bash enable_backups.sh
 ```
 
-Добавь строку (копия базы каждую ночь в 4:00, хранится 14 дней):
+Каждую ночь в 4:00 копируются база и картинки, копии хранятся 14 дней
+в папке `backups`. Журнал: `/var/log/site-backup.log`.
+
+Разовая копия вручную: `bash backup.sh`
+
+Восстановить базу из копии: `bash restore.sh backups/db-ДАТА.sql.gz`
+
+Совет: раз в неделю скачивай свежую копию к себе на компьютер —
+если сервер сломается целиком, копии на нём не помогут:
 
 ```
-0 4 * * * cd /opt/app/selfhost && bash backup.sh >> /var/log/db-backup.log 2>&1
+scp root@IP_АДРЕС_СЕРВЕРА:/opt/app/selfhost/backups/db-*.sql.gz .
 ```
-
-Разовый бэкап вручную: `bash backup.sh`
 
 ---
 
