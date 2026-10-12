@@ -4,11 +4,16 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ROOT="$(cd .. && pwd)"
 
+bash "$ROOT/selfhost/migrate.sh" --baseline
+
 echo "==> Забираю обновления из репозитория"
 cd "$ROOT"
 git pull
 
 cd "$ROOT/selfhost"
+
+echo "==> Проверяю изменения базы"
+bash migrate.sh
 
 CHANGED_BACKEND=$(git -C "$ROOT" diff --name-only HEAD@{1} HEAD 2>/dev/null | grep -c '^backend/' || true)
 CHANGED_FRONT=$(git -C "$ROOT" diff --name-only HEAD@{1} HEAD 2>/dev/null | grep -cE '^(src/|package.json|index.html|tailwind|vite)' || true)
