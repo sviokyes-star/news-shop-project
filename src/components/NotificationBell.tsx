@@ -106,7 +106,7 @@ export default function NotificationBell({ steamId }: NotificationBellProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-2xl shadow-black/30 z-50 overflow-hidden">
+        <div className="fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full mt-2 sm:w-80 bg-card border border-border rounded-xl shadow-2xl shadow-black/30 z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <span className="font-semibold text-sm">Уведомления</span>
             {notifications.some(n => !n.isRead) && (

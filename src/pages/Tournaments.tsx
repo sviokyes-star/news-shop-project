@@ -245,7 +245,7 @@ const Tournaments = () => {
 
   return (
       <>
-        <main className="container mx-auto px-6 py-16">
+        <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
           <TournamentsTab
             tournaments={tournaments}
             isLoading={isLoadingTournaments}

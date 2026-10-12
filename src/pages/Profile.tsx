@@ -147,8 +147,8 @@ const Profile = () => {
   if (!user || !profileData) return null;
 
   return (
-    <main className="container mx-auto px-6 py-16">
-      <div className="space-y-10">
+    <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
+      <div className="space-y-6 sm:space-y-10">
         <ProfileHero
           user={user}
           profileUser={profileData.user}

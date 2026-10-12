@@ -82,7 +82,7 @@ export default function TournamentForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor={`${idPrefix}-prize_pool`}>Призовой фонд (₽) *</Label>
             <Input
@@ -106,7 +106,7 @@ export default function TournamentForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor={`${idPrefix}-bracket_type`}>Создание сетки</Label>
             <select
@@ -135,7 +135,7 @@ export default function TournamentForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor={`${idPrefix}-game`}>Игра</Label>
             <select

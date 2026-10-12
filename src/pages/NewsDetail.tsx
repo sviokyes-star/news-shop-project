@@ -307,7 +307,7 @@ const NewsDetail = () => {
   }
 
   return (
-      <main className="container mx-auto px-6 py-16">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
         <article className="space-y-8">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -320,7 +320,7 @@ const NewsDetail = () => {
               </div>
             </div>
 
-            <h1 className="text-5xl font-bold tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
               {news.title}
             </h1>
           </div>
@@ -335,7 +335,7 @@ const NewsDetail = () => {
             </div>
           )}
 
-          <Card className="p-10 border border-border bg-card/50 backdrop-blur">
+          <Card className="p-5 sm:p-10 border border-border bg-card/50 backdrop-blur">
             <div 
               className="prose prose-lg prose-invert max-w-none"
               style={{
@@ -355,7 +355,7 @@ const NewsDetail = () => {
                     return null;
                   }
                   return (
-                    <h1 key={index} className="text-4xl font-bold mb-2 mt-2">
+                    <h1 key={index} className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 mt-2">
                       {line.substring(2)}
                     </h1>
                   );

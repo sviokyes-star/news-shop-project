@@ -50,7 +50,7 @@ const TournamentBracket = ({ bracket }: TournamentBracketProps) => {
             const roundMatches = bracket.filter(m => m.round_number === roundNum);
             
             return (
-              <div key={roundNum} className="flex-1 min-w-[320px]">
+              <div key={roundNum} className="flex-1 min-w-[260px] sm:min-w-[320px]">
                 <h3 className="text-xl font-bold mb-4 text-center">
                   {getRoundName(roundNum, rounds.length)}
                 </h3>

@@ -59,12 +59,12 @@ export default function ProfileHistory({ steamId }: ProfileHistoryProps) {
       </h2>
 
       {isLoading ? (
-        <Card className="p-8 text-center border border-dashed border-border bg-card/30">
+        <Card className="p-5 sm:p-8 text-center border border-dashed border-border bg-card/30">
           <Icon name="Loader2" size={36} className="text-muted-foreground mx-auto mb-2 animate-spin" />
           <p className="text-muted-foreground">Загрузка...</p>
         </Card>
       ) : history.length === 0 ? (
-        <Card className="p-8 text-center border border-dashed border-border bg-card/30">
+        <Card className="p-5 sm:p-8 text-center border border-dashed border-border bg-card/30">
           <Icon name="ReceiptText" size={36} className="text-muted-foreground mx-auto mb-2" />
           <p className="text-muted-foreground">Операций пока нет</p>
         </Card>

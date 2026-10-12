@@ -41,7 +41,7 @@ export default function TournamentCard({ tournament, onEdit, onDelete }: Tournam
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 text-sm">
             <div className="flex items-center gap-2">
               <Icon name="Gamepad2" size={16} className="text-primary" />
               <span className="text-muted-foreground">Игра:</span>

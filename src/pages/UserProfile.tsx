@@ -210,13 +210,13 @@ const UserProfile = () => {
   };
 
   if (isLoading) return (
-    <main className="container mx-auto px-6 py-16 flex justify-center">
+    <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16 flex justify-center">
       <Icon name="Loader2" size={40} className="animate-spin text-primary" />
     </main>
   );
 
   if (notFound || !profileData) return (
-    <main className="container mx-auto px-6 py-16 text-center">
+    <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16 text-center">
       <Icon name="UserX" size={64} className="text-muted-foreground mx-auto mb-4" />
       <h1 className="text-3xl font-bold mb-2">Профиль не найден</h1>
       <p className="text-muted-foreground mb-6">Пользователь с таким Steam ID не существует</p>
@@ -230,8 +230,8 @@ const UserProfile = () => {
   const { user, tournaments } = profileData;
 
   return (
-    <main className="container mx-auto px-6 py-16">
-      <div className="space-y-10">
+    <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
+      <div className="space-y-6 sm:space-y-10">
         <UserProfileHero
           user={user}
           me={me}

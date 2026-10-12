@@ -15,7 +15,7 @@ interface AdminAccessDeniedProps {
 export default function AdminAccessDenied({ user, onSteamLogin }: AdminAccessDeniedProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      <Card className="p-8 bg-card/80 backdrop-blur border-primary/20 max-w-md w-full">
+      <Card className="p-5 sm:p-8 bg-card/80 backdrop-blur border-primary/20 max-w-md w-full">
         <div className="text-center space-y-6">
           <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
             <Icon name="ShieldAlert" size={32} className="text-destructive" />

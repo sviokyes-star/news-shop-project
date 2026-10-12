@@ -63,7 +63,7 @@ export default function LobbyChat({
                 {msg.image_url ? (
                   <div className={`rounded-xl overflow-hidden border ${isMine ? 'border-primary/40' : 'border-border'}`}>
                     <a href={msg.image_url} target="_blank" rel="noopener noreferrer">
-                      <img src={msg.image_url} className="max-w-[240px] max-h-48 object-cover block" />
+                      <img src={msg.image_url} className="max-w-full sm:max-w-[240px] max-h-48 object-cover block" />
                     </a>
                     <div className={`px-3 py-1.5 text-xs ${isMine ? 'bg-primary text-primary-foreground' : 'bg-muted/60'}`}>
                       {msg.message}

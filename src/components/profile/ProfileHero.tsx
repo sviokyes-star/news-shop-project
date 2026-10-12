@@ -115,17 +115,17 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
   };
 
   return (
-    <Card className="p-10 border border-border bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur border-primary/20">
-      <div className="flex items-start gap-8">
+    <Card className="p-5 sm:p-10 border border-border bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur border-primary/20">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-8 text-center sm:text-left">
         <div className="relative group">
           <img
             src={user.avatarUrl}
             alt={user.personaName}
-            className="w-32 h-32 rounded-2xl border-4 border-primary shadow-2xl shadow-primary/20"
+            className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl border-4 border-primary shadow-2xl shadow-primary/20"
           />
           <label
             htmlFor="avatar-upload"
-            className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity cursor-pointer"
           >
             {isUploadingAvatar ? (
               <Icon name="Loader2" size={32} className="text-white animate-spin" />
@@ -146,16 +146,16 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
           />
         </div>
 
-        <div className="flex-1 flex items-start justify-between gap-4">
+        <div className="flex-1 w-full flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
           <div className="flex-1">
             {isEditingNickname ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <Input
                     value={newNickname}
                     onChange={(e) => setNewNickname(e.target.value)}
                     placeholder="Введите никнейм"
-                    className="text-2xl font-bold h-12"
+                    className="text-xl sm:text-2xl font-bold h-12 flex-1 min-w-[160px]"
                     maxLength={30}
                   />
                   <Button onClick={handleUpdateNickname} size="sm" className="gap-2">
@@ -174,7 +174,7 @@ export default function ProfileHero({ user, profileUser, statistics, onUserUpdat
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-bold tracking-tight">{profileUser.nickname || user.personaName}</h1>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words">{profileUser.nickname || user.personaName}</h1>
                 <Button onClick={() => setIsEditingNickname(true)} variant="ghost" size="sm" className="gap-2">
                   <Icon name="Pencil" size={16} />
                 </Button>

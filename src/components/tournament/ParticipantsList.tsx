@@ -20,7 +20,7 @@ const ParticipantsList = ({ participants }: ParticipantsListProps) => {
       </div>
 
       {participants.length === 0 ? (
-        <Card className="p-8 text-center">
+        <Card className="p-5 sm:p-8 text-center">
           <Icon name="Users" size={48} className="mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">Пока никто не зарегистрировался на турнир</p>
         </Card>

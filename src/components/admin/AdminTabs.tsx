@@ -20,14 +20,14 @@ export default function AdminTabs({ activeTab, setActiveTab }: AdminTabsProps) {
   ];
 
   return (
-    <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[73px] z-40">
-      <div className="container mx-auto px-6">
+    <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[65px] sm:top-[81px] z-40">
+      <div className="container mx-auto px-4 sm:px-6">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-4 font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-muted-foreground hover:text-foreground'

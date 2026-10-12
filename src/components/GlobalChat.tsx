@@ -209,7 +209,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
       </div>
 
       {/* Messages */}
-      <div className="h-[400px] overflow-y-auto p-4 space-y-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-muted-foreground/50">
+      <div className="h-[360px] sm:h-[400px] overflow-y-auto p-3 sm:p-4 space-y-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-muted-foreground/50">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Icon name="Loader2" size={24} className="animate-spin text-muted-foreground" />
@@ -248,7 +248,7 @@ export default function GlobalChat({ user, onLoginClick }: GlobalChatProps) {
                 )}
                 <p className="text-sm break-words">{msg.message}</p>
               </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 {user && (
                   <Button
                     variant="ghost"

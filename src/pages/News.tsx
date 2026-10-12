@@ -95,13 +95,13 @@ const News = () => {
 
 
   return (
-      <main className="container mx-auto px-6 py-16">
-        <div className="space-y-10">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
+        <div className="space-y-6 sm:space-y-10">
           <div className="space-y-3">
             <div className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full mb-2">
               <span className="text-sm font-medium text-primary">Последние обновления</span>
             </div>
-            <h2 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
               Новости
             </h2>
             <p className="text-muted-foreground text-xl">Следите за событиями и обновлениями игры</p>

@@ -69,7 +69,7 @@ const ServersTab = () => {
   }, {});
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 sm:space-y-10">
       <div className="space-y-3">
         <div className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full mb-2">
           <span className="text-sm font-medium text-primary">Игровые сервера</span>
@@ -77,7 +77,7 @@ const ServersTab = () => {
         <p className="text-muted-foreground text-xl">Выберите сервер и присоединяйтесь к игре</p>
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-6 sm:space-y-10">
         {Object.entries(grouped).map(([gameType, gameServers]) => (
           <div key={gameType} className="space-y-4">
             <div className="flex items-center gap-3">

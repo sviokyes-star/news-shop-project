@@ -78,16 +78,16 @@ export default function UserProfileHero({
   };
 
   return (
-    <Card className="p-10 border border-border bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur border-primary/20">
-      <div className="flex items-start gap-8">
+    <Card className="p-5 sm:p-10 border border-border bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur border-primary/20">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-8 text-center sm:text-left">
         <div className="relative">
-          <img src={user.avatarUrl} alt={displayName} className="w-32 h-32 rounded-2xl border-4 border-primary shadow-2xl shadow-primary/20" />
+          <img src={user.avatarUrl} alt={displayName} className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl border-4 border-primary shadow-2xl shadow-primary/20" />
           <div className={`absolute -bottom-2 -right-2 w-5 h-5 rounded-full border-2 border-background ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
         </div>
         <div className="flex-1 space-y-4">
-          <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="flex items-start justify-center sm:justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight">{displayName}</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words">{displayName}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
                 <span className="text-sm text-muted-foreground">

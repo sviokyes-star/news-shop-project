@@ -37,24 +37,24 @@ const ProductCard = ({
       key={product.id}
       className="group px-4 py-3 border-border hover:border-primary/50 transition-all duration-200 bg-card/50 backdrop-blur"
     >
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
         <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
           <Icon name="Coins" size={18} className="text-primary" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm leading-tight truncate">{product.name}</p>
+          <p className="font-semibold text-sm leading-tight sm:truncate">{product.name}</p>
           {product.amount && <p className="text-xs text-muted-foreground truncate">{product.amount}</p>}
 
           {product.is_slider && (
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
               <Slider
                 min={product.slider_min}
                 max={product.slider_max}
                 step={product.slider_step}
                 value={[qty]}
                 onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [product.id]: val }))}
-                className="w-32"
+                className="w-full sm:w-32"
               />
               <div className="flex items-center border border-border rounded overflow-hidden bg-background">
                 <button
@@ -101,8 +101,8 @@ const ProductCard = ({
           )}
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="text-right">
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto flex-shrink-0 pl-12 sm:pl-0">
+          <div className="text-left sm:text-right">
             <span className="text-xl font-bold">{totalPrice}</span>
             <span className="text-sm text-muted-foreground ml-0.5">₽</span>
             {product.is_slider && (

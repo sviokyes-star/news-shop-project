@@ -80,7 +80,7 @@ const TournamentDetail = () => {
 
   if (isLoading) {
     return (
-      <main className="container mx-auto px-6 py-16">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center space-y-4">
             <Icon name="Loader2" size={48} className="animate-spin text-primary mx-auto" />
@@ -93,7 +93,7 @@ const TournamentDetail = () => {
 
   if (!tournament) {
     return (
-      <main className="container mx-auto px-6 py-16">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center space-y-4">
             <Icon name="AlertCircle" size={48} className="text-destructive mx-auto" />
@@ -118,7 +118,7 @@ const TournamentDetail = () => {
     : null;
 
   return (
-    <main className="container mx-auto px-6 py-16">
+    <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
       <Button variant="ghost" onClick={() => navigate('/tournaments')} className="mb-6 gap-2">
         <Icon name="ArrowLeft" size={16} />
         Назад к турнирам

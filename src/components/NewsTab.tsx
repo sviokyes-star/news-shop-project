@@ -17,7 +17,7 @@ const NewsTab = ({ newsItems }: NewsTabProps) => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 sm:space-y-10">
       <div className="space-y-3">
         <div className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full mb-2">
           <span className="text-sm font-medium text-primary">Последние обновления</span>
@@ -30,7 +30,7 @@ const NewsTab = ({ newsItems }: NewsTabProps) => {
         {newsItems.map((item, index) => (
           <Card 
             key={item.id} 
-            className="group p-8 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 bg-card/50 backdrop-blur"
+            className="group p-5 sm:p-8 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 bg-card/50 backdrop-blur"
             style={{ animationDelay: `${index * 100}ms` }}
             onClick={() => navigate(`/news/${item.id}`)}
           >

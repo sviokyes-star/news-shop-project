@@ -39,8 +39,8 @@ const BalanceCard = ({
   loadBalance,
 }: BalanceCardProps) => {
   return (
-    <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-      <div className="flex items-center justify-between">
+    <Card className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">Ваш баланс</p>
           <div className="flex items-center gap-3">
@@ -48,12 +48,12 @@ const BalanceCard = ({
             {isLoadingBalance ? (
               <span className="text-3xl font-bold">...</span>
             ) : (
-              <span className="text-4xl font-bold">{balance.toLocaleString('ru-RU')}</span>
+              <span className="text-3xl sm:text-4xl font-bold">{balance.toLocaleString('ru-RU')}</span>
             )}
             <span className="text-2xl text-muted-foreground">₽</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Dialog open={isHistoryOpen} onOpenChange={(open) => { setIsHistoryOpen(open); if (open) loadHistory(); }}>
             <DialogTrigger asChild>
               <Button variant="outline" size="lg" className="gap-2">

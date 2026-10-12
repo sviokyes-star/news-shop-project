@@ -49,7 +49,7 @@ export default function TournamentTabs({ tournament, activeTab, onTabChange }: T
                 {tournament.rules}
               </div>
             ) : (
-              <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+              <div className="p-5 sm:p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
                 <Icon name="BookOpen" size={36} className="mx-auto mb-3 opacity-30" />
                 <p>Правила турнира не указаны</p>
               </div>
@@ -88,7 +88,7 @@ export default function TournamentTabs({ tournament, activeTab, onTabChange }: T
                 {tournament.prizes_description}
               </div>
             ) : (
-              <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+              <div className="p-5 sm:p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
                 <Icon name="Trophy" size={36} className="mx-auto mb-3 opacity-30" />
                 <p>Призовая информация не указана</p>
               </div>

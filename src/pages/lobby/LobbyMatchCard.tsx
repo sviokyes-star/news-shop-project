@@ -98,10 +98,10 @@ export default function LobbyMatchCard({
   };
 
   return (
-    <Card className="p-5 mb-6 border-border bg-card/60">
-      <div className="flex items-center justify-between gap-4">
+    <Card className="p-3 sm:p-5 mb-6 border-border bg-card/60">
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
         {/* Игрок 1 */}
-        <div className="flex flex-col items-center gap-2 flex-1">
+        <div className="flex flex-col items-center gap-2 flex-1 min-w-0 text-center">
           {player1 ? (
             <>
               <div className="relative">
@@ -124,10 +124,10 @@ export default function LobbyMatchCard({
           )}
         </div>
 
-        <div className="text-2xl font-bold text-muted-foreground">VS</div>
+        <div className="text-lg sm:text-2xl font-bold text-muted-foreground">VS</div>
 
         {/* Игрок 2 */}
-        <div className="flex flex-col items-center gap-2 flex-1">
+        <div className="flex flex-col items-center gap-2 flex-1 min-w-0 text-center">
           {player2 ? (
             <>
               <div className="relative">

@@ -37,7 +37,7 @@ export default function UserProfileFriends({ friends }: UserProfileFriendsProps)
           </div>
         </Card>
       ) : (
-        <Card className="p-8 text-center border border-dashed border-border bg-card/30">
+        <Card className="p-5 sm:p-8 text-center border border-dashed border-border bg-card/30">
           <Icon name="Users" size={36} className="text-muted-foreground mx-auto mb-2" />
           <p className="text-muted-foreground">У пользователя пока нет друзей</p>
         </Card>

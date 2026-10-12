@@ -188,7 +188,7 @@ export default function MatchLobby() {
 
   if (isLoading) {
     return (
-      <main className="container mx-auto px-6 py-16 flex items-center justify-center min-h-[400px]">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16 flex items-center justify-center min-h-[400px]">
         <Icon name="Loader2" size={40} className="animate-spin text-primary" />
       </main>
     );
@@ -196,7 +196,7 @@ export default function MatchLobby() {
 
   if (!data) {
     return (
-      <main className="container mx-auto px-6 py-16 text-center">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16 text-center">
         <p className="text-muted-foreground">Лобби не найдено</p>
       </main>
     );
@@ -211,7 +211,7 @@ export default function MatchLobby() {
   const isTournamentAdmin = !!(user && tournamentAdmins.some(a => a.steam_id === user.steamId));
 
   return (
-    <main className="container mx-auto px-6 py-10 max-w-3xl">
+    <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 max-w-3xl">
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 gap-2">
         <Icon name="ArrowLeft" size={16} />
         Назад к турниру

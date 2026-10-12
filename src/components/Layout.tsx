@@ -18,7 +18,7 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b border-border backdrop-blur-xl bg-background/80 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-5">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">

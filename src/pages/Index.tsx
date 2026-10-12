@@ -275,8 +275,8 @@ const Index = () => {
 
 
   return (
-      <main className="container mx-auto px-6 py-16">
-        <div className="flex gap-6">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
+        <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1 min-w-0">
             {activeTab === 'news' && <NewsTab newsItems={newsItems} />}
             {activeTab === 'shop' && <ShopTab products={products} user={user} />}
@@ -293,7 +293,7 @@ const Index = () => {
             {activeTab === 'partners' && <PartnersTab />}
           </div>
           
-          <aside className="w-96 flex-shrink-0">
+          <aside className="w-full lg:w-96 lg:flex-shrink-0">
             <GlobalChat user={user} onLoginClick={handleSteamLogin} />
           </aside>
         </div>

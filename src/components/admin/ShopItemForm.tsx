@@ -110,7 +110,7 @@ export default function ShopItemForm({ formData, editingId, error, success, onCh
                   min="1"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">Мин.</label>
                   <Input

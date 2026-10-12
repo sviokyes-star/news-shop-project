@@ -68,8 +68,8 @@ const TournamentInfo = ({ tournament }: TournamentInfoProps) => {
       </div>
 
       <div>
-        <h1 className="text-4xl font-bold mb-2">{tournament.name}</h1>
-        <p className="text-muted-foreground text-lg">{tournament.description}</p>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 break-words">{tournament.name}</h1>
+        <p className="text-muted-foreground text-base sm:text-lg break-words">{tournament.description}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -80,7 +80,7 @@ const TournamentInfo = ({ tournament }: TournamentInfoProps) => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Призовой фонд</p>
-              <p className="text-xl font-bold">{tournament.prize_pool.toLocaleString('ru-RU')} ₽</p>
+              <p className="text-lg sm:text-xl font-bold">{tournament.prize_pool.toLocaleString('ru-RU')} ₽</p>
             </div>
           </div>
         </Card>
@@ -92,7 +92,7 @@ const TournamentInfo = ({ tournament }: TournamentInfoProps) => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Участники</p>
-              <p className="text-xl font-bold">{tournament.participants_count}/{tournament.max_participants}</p>
+              <p className="text-lg sm:text-xl font-bold">{tournament.participants_count}/{tournament.max_participants}</p>
             </div>
           </div>
         </Card>
@@ -104,7 +104,7 @@ const TournamentInfo = ({ tournament }: TournamentInfoProps) => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Начало</p>
-              <p className="text-xl font-bold">{formatDateTime(tournament.start_date)}</p>
+              <p className="text-lg sm:text-xl font-bold">{formatDateTime(tournament.start_date)}</p>
             </div>
           </div>
         </Card>
