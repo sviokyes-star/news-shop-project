@@ -30,6 +30,12 @@ else
 	echo "==> Функции не менялись"
 fi
 
+CHANGED_CADDY=$(git -C "$ROOT" diff --name-only HEAD@{1} HEAD 2>/dev/null | grep -c '^selfhost/Caddyfile' || true)
+if [ "$CHANGED_CADDY" -gt 0 ] || [ "${1:-}" = "--all" ]; then
+	echo "==> Обновляю настройки веб-сервера"
+	docker compose restart caddy
+fi
+
 if [ "$CHANGED_FRONT" -gt 0 ]; then
 	echo "==> Пересобираю сайт"
 	bash build_site.sh
